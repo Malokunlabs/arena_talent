@@ -34,7 +34,7 @@ export default function ProofDetailModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 overflow-hidden bg-white border-none rounded-3xl sm:max-w-lg">
         <DialogTitle className="sr-only">Proof Details</DialogTitle>
-        <div className="relative aspect-square w-full bg-gray-100">
+        <div className="relative aspect-video w-full bg-gray-100">
           <Image
             src={proof.image}
             alt={`Proof by ${proof.name}`}

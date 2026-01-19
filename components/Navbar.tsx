@@ -76,15 +76,19 @@ const Navbar = () => {
 
           {/* Right Buttons (Desktop) */}
           <div className="hidden lg:flex items-center gap-4">
-            <Button
-              variant="outline"
-              className="px-5 h-12 rounded-lg border-primary text-primary hover:bg-primary/5 font-semibold text-base"
-            >
-              Login
-            </Button>
-            <Button className="px-5 h-12 rounded-lg bg-primary text-white hover:bg-primary/90 font-semibold text-base">
-              Sign Up
-            </Button>
+            <Link href="/login">
+              <Button
+                variant="outline"
+                className="px-5 h-12 rounded-lg border-primary text-primary hover:bg-primary/5 font-semibold text-base"
+              >
+                Login
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button className="px-5 h-12 rounded-lg bg-primary text-white hover:bg-primary/90 font-semibold text-base">
+                Sign Up
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -124,19 +128,19 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="flex flex-col gap-3 mt-4">
-              <Button
-                variant="outline"
-                className="w-full h-12 rounded-lg border-primary text-primary font-bold text-lg"
-                onClick={() => setShowNav(false)}
-              >
-                Login
-              </Button>
-              <Button
-                className="w-full h-12 rounded-lg bg-primary text-white font-bold text-lg"
-                onClick={() => setShowNav(false)}
-              >
-                Sign Up
-              </Button>
+              <Link href="/login" onClick={() => setShowNav(false)}>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 rounded-lg border-primary text-primary font-bold text-lg"
+                >
+                  Login
+                </Button>
+              </Link>
+              <Link href="/signup" onClick={() => setShowNav(false)}>
+                <Button className="w-full h-12 rounded-lg bg-primary text-white font-bold text-lg">
+                  Sign Up
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
