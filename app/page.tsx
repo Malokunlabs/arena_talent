@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import DailyPulse from "@/components/DailyPulse";
 import ProofCard from "@/components/ProofCard";
+import FeedCard from "@/components/FeedCard";
+import FeedSkeleton from "@/components/FeedSkeleton";
 import { Briefcase } from "lucide-react";
 
 // Modals
@@ -22,11 +24,34 @@ interface Proof {
   proofboardLink: string;
 }
 
+interface FeedItem {
+  id: number;
+  avatar: string;
+  name: string;
+  location: string;
+  timeAgo: string;
+  badge: "Win" | "Hustle" | "Unicorn" | "Learning";
+  image: string;
+  tags: string[];
+  title: string;
+  description: string;
+  salutes: number;
+}
+
 export default function Home() {
   const [activeModal, setActiveModal] = useState<
     "detail" | "create" | "pulse" | null
   >(null);
   const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulated Lazy Loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000); // Show skeleton for 2 seconds
+    return () => clearTimeout(timer);
+  }, []);
 
   const proofs: Proof[] = [
     {
@@ -61,6 +86,105 @@ export default function Home() {
       name: "Idubamo Erekosima",
       description: "Reached 100 completed gigs milestone",
       proofboardLink: "/idubamo_erekosima",
+    },
+  ];
+
+  const feedItems: FeedItem[] = [
+    {
+      id: 101,
+      avatar:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2564&auto=format&fit=crop",
+      name: "Kponane Abam",
+      location: "Lagos",
+      timeAgo: "3hrs ago",
+      badge: "Win",
+      image:
+        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2670&auto=format&fit=crop",
+      tags: ["UGC", "win", "unicorn"],
+      title: "Collaborated with a Unicorn Startup!",
+      description:
+        "Victoria Island to Lekki hustle. Every brand checked, every detail noted. This how we make progress.🤩",
+      salutes: 87,
+    },
+    {
+      id: 102,
+      avatar:
+        "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=2574&auto=format&fit=crop",
+      name: "Wariso Tuma",
+      location: "Lagos",
+      timeAgo: "3hrs ago",
+      badge: "Hustle",
+      image:
+        "https://images.unsplash.com/photo-1519999482648-25049ddd37b1?q=80&w=2626&auto=format&fit=crop",
+      tags: ["UGC", "win", "unicorn"],
+      title: "Collaborated with a Unicorn Startup!",
+      description:
+        "Victoria Island to Lekki hustle. Every brand checked, every detail noted. This how we make progress.🤩",
+      salutes: 87,
+    },
+    {
+      id: 103,
+      avatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2574&auto=format&fit=crop",
+      name: "Nnamdi Nwanze",
+      location: "Lagos",
+      timeAgo: "3hrs ago",
+      badge: "Learning",
+      image:
+        "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?q=80&w=2574&auto=format&fit=crop",
+      tags: ["UGC", "win", "unicorn"],
+      title: "Collaborated with a Unicorn Startup!",
+      description:
+        "Victoria Island to Lekki hustle. Every brand checked, every detail noted. This how we make progress.🤩",
+      salutes: 87,
+    },
+    {
+      id: 104,
+      avatar:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=2574&auto=format&fit=crop",
+      name: "Abubakar Gambo",
+      location: "Lagos",
+      timeAgo: "3hrs ago",
+      badge: "Win",
+      image:
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2673&auto=format&fit=crop",
+      tags: ["UGC", "win", "unicorn"],
+      title: "Collaborated with a Unicorn Startup!",
+      description:
+        "Victoria Island to Lekki hustle. Every brand checked, every detail noted. This how we make progress.🤩",
+      salutes: 87,
+    },
+    {
+      id: 105,
+      avatar:
+        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=2680&auto=format&fit=crop",
+      name: "Sade Oyeleke",
+      location: "Lagos",
+      timeAgo: "3hrs ago",
+      badge: "Win",
+      image:
+        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2670&auto=format&fit=crop",
+      tags: ["UGC", "win", "unicorn"],
+      title: "Collaborated with a Unicorn Startup!",
+      description:
+        "Victoria Island to Lekki hustle. Every brand checked, every detail noted. This how we make progress.🤩",
+      salutes: 87,
+    },
+    {
+      id: 106,
+      avatar:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2670&auto=format&fit=crop",
+      name: "Boma Kalio",
+      location: "Lagos",
+      timeAgo: "3hrs ago",
+      badge: "Win",
+      image:
+        "https://images.unsplash.com/photo-1493863641943-9b68992a8d07?q=80&w=2658&auto=format&fit=crop",
+      tags: ["UGC", "win", "unicorn"],
+      title: "Collaborated with a Unicorn Startup!",
+      description:
+        "Victoria Island to Lekki hustle. Every brand checked, every detail noted. This how we make progress.🤩",
+      salutes: 87,
     },
   ];
 
@@ -173,12 +297,27 @@ export default function Home() {
           </Button>
         </section>
 
-        {/* Feed Placeholder (for context) */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-40 grayscale pointer-events-none select-none">
-          {/* Placeholders to show layout structure below filters */}
-          <div className="aspect-4/5 bg-gray-200 rounded-2xl"></div>
-          <div className="aspect-4/5 bg-gray-200 rounded-2xl"></div>
-          <div className="aspect-4/5 bg-gray-200 rounded-2xl"></div>
+        {/* Feed Section with Skeleton Loading */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, index) => (
+                <FeedSkeleton key={index} />
+              ))
+            : feedItems.map((item) => (
+                <FeedCard
+                  key={item.id}
+                  avatar={item.avatar}
+                  name={item.name}
+                  location={item.location}
+                  timeAgo={item.timeAgo}
+                  badge={item.badge}
+                  image={item.image}
+                  tags={item.tags}
+                  title={item.title}
+                  description={item.description}
+                  salutes={item.salutes}
+                />
+              ))}
         </section>
       </div>
 
