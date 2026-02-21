@@ -2,30 +2,44 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/store/useAuthStore";
 import { cn } from "@/lib/utils";
 import { ChevronRight, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SignUpPage() {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const {
     fullName,
     email,
     password,
     confirmPassword,
     errors,
+    isLoading,
+    error,
     setFullName,
     setEmail,
     setPassword,
     setConfirmPassword,
     validateStep1,
     validate,
+    signup,
   } = useAuthStore();
+
+  React.useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const router = useRouter();
 
   const handleContinue = () => {
     if (validateStep1()) {
@@ -33,10 +47,12 @@ export default function SignUpPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validate()) {
-      console.log("Form is valid", { fullName, email, password });
-      // Proceed with signup logic
+      const success = await signup();
+      if (success) {
+        router.push("/verify-email");
+      }
     }
   };
 
@@ -187,9 +203,10 @@ export default function SignUpPage() {
                 </Button>
                 <Button
                   onClick={handleSubmit}
+                  disabled={isLoading}
                   className="w-2/3 h-12 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl text-base shadow-lg shadow-purple-100 transition-all hover:scale-[1.02]"
                 >
-                  Sign Up
+                  {isLoading ? "Signing up..." : "Sign Up"}
                 </Button>
               </div>
             </div>

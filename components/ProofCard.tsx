@@ -20,7 +20,7 @@ export default function ProofCard({
   return (
     <div
       onClick={onClick}
-      className="group relative flex flex-col gap-3 rounded-2xl bg-white p-2 transition-all hover:shadow-md border border-transparent hover:border-gray-100 cursor-pointer"
+      className="group relative flex flex-col gap-3 rounded-2xl bg-white p-2 transition-all hover:shadow-md border border-gray-100 hover:border-gray-100 cursor-pointer"
     >
       <div className="relative aspect-4/5 w-full overflow-hidden rounded-xl">
         <Image

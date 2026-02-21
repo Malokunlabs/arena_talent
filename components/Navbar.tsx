@@ -2,21 +2,40 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useUserStore } from "@/store/useUserStore";
+import ProfileDropdown from "./ProfileDropdown";
 
 const Navbar = () => {
   const [showNav, setShowNav] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { isAuthenticated, initAuth } = useAuthStore();
+  const { fetchUser } = useUserStore();
+  const pathname = usePathname();
 
   const navLinks = [
     { name: "Arena", href: "/" },
     { name: "About us", href: "#" },
-    { name: "Talent", href: "#" },
+    { name: "Talent", href: "/talent" },
   ];
+
+  useEffect(() => {
+    // Initialize auth state from localStorage
+    initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
+    // Fetch user data when authenticated
+    if (isAuthenticated) {
+      fetchUser();
+    }
+  }, [isAuthenticated, fetchUser]);
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -37,6 +56,8 @@ const Navbar = () => {
     window.addEventListener("scroll", controlNavbar);
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
+
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <nav
@@ -76,19 +97,25 @@ const Navbar = () => {
 
           {/* Right Buttons (Desktop) */}
           <div className="hidden lg:flex items-center gap-4">
-            <Link href="/login">
-              <Button
-                variant="outline"
-                className="px-5 h-12 rounded-lg border-primary text-primary hover:bg-primary/5 font-semibold text-base"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="px-5 h-12 rounded-lg bg-primary text-white hover:bg-primary/90 font-semibold text-base">
-                Sign Up
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <ProfileDropdown />
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    className="px-5 h-12 rounded-lg border-primary text-primary hover:bg-primary/5 font-semibold text-base"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button className="px-5 h-12 rounded-lg bg-primary text-white hover:bg-primary/90 font-semibold text-base">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -128,19 +155,28 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="flex flex-col gap-3 mt-4">
-              <Link href="/login" onClick={() => setShowNav(false)}>
-                <Button
-                  variant="outline"
-                  className="w-full h-12 rounded-lg border-primary text-primary font-bold text-lg"
-                >
-                  Login
-                </Button>
-              </Link>
-              <Link href="/signup" onClick={() => setShowNav(false)}>
-                <Button className="w-full h-12 rounded-lg bg-primary text-white font-bold text-lg">
-                  Sign Up
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600">Logged in</span>
+                  <ProfileDropdown />
+                </div>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setShowNav(false)}>
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 rounded-lg border-primary text-primary font-bold text-lg"
+                    >
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/signup" onClick={() => setShowNav(false)}>
+                    <Button className="w-full h-12 rounded-lg bg-primary text-white font-bold text-lg">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

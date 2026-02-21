@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/toaster";
 import { Inter_Tight } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={`${interTight.variable} font-sans antialiased`}>
         <Navbar />
         {children}
+        <Toaster />
         <Footer />
       </body>
     </html>

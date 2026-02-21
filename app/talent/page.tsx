@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TalentCard, { Talent } from "@/components/TalentCard";
+import TalentCard from "@/components/TalentCard";
 import TalentFilters from "@/components/TalentFilters";
 import RequestHireModal from "@/components/modals/RequestHireModal";
 import {
@@ -13,90 +13,37 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-// Mock Data
-const MOCK_TALENTS: Talent[] = [
-  {
-    id: "1",
-    name: "Ruth Pakabo",
-    role: "UGC creator and street interviewer. Fast turnarounds.",
-    location: "Lagos",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574&auto=format&fit=crop",
-    availability: "Available",
-    tags: ["UGC Video", "Vox Pop", "Transcription"],
-    stats: { gigs: 23, turnaround: "24hrs avg", rating: 4.9 },
-  },
-  {
-    id: "2",
-    name: "Simon Bankole",
-    role: "UGC creator and street interviewer. Fast turnarounds.",
-    location: "Lagos",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2574&auto=format&fit=crop",
-    availability: "Available",
-    tags: ["#UGC", "#win", "#unicorn"],
-    stats: { gigs: 23, turnaround: "24hrs avg", rating: 4.9 },
-  },
-  {
-    id: "3",
-    name: "Michael Ogunleye",
-    role: "UGC creator and street interviewer. Fast turnarounds.",
-    location: "Lagos",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=2574&auto=format&fit=crop",
-    availability: "Available",
-    tags: ["UGC Video", "Vox Pop", "Transcription"],
-    stats: { gigs: 23, turnaround: "24hrs avg", rating: 4.9 },
-  },
-  {
-    id: "4",
-    name: "Daniel Ahmad",
-    role: "UGC creator and street interviewer. Fast turnarounds.",
-    location: "Lagos",
-    avatar:
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=2574&auto=format&fit=crop",
-    availability: "Available", // Note: Design had no badge here, but standardizing
-    tags: ["#UGC", "#win", "#unicorn"],
-    stats: { gigs: 23, turnaround: "24hrs avg", rating: 4.9 },
-  },
-  {
-    id: "5",
-    name: "Michael Fubara",
-    role: "UGC creator and street interviewer. Fast turnarounds.",
-    location: "Lagos",
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=2574&auto=format&fit=crop",
-    availability: "Available",
-    tags: ["UGC Video", "Vox Pop", "Transcription"],
-    stats: { gigs: 23, turnaround: "24hrs avg", rating: 4.9 },
-  },
-  {
-    id: "6",
-    name: "Timothy Bozimo",
-    role: "UGC creator and street interviewer. Fast turnarounds.",
-    location: "Lagos",
-    avatar:
-      "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=2574&auto=format&fit=crop",
-    availability: "Available",
-    tags: ["#UGC", "#win", "#unicorn"],
-    stats: { gigs: 23, turnaround: "24hrs avg", rating: 4.9 },
-  },
-];
+import { useTalentStore } from "@/store/useTalentStore";
+import { Talent } from "@/services/talentService";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TalentPage() {
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filteredTalents, setFilteredTalents] = useState(MOCK_TALENTS);
+  const { talents, fetchTalents, isLoading } = useTalentStore();
+  const { isAuthenticated } = useAuthStore();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchTalents();
+  }, [fetchTalents]);
 
   const handleRequest = (talent: Talent) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to hire talent.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedTalent(talent);
     setIsModalOpen(true);
   };
 
   const handleClearFilters = () => {
-    // Reset logic would go here
-    console.log("Filters cleared");
+    fetchTalents(); // Reset to default
   };
 
   return (
@@ -150,8 +97,12 @@ export default function TalentPage() {
 
             {/* Content Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-              {filteredTalents.length > 0 ? (
-                filteredTalents.map((talent) => (
+              {isLoading ? (
+                <div className="col-span-full py-20 text-center">
+                  <p>Loading talents...</p>
+                </div>
+              ) : talents.length > 0 ? (
+                talents.map((talent) => (
                   <TalentCard
                     key={talent.id}
                     talent={talent}
@@ -189,8 +140,13 @@ export default function TalentPage() {
       <RequestHireModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        talentName={selectedTalent?.name}
+        talentName={
+          selectedTalent
+            ? `${selectedTalent.firstName} ${selectedTalent.lastName}`
+            : ""
+        }
         talentAvatar={selectedTalent?.avatar}
+        talentId={selectedTalent?.id}
       />
     </main>
   );

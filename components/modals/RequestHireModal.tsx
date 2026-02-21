@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,32 +22,128 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTalentStore } from "@/store/useTalentStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface RequestHireModalProps {
   isOpen: boolean;
   onClose: () => void;
   talentName?: string;
   talentAvatar?: string;
+  talentId?: string;
 }
 
 export default function RequestHireModal({
   isOpen,
   onClose,
-  talentName = "Ebibere Rinebai",
+  talentName = "Agatha",
   talentAvatar,
+  talentId,
 }: RequestHireModalProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { sendTalentRequest, isSendingRequest } = useTalentStore();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    companyName: "",
+    email: "",
+    phone: "",
+    requestType: "",
+    projectBrief: "",
+    location: "",
+    budgetMin: "",
+    budgetMax: "",
+    timeline: "",
+    terms: false,
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, requestType: value }));
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, terms: checked }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
+
+    if (!talentId) {
+      toast({
+        title: "Error",
+        description: "Talent ID is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.terms) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the terms to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic validation for numbers
+    const minBudget = parseFloat(formData.budgetMin);
+    const maxBudget = parseFloat(formData.budgetMax);
+
+    if (isNaN(minBudget) || isNaN(maxBudget)) {
+      toast({
+        title: "Invalid Budget",
+        description: "Please enter valid numbers for the budget range.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await sendTalentRequest({
+        talentId,
+        companyName: formData.companyName,
+        email: formData.email,
+        requestType: formData.requestType,
+        projectBrief: formData.projectBrief,
+        budgetMin: minBudget,
+        budgetMax: maxBudget,
+        phone: formData.phone,
+        location: formData.location,
+        timeline: formData.timeline,
+      });
       setIsSubmitted(true);
-    }, 1000);
+    } catch (error) {
+      // Error is handled in store but we can show toast here if needed
+      toast({
+        title: "Request Failed",
+        description: "Failed to submit request. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const resetForm = () => {
     setIsSubmitted(false);
+    setFormData({
+      companyName: "",
+      email: "",
+      phone: "",
+      requestType: "",
+      projectBrief: "",
+      location: "",
+      budgetMin: "",
+      budgetMax: "",
+      timeline: "",
+      terms: false,
+    });
     onClose();
   };
 
@@ -97,11 +193,13 @@ export default function RequestHireModal({
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="company" className="text-sm font-semibold">
+            <Label htmlFor="companyName" className="text-sm font-semibold">
               Company Name *
             </Label>
             <Input
-              id="company"
+              id="companyName"
+              value={formData.companyName}
+              onChange={handleChange}
               placeholder="Your company"
               required
               className="h-12 rounded-lg border-gray-200"
@@ -116,6 +214,8 @@ export default function RequestHireModal({
               <Input
                 id="email"
                 type="email"
+                value={formData.email}
+                onChange={handleChange}
                 placeholder="contact@company.com"
                 required
                 className="h-12 rounded-lg border-gray-200"
@@ -128,6 +228,8 @@ export default function RequestHireModal({
               <Input
                 id="phone"
                 type="tel"
+                value={formData.phone}
+                onChange={handleChange}
                 placeholder="+234"
                 className="h-12 rounded-lg border-gray-200"
               />
@@ -135,28 +237,33 @@ export default function RequestHireModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service" className="text-sm font-semibold">
+            <Label htmlFor="requestType" className="text-sm font-semibold">
               What you need *
             </Label>
-            <Select>
+            <Select onValueChange={handleSelectChange}>
               <SelectTrigger className="h-12 rounded-lg border-gray-200">
                 <SelectValue placeholder="Select options" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ugc">UGC Video</SelectItem>
-                <SelectItem value="mystery">Mystery Shopping</SelectItem>
-                <SelectItem value="content">Content Creation</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="Mystery Shop">Mystery Shop</SelectItem>
+                <SelectItem value="UGC Video">UGC Video</SelectItem>
+                <SelectItem value="Content Creation">
+                  Content Creation
+                </SelectItem>
+                <SelectItem value="Field Ops">Field Ops</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="brief" className="text-sm font-semibold">
+            <Label htmlFor="projectBrief" className="text-sm font-semibold">
               Project Brief *
             </Label>
             <Textarea
-              id="brief"
+              id="projectBrief"
+              value={formData.projectBrief}
+              onChange={handleChange}
               placeholder="Describe your project, deliverables, and objectives..."
               required
               className="min-h-[100px] rounded-lg border-gray-200 resize-none"
@@ -169,20 +276,28 @@ export default function RequestHireModal({
             </Label>
             <Input
               id="location"
+              value={formData.location}
+              onChange={handleChange}
               placeholder="e.g., Lagos, Abuja"
               className="h-12 rounded-lg border-gray-200"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Budget Range (₦)</Label>
+            <Label className="text-sm font-semibold">Budget Range (N)</Label>
             <div className="grid grid-cols-2 gap-4">
               <Input
+                id="budgetMin"
+                value={formData.budgetMin}
+                onChange={handleChange}
                 placeholder="min"
                 type="number"
                 className="h-12 rounded-lg border-gray-200"
               />
               <Input
+                id="budgetMax"
+                value={formData.budgetMax}
+                onChange={handleChange}
                 placeholder="max"
                 type="number"
                 className="h-12 rounded-lg border-gray-200"
@@ -196,13 +311,20 @@ export default function RequestHireModal({
             </Label>
             <Input
               id="timeline"
+              value={formData.timeline}
+              onChange={handleChange}
               placeholder="e.g., ASAP, 2 weeks, Dec 2025"
               className="h-12 rounded-lg border-gray-200"
             />
           </div>
 
           <div className="flex items-start gap-3 p-4 bg-[#F3E8FF]/30 rounded-lg border border-[#F3E8FF]">
-            <Checkbox id="terms" className="mt-1" />
+            <Checkbox
+              id="terms"
+              checked={formData.terms}
+              onCheckedChange={handleCheckboxChange}
+              className="mt-1"
+            />
             <label
               htmlFor="terms"
               className="text-xs text-gray-600 leading-relaxed cursor-pointer"
@@ -216,14 +338,23 @@ export default function RequestHireModal({
           <div className="flex gap-3 pt-2">
             <Button
               type="submit"
+              disabled={isSendingRequest}
               className="flex-1 h-12 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl"
             >
-              Submit Request
+              {isSendingRequest ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Submit Request"
+              )}
             </Button>
             <Button
               type="button"
               onClick={onClose}
               variant="outline"
+              disabled={isSendingRequest}
               className="flex-1 h-12 border-gray-300 text-gray-500 font-bold rounded-xl hover:bg-gray-50"
             >
               Cancel

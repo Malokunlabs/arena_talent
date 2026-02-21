@@ -1,15 +1,42 @@
 "use client";
 
 import React, { useState } from "react";
+
 import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const { email, password, setEmail, setPassword, login, isLoading, error } =
+    useAuthStore();
+
+  React.useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    const success = await login();
+    if (success) {
+      const user = useAuthStore.getState().user;
+      if (user?.role === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/");
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
@@ -32,6 +59,8 @@ export default function LoginPage() {
               id="email"
               placeholder="abdphi@gmail.com"
               className="h-12 rounded-xl"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -43,6 +72,8 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 className="h-12 rounded-xl pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
               <button
                 type="button"
@@ -68,8 +99,16 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <Button className="w-full h-12 bg-[#B794F4] hover:bg-[#9F7AEA] text-white font-bold rounded-xl text-base shadow-lg shadow-purple-100">
-            Continue with email
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading || !email || !password}
+            className={`w-full h-12 ${
+              email && password
+                ? "bg-[#7300E5] hover:bg-[#5f00bd]"
+                : "bg-[#B794F4] hover:bg-[#9F7AEA]"
+            } text-white cursor-pointer font-bold rounded-xl text-base shadow-lg shadow-purple-100 transition-all`}
+          >
+            {isLoading ? "Logging in..." : "Continue with email"}
           </Button>
         </div>
 

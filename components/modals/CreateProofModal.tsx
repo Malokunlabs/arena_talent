@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Upload } from "lucide-react";
+import { useProofStore } from "@/store/useProofStore";
+import { toast } from "sonner";
 
 interface CreateProofModalProps {
   isOpen: boolean;
@@ -26,10 +28,69 @@ export default function CreateProofModal({
   onClose,
 }: CreateProofModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    caption: "",
+    tags: "",
+  });
+
+  const { createProof, isLoading } = useProofStore();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, category: value }));
+  };
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!formData.title || !formData.category || !formData.caption) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (!file) {
+      toast.error("Please upload media");
+      return;
+    }
+
+    // Since we don't have a file upload endpoint yet, we'll create a fake URL
+    // In a real app, we would upload the file first, get the URL, then create the proof
+    // updated to user requested URL
+    const mediaUrl =
+      "https://static.wikia.nocookie.net/onepiece/images/e/e5/Monkey_D._Luffy_Anime_Pre_Timeskip_Infobox.png/revision/latest?cb=20251214174652";
+
+    // Parse tags
+    const tags = formData.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+
+    const success = await createProof({
+      title: formData.title,
+      category: formData.category,
+      caption: formData.caption,
+      mediaUrl: mediaUrl,
+      tags: tags,
+    });
+
+    if (success) {
+      toast.success("Proof published successfully!");
+      setFormData({ title: "", category: "", caption: "", tags: "" });
+      setFile(null);
+      onClose();
     }
   };
 
@@ -83,6 +144,8 @@ export default function CreateProofModal({
             </Label>
             <Input
               id="title"
+              value={formData.title}
+              onChange={handleChange}
               placeholder="What did you accomplish"
               className="rounded-xl border-gray-200"
             />
@@ -93,14 +156,18 @@ export default function CreateProofModal({
             <Label htmlFor="category" className="font-bold text-sm">
               Category *
             </Label>
-            <Select>
+            <Select
+              onValueChange={handleCategoryChange}
+              value={formData.category}
+            >
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Select options" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ugc">UGC Content</SelectItem>
-                <SelectItem value="design">Design</SelectItem>
-                <SelectItem value="dev">Development</SelectItem>
+                <SelectItem value="UGC Content">UGC Content</SelectItem>
+                <SelectItem value="Design">Design</SelectItem>
+                <SelectItem value="Development">Development</SelectItem>
+                <SelectItem value="Logistics">Logistics</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -112,6 +179,8 @@ export default function CreateProofModal({
             </Label>
             <Textarea
               id="caption"
+              value={formData.caption}
+              onChange={handleChange}
               placeholder="Tell your story"
               className="rounded-xl border-gray-200 min-h-[100px]"
             />
@@ -124,6 +193,8 @@ export default function CreateProofModal({
             </Label>
             <Input
               id="tags"
+              value={formData.tags}
+              onChange={handleChange}
               placeholder="e.g., UGC, VoxPop, Lagos"
               className="rounded-xl border-gray-200"
             />
@@ -132,10 +203,11 @@ export default function CreateProofModal({
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
-              onClick={onClose}
+              onClick={handleSubmit}
+              disabled={isLoading}
               className="flex-1 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl py-6"
             >
-              Publish Proof (+10 Pt)
+              {isLoading ? "Publishing..." : "Publish Proof (+10 Pt)"}
             </Button>
             <Button
               variant="outline"

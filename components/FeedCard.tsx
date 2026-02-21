@@ -14,6 +14,8 @@ interface FeedCardProps {
   title: string;
   description: string;
   salutes: number;
+  onClick?: () => void;
+  onSalute?: () => void;
 }
 
 const badgeColors = {
@@ -34,9 +36,17 @@ export default function FeedCard({
   title,
   description,
   salutes,
+  onClick,
+  onSalute,
 }: FeedCardProps) {
   return (
-    <div className="flex flex-col gap-4 rounded-3xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all">
+    <div
+      onClick={onClick}
+      className={cn(
+        "flex flex-col gap-4 rounded-3xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all",
+        onClick && "cursor-pointer",
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -97,7 +107,13 @@ export default function FeedCard({
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2">
-        <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#F3E8FF] text-[#7300E5] text-sm font-bold transition-colors hover:bg-[#E9D5FF]">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSalute?.();
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#F3E8FF] text-[#7300E5] text-sm font-bold transition-colors hover:bg-[#E9D5FF]"
+        >
           <Hand className="w-4 h-4" />
           <span>{salutes} Salutes</span>
         </button>
