@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/config";
+import { apiClient } from "./apiClient";
 
 export interface RegisterData {
   email: string;
@@ -18,6 +18,15 @@ export interface AuthResponse {
   loggedInUser?: {
     id: string;
     email: string;
+    username?: string;
+    avatarUrl?: string;
+    role?: string;
+  };
+  user?: {
+    id: string;
+    email: string;
+    username?: string;
+    avatarUrl?: string;
     role?: string;
   };
 }
@@ -44,20 +53,7 @@ export const tokenStorage = {
 
 export const authService = {
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Registration failed");
-    }
-
-    const result = await response.json();
+    const result = await apiClient.post<AuthResponse>("/auth/register", data);
 
     // Store token if provided
     if (result.accessToken) {
@@ -68,20 +64,7 @@ export const authService = {
   },
 
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Login failed");
-    }
-
-    const result = await response.json();
+    const result = await apiClient.post<AuthResponse>("/auth/login", data);
 
     // Store token
     if (result.accessToken) {

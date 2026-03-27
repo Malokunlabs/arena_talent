@@ -24,7 +24,7 @@ export const useProofStore = create<ProofState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const result = await proofService.getProofs({ filter });
-      set({ proofs: result.data, isLoading: false });
+      set({ proofs: result.data || [], isLoading: false });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       set({
@@ -92,7 +92,7 @@ export const useProofStore = create<ProofState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const result = await proofService.getMyProofs();
-      set({ userProofs: result.data, isLoading: false });
+      set({ userProofs: result.data || [], isLoading: false });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       set({

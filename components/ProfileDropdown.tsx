@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LogOut, LayoutDashboard } from "lucide-react";
 import {
@@ -52,8 +53,17 @@ export default function ProfileDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="h-10 w-10 rounded-full bg-linear-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-semibold text-sm hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-          {getInitials()}
+        <button className="h-10 w-10 rounded-full overflow-hidden bg-linear-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-semibold text-sm hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 relative">
+          {user?.avatarUrl ? (
+            <Image
+              src={user.avatarUrl}
+              alt={getDisplayName()}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            getInitials()
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

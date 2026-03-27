@@ -28,6 +28,8 @@ interface SignUpState {
   user: {
     id: string;
     email: string;
+    username?: string;
+    avatarUrl?: string;
     role?: string;
   } | null;
   initAuth: () => void;
@@ -173,7 +175,7 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
         isLoading: false,
         token: result.accessToken,
         isAuthenticated: true,
-        user: result.loggedInUser || null,
+        user: result.loggedInUser || result.user || null,
       });
       return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

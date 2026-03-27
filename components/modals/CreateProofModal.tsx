@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "../ui/input";
@@ -14,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { useProofStore } from "@/store/useProofStore";
+import { mediaService } from "@/services/mediaService";
 import { toast } from "sonner";
 
 interface CreateProofModalProps {
@@ -28,6 +28,7 @@ export default function CreateProofModal({
   onClose,
 }: CreateProofModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -55,7 +56,6 @@ export default function CreateProofModal({
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!formData.title || !formData.category || !formData.caption) {
       toast.error("Please fill in all required fields");
       return;
@@ -66,33 +66,41 @@ export default function CreateProofModal({
       return;
     }
 
-    // Since we don't have a file upload endpoint yet, we'll create a fake URL
-    // In a real app, we would upload the file first, get the URL, then create the proof
-    // updated to user requested URL
-    const mediaUrl =
-      "https://static.wikia.nocookie.net/onepiece/images/e/e5/Monkey_D._Luffy_Anime_Pre_Timeskip_Infobox.png/revision/latest?cb=20251214174652";
+    try {
+      setIsUploading(true);
 
-    // Parse tags
-    const tags = formData.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+      // Step 1 & 2 & 3: Upload file to R2 and get public URL
+      const mediaUrl = await mediaService.upload(file, "proofs");
 
-    const success = await createProof({
-      title: formData.title,
-      category: formData.category,
-      caption: formData.caption,
-      mediaUrl: mediaUrl,
-      tags: tags,
-    });
+      // Parse tags
+      const tags = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
 
-    if (success) {
-      toast.success("Proof published successfully!");
-      setFormData({ title: "", category: "", caption: "", tags: "" });
-      setFile(null);
-      onClose();
+      // Step 3: Link media to the proof record
+      const success = await createProof({
+        title: formData.title,
+        category: formData.category,
+        caption: formData.caption,
+        mediaUrl,
+        tags,
+      });
+
+      if (success) {
+        toast.success("Proof published successfully!");
+        setFormData({ title: "", category: "", caption: "", tags: "" });
+        setFile(null);
+        onClose();
+      }
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
     }
   };
+
+  const isBusy = isUploading || isLoading;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -133,6 +141,7 @@ export default function CreateProofModal({
                 className="hidden"
                 accept="image/*,video/*"
                 onChange={handleFileChange}
+                disabled={isBusy}
               />
             </label>
           </div>
@@ -148,6 +157,7 @@ export default function CreateProofModal({
               onChange={handleChange}
               placeholder="What did you accomplish"
               className="rounded-xl border-gray-200"
+              disabled={isBusy}
             />
           </div>
 
@@ -159,6 +169,7 @@ export default function CreateProofModal({
             <Select
               onValueChange={handleCategoryChange}
               value={formData.category}
+              disabled={isBusy}
             >
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Select options" />
@@ -175,7 +186,7 @@ export default function CreateProofModal({
           {/* Caption */}
           <div className="space-y-2">
             <Label htmlFor="caption" className="font-bold text-sm">
-              Caption * (0/220)
+              Caption * ({formData.caption.length}/220)
             </Label>
             <Textarea
               id="caption"
@@ -183,6 +194,8 @@ export default function CreateProofModal({
               onChange={handleChange}
               placeholder="Tell your story"
               className="rounded-xl border-gray-200 min-h-[100px]"
+              maxLength={220}
+              disabled={isBusy}
             />
           </div>
 
@@ -197,6 +210,7 @@ export default function CreateProofModal({
               onChange={handleChange}
               placeholder="e.g., UGC, VoxPop, Lagos"
               className="rounded-xl border-gray-200"
+              disabled={isBusy}
             />
           </div>
 
@@ -204,14 +218,24 @@ export default function CreateProofModal({
           <div className="flex gap-3 pt-4">
             <Button
               onClick={handleSubmit}
-              disabled={isLoading}
+              disabled={isBusy}
               className="flex-1 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl py-6"
             >
-              {isLoading ? "Publishing..." : "Publish Proof (+10 Pt)"}
+              {isUploading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Uploading...
+                </span>
+              ) : isLoading ? (
+                "Publishing..."
+              ) : (
+                "Publish Proof (+10 Pt)"
+              )}
             </Button>
             <Button
               variant="outline"
               onClick={onClose}
+              disabled={isBusy}
               className="flex-1 border-[#7300E5] text-gray-600 hover:text-gray-900 border-opacity-30 rounded-xl py-6"
             >
               Cancel

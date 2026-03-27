@@ -5,6 +5,8 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
+  username?: string;
+  avatarUrl?: string;
   phone?: string;
   bio?: string;
   location?: string;
@@ -18,6 +20,7 @@ export interface UpdateUserData {
   phone?: string;
   bio?: string;
   location?: string;
+  avatarUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 }

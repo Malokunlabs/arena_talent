@@ -13,7 +13,7 @@ export interface Talent {
   phone?: string;
   bio?: string;
   totalGigs?: number;
-  avatar?: string;
+  avatarUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -24,7 +24,7 @@ const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
   { icon: ShieldCheck, label: "Proof Moderation", href: "/admin/moderation" },
   { icon: Briefcase, label: "Hire Requests", href: "/admin/requests" },
-  { icon: Users, label: "Collaborations", href: "/admin/collaborations" },
+  { icon: Users, label: "Collaborations", href: "#" },
   { icon: Activity, label: "Pulse Manager", href: "/admin/pulse" },
   { icon: UserCheck, label: "Talent Directory", href: "/admin/talents" },
   { icon: CreditCard, label: "Finance & Payouts", href: "/admin/finance" },
@@ -89,6 +89,7 @@ export default function AdminLayout({
                   <p className="font-medium text-gray-900">Admin</p>
                   <p className="text-gray-500 text-xs truncate w-24">
                     {user?.email}
+
                   </p>
                 </div>
               </div>

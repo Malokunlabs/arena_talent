@@ -62,17 +62,20 @@ export default function Home() {
     action();
   };
 
-  // Map proofs for the "Proofs of the week" section
-  const topProofs = proofs.slice(0, 3).map((p, index) => ({
-    ...p,
-    rank: index + 1,
-    image: p.mediaUrl,
-    avatar:
-      p.talent?.avatar ||
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
-    name: `${p.talent?.firstName || "Anonymous"} ${p.talent?.lastName || ""}`,
-    description: p.title,
-  }));
+  // Map proofs for the "Proofs of the week" section — only featured ones
+  const featuredProofs = (proofs || [])
+    .filter((p) => p.isFeatured === true)
+    .slice(0, 3)
+    .map((p, index) => ({
+      ...p,
+      rank: index + 1,
+      image: p.mediaUrl,
+      avatar:
+        p.talent?.avatarUrl ||
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
+      name: `${p.talent?.firstName || "Anonymous"} ${p.talent?.lastName || ""}`,
+      description: p.title,
+    }));
 
   const categories = ["All", "Trending", "Nearby", "My network"];
 
@@ -107,7 +110,7 @@ export default function Home() {
             </div>
           </div>
 
-          {!isLoading && proofs.length > 0 ? (
+          {!isLoading && featuredProofs.length > 0 ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-primary">
@@ -122,7 +125,7 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {topProofs.map((proof) => (
+                {featuredProofs.map((proof) => (
                   <ProofCard
                     key={proof.id}
                     rank={proof.rank}
@@ -135,7 +138,7 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          ) : !isLoading && proofs.length === 0 ? (
+          ) : !isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-6 text-center">
               <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-2">
                 <Briefcase className="w-10 h-10 text-gray-300" />
@@ -189,13 +192,13 @@ export default function Home() {
             ? Array.from({ length: 6 }).map((_, index) => (
                 <FeedSkeleton key={index} />
               ))
-            : proofs.map((proof) => (
+            : (proofs || []).map((proof) => (
                 <FeedCard
                   key={proof.id}
                   avatar={
-                    proof.talent?.avatar ||
+                    proof.talent?.avatarUrl ||
                     "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
-                  } // Fallback avatar
+                  } // Fallback avatarUrl
                   name={`${proof.talent?.firstName || "Anonymous"} ${proof.talent?.lastName || ""}`}
                   location={proof.talent?.location || "Global"}
                   timeAgo={timeAgo(proof.createdAt)}

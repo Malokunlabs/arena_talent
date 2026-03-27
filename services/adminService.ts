@@ -107,6 +107,20 @@ export const adminService = {
   ): Promise<TalentRequest> {
     return apiClient.patch(`/admin/talent-requests/${id}`, data);
   },
+
+  async getPulses(filter: PulseFilter = {}): Promise<PulseResponse> {
+    const params = new URLSearchParams();
+    if (filter.page) params.append("page", filter.page.toString());
+    if (filter.limit) params.append("limit", filter.limit.toString());
+    if (filter.status && filter.status !== "All")
+      params.append("status", filter.status);
+    if (filter.search) params.append("search", filter.search);
+    return apiClient.get(`/admin/pulses?${params.toString()}`);
+  },
+
+  async createPulse(data: CreatePulseData): Promise<Pulse> {
+    return apiClient.post("/admin/pulses", data);
+  },
 };
 
 export interface TalentRequest {
@@ -136,4 +150,46 @@ export interface TalentRequest {
 export interface KanbanColumn {
   status: string;
   items: TalentRequest[];
+}
+
+export interface Pulse {
+  id: string;
+  type: "POLL" | "EMOJI" | "BRAND";
+  question: string;
+  description?: string;
+  options: string[];
+  audience: string;
+  status: "DRAFT" | "LIVE" | "CLOSED";
+  expiresAt?: string;
+  totalResponses: number;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PulseResponse {
+  data: Pulse[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    pageCount: number;
+  };
+}
+
+export interface CreatePulseData {
+  type: "POLL" | "EMOJI" | "BRAND";
+  question: string;
+  audience: string;
+  options: string[];
+  description?: string;
+  status: "DRAFT" | "LIVE";
+  expiresAt?: string;
+}
+
+export interface PulseFilter {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
 }

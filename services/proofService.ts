@@ -18,7 +18,7 @@ export interface Proof {
     firstName: string;
     lastName: string;
     username?: string | null;
-    avatar?: string;
+    avatarUrl?: string;
     location?: string | null;
     skills?: string[];
     badges?: string[];

@@ -29,11 +29,14 @@ export default function LoginPage() {
 
     const success = await login();
     if (success) {
-      const user = useAuthStore.getState().user;
+      // Small delay to ensure state is synchronized if needed (though zustand is sync)
+      const state = useAuthStore.getState();
+      const user = state.user;
+
       if (user?.role === "ADMIN") {
         router.push("/admin/dashboard");
       } else {
-        router.push("/");
+        router.push("/dashboard");
       }
     }
   };
