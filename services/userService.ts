@@ -10,6 +10,7 @@ export interface UserProfile {
   phone?: string;
   bio?: string;
   location?: string;
+  skills?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -21,6 +22,8 @@ export interface UpdateUserData {
   bio?: string;
   location?: string;
   avatarUrl?: string;
+  username?: string;
+  skills?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wallet, Clock, AlertCircle, Award } from "lucide-react";
+import { Wallet, Clock, AlertCircle, Award, Share2 } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import FeedCard from "@/components/FeedCard";
 import FeedSkeleton from "@/components/FeedSkeleton";
 import { useUserStore } from "@/store/useUserStore";
 import { proofService, Proof } from "@/services/proofService";
 import { talentService, TalentStats } from "@/services/talentService";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 export default function DashboardHome() {
   const { user, fetchUser } = useUserStore();
@@ -55,16 +57,43 @@ export default function DashboardHome() {
     ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
     : "there";
 
+  const handleShareProfile = () => {
+    if (!user?.username) {
+      toast({
+        title: "Username missing",
+        description: "Please set your username in settings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const url = `${window.location.origin}/profile?username=${user.username}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link copied!",
+      description: "Your profile link is ready to share.",
+    });
+  };
+
   const formatCurrency = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
   return (
     <div className="space-y-10">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">
-          Welcome back, {displayName}! Here&apos;s what&apos;s happening.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">
+            Welcome back, {displayName}! Here&apos;s what&apos;s happening.
+          </p>
+        </div>
+        <Button
+          onClick={handleShareProfile}
+          className="rounded-xl bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 font-bold px-6 shadow-sm flex items-center gap-2"
+        >
+          <Share2 className="w-4 h-4" />
+          Share Profile
+        </Button>
       </div>
 
       {/* Stats Grid */}

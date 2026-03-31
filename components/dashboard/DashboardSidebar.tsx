@@ -9,10 +9,8 @@ import {
   Users,
   Briefcase,
   FileText,
-  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
   {
@@ -76,13 +74,7 @@ export default function DashboardSidebar() {
       </nav>
 
       <div className="p-4 mt-auto">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-red-500 hover:text-red-600 hover:bg-red-50 h-12 rounded-xl"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="font-semibold">Log Out</span>
-        </Button>
+        {/* Logout handled by ProfileDropdown or similar */}
       </div>
     </aside>
   );
