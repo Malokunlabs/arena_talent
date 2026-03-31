@@ -145,7 +145,6 @@ export default function TalentPage() {
             ? `${selectedTalent.firstName} ${selectedTalent.lastName}`
             : ""
         }
-        talentAvatar={selectedTalent?.avatar}
         talentId={selectedTalent?.id}
       />
     </main>

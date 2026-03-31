@@ -14,8 +14,13 @@ export interface Talent {
   bio?: string;
   totalGigs?: number;
   avatarUrl?: string;
+  avatar?: string;
   createdAt?: string;
   updatedAt?: string;
+  piScore?: number;
+  progressIndex?: number;
+  piToNextLevel?: number;
+  nextLevelPi?: number | null;
 }
 
 export interface TalentStats {
@@ -70,7 +75,43 @@ export const talentService = {
   async createTalentRequest(data: CreateTalentRequest): Promise<void> {
     return apiClient.post("/talent-requests", data);
   },
+
+  async getReceivedTalentRequests(params: { page?: number; limit?: number } = {}): Promise<{
+    data: TalentRequest[];
+    meta: { total: number; page: number; limit: number };
+  }> {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page.toString());
+    if (params.limit) query.append("limit", params.limit.toString());
+    
+    return apiClient.get(`/talent-requests?${query.toString()}`);
+  },
+
+  async updateTalentRequestStatus(id: string, status: string): Promise<void> {
+    return apiClient.patch(`/talent-requests/${id}/status`, { status });
+  },
 };
+
+export interface TalentRequest {
+  id: string;
+  talentId: string;
+  companyName: string;
+  email: string;
+  requestType: string;
+  projectBrief: string;
+  budgetMin: number;
+  budgetMax: number;
+  phone?: string;
+  city?: string;
+  location?: string;
+  timeline?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  notes?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface CreateTalentRequest {
   talentId: string;
@@ -81,6 +122,10 @@ export interface CreateTalentRequest {
   budgetMin: number;
   budgetMax: number;
   phone?: string;
+  city?: string;
   location?: string;
   timeline?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  notes?: string;
 }

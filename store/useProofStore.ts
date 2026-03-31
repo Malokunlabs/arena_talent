@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { proofService, Proof, CreateProofData } from "@/services/proofService";
+import { usePiStore } from "./usePiStore";
+import { toast } from "sonner";
 
 interface ProofState {
   proofs: Proof[];
@@ -12,6 +14,7 @@ interface ProofState {
   addUserProof: (proof: Proof) => void;
   saluteProof: (id: string) => Promise<void>;
   fetchUserProofs: () => Promise<void>;
+  shareProof: (id: string) => Promise<void>;
 }
 
 export const useProofStore = create<ProofState>((set) => ({
@@ -44,6 +47,8 @@ export const useProofStore = create<ProofState>((set) => ({
         userProofs: [newProof, ...state.userProofs],
         isLoading: false,
       }));
+      // Refresh PI after proof creation (+10 PI)
+      await usePiStore.getState().refreshAfterProof(10);
       return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -99,6 +104,17 @@ export const useProofStore = create<ProofState>((set) => ({
         isLoading: false,
         error: error.message || "Failed to fetch user proofs",
       });
+    }
+  },
+
+  shareProof: async (id: string) => {
+    try {
+      const piStatus = await proofService.shareProof(id);
+      // Response IS PiStatus — update store directly
+      usePiStore.getState().updatePiStatus(piStatus);
+      toast.success(`+3 PI earned! You're at ${piStatus.piScore} PI`);
+    } catch (error) {
+      console.error("Failed to share proof:", error);
     }
   },
 }));

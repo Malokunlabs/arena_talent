@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+
 import { Button } from "@/components/ui/button";
 import DailyPulse from "@/components/DailyPulse";
 import ProofCard from "@/components/ProofCard";
@@ -210,6 +210,7 @@ export default function Home() {
                   salutes={proof.salutesCount || 0}
                   onSalute={() => checkAuth(() => saluteProof(proof.id))}
                   onClick={() => handleProofClick(proof)}
+                  onShare={() => handleProofClick(proof)}
                 />
               ))}
         </section>
@@ -219,7 +220,24 @@ export default function Home() {
       <ProofDetailModal
         isOpen={activeModal === "detail"}
         onClose={closeModals}
-        proof={selectedProof}
+        proof={
+          selectedProof
+            ? {
+                image: selectedProof.mediaUrl,
+                rank: 1,
+                name: `${selectedProof.talent?.firstName || "Anonymous"} ${
+                  selectedProof.talent?.lastName || ""
+                }`.trim(),
+                avatar:
+                  selectedProof.talent?.avatarUrl ||
+                  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
+                proofboardLink: selectedProof.talent?.username
+                  ? `/u/${selectedProof.talent.username}`
+                  : "/u/anonymous",
+                id: selectedProof.id,
+              }
+            : null
+        }
       />
       <CreateProofModal
         isOpen={activeModal === "create"}

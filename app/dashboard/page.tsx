@@ -10,17 +10,24 @@ import { proofService, Proof } from "@/services/proofService";
 import { talentService, TalentStats } from "@/services/talentService";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { usePiStore } from "@/store/usePiStore";
+import PIProgressBar from "@/components/pi/PIProgressBar";
+import LevelUpModal from "@/components/pi/LevelUpModal";
+import ProofDetailModal from "@/components/modals/ProofDetailModal";
 
 export default function DashboardHome() {
   const { user, fetchUser } = useUserStore();
+  const { fetchPiStatus } = usePiStore();
 
   const [proofs, setProofs] = useState<Proof[]>([]);
   const [stats, setStats] = useState<TalentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
 
   useEffect(() => {
     fetchUser();
-  }, [fetchUser]);
+    fetchPiStatus();
+  }, [fetchUser, fetchPiStatus]);
 
   useEffect(() => {
     async function loadData() {
@@ -120,6 +127,11 @@ export default function DashboardHome() {
         />
       </div>
 
+      {/* Progress Index Card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-sm">
+        <PIProgressBar />
+      </div>
+
       {/* Recent Posts */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -165,11 +177,41 @@ export default function DashboardHome() {
                 title={proof.title}
                 description={proof.caption}
                 salutes={proof.salutesCount ?? 0}
+                onShare={() => setSelectedProof(proof)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Level-up modal - driven by usePiStore */}
+      <LevelUpModal />
+
+      <ProofDetailModal
+        isOpen={!!selectedProof}
+        onClose={() => setSelectedProof(null)}
+        proof={
+          selectedProof
+            ? {
+                image: selectedProof.mediaUrl,
+                rank: 1,
+                name: selectedProof.talent
+                  ? `${selectedProof.talent.firstName} ${selectedProof.talent.lastName}`
+                  : displayName,
+                avatar:
+                  selectedProof.talent?.avatarUrl ||
+                  user?.avatarUrl ||
+                  "/placeholder-avatar.png",
+                proofboardLink: selectedProof.talent?.username
+                  ? `arena.com/${selectedProof.talent.username}`
+                  : user?.username
+                  ? `arena.com/${user.username}`
+                  : "arena.com",
+                id: selectedProof.id,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

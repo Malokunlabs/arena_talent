@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,11 +14,13 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useCollaborationStore } from "@/store/useCollaborationStore";
 
 interface CollaborateModalProps {
   isOpen: boolean;
   onClose: () => void;
   partnerName?: string;
+  partnerId?: string;
 }
 
 const SKILL_OPTIONS = [
@@ -38,13 +40,32 @@ export default function CollaborateModal({
   isOpen,
   onClose,
   partnerName = "Segun Balogun",
+  partnerId,
 }: CollaborateModalProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [description, setDescription] = useState("");
+  const { submitRequest, isSubmitting } = useCollaborationStore();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    whatsapp: "",
+    projectTitle: "",
+    description: "",
+    brief: "",
+    city: "",
+    startDate: "",
+  });
+
   const [selectedSkills, setSelectedSkills] = useState<string[]>([
     "Video Editing",
     "Content Strategy",
   ]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
 
   const toggleSkill = (skill: string) => {
     if (selectedSkills.includes(skill)) {
@@ -54,12 +75,22 @@ export default function CollaborateModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await submitRequest({
+        toUserId: partnerId,
+        title: formData.projectTitle,
+        description: formData.description,
+        roles: selectedSkills,
+        city: formData.city,
+        startDate: new Date().toISOString(), // Or use formData.startDate if it's a date picker
+        tags: ["tech"], // Default for now
+      });
       setIsSubmitted(true);
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to submit collab request", error);
+    }
   };
 
   const resetForm = () => {
@@ -74,7 +105,7 @@ export default function CollaborateModal({
         <DialogContent className="sm:max-w-[425px] flex flex-col items-center justify-center text-center p-10 gap-6">
           <div className="h-24 w-24 rounded-full bg-[#E8F8F0] flex items-center justify-center">
             <div className="h-16 w-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white">
-              <Check className="h-8 w-8 stroke-[3]" />
+              <Check className="h-8 w-8 stroke-3" />
             </div>
           </div>
           <div className="space-y-2">
@@ -122,6 +153,8 @@ export default function CollaborateModal({
             </Label>
             <Input
               id="name"
+              value={formData.name}
+              onChange={handleChange}
               placeholder="Chinonso Eze"
               required
               className="h-12 rounded-lg border-gray-200"
@@ -136,6 +169,8 @@ export default function CollaborateModal({
               <Input
                 id="email"
                 type="email"
+                value={formData.email}
+                onChange={handleChange}
                 placeholder="lukew@gmail.com"
                 required
                 className="h-12 rounded-lg border-gray-200"
@@ -148,6 +183,8 @@ export default function CollaborateModal({
               <Input
                 id="whatsapp"
                 type="tel"
+                value={formData.whatsapp}
+                onChange={handleChange}
                 placeholder="+234 815 701 5140"
                 required
                 className="h-12 rounded-lg border-gray-200"
@@ -161,7 +198,23 @@ export default function CollaborateModal({
             </Label>
             <Input
               id="projectTitle"
+              value={formData.projectTitle}
+              onChange={handleChange}
               placeholder="Product Advertisement"
+              required
+              className="h-12 rounded-lg border-gray-200"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="city" className="text-sm font-semibold">
+              City *
+            </Label>
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={handleChange}
+              placeholder="e.g. Lagos"
               required
               className="h-12 rounded-lg border-gray-200"
             />
@@ -170,15 +223,15 @@ export default function CollaborateModal({
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-semibold">
               Describe what you&apos;d like to work on together *(
-              {description.length}/300 chars)
+              {formData.description.length}/300 chars)
             </Label>
             <Textarea
               id="description"
               placeholder="I want us to make some really sharp video content for this brand. It is super promising"
               required
               maxLength={300}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={formData.description}
+              onChange={handleChange}
               className="min-h-[100px] rounded-lg border-gray-200 resize-none"
             />
           </div>
@@ -189,6 +242,8 @@ export default function CollaborateModal({
             </Label>
             <Textarea
               id="brief"
+              value={formData.brief}
+              onChange={handleChange}
               placeholder="We just need about 3 videos, one drone shot and well edited videos"
               required
               className="min-h-[100px] rounded-lg border-gray-200 resize-none"
@@ -231,7 +286,9 @@ export default function CollaborateModal({
               Preferred start time *
             </Label>
             <Input
-              id="startTime"
+              id="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
               placeholder="Next Week"
               required
               className="h-12 rounded-lg border-gray-200"
@@ -241,13 +298,22 @@ export default function CollaborateModal({
           <div className="flex gap-3 pt-2">
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="flex-1 h-12 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl"
             >
-              Submit Request
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Submit Request"
+              )}
             </Button>
             <Button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               variant="outline"
               className="flex-1 h-12 border-gray-300 text-gray-500 font-bold rounded-xl hover:bg-gray-50"
             >

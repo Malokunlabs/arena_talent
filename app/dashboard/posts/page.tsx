@@ -12,7 +12,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import CreateProofModal from "@/components/modals/CreateProofModal";
+import ProofDetailModal from "@/components/modals/ProofDetailModal";
 import { useProofStore } from "@/store/useProofStore";
+import { useUserStore } from "@/store/useUserStore";
+import { Proof } from "@/services/proofService";
 
 // Helper to calculate time ago (duplicated for now, could move to utils)
 function timeAgo(dateString?: string) {
@@ -32,8 +35,14 @@ function timeAgo(dateString?: string) {
 
 export default function MyPostsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const { userProofs, fetchUserProofs, isLoading, saluteProof } =
-    useProofStore();
+  const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
+  
+  const { userProofs, fetchUserProofs, isLoading, saluteProof } = useProofStore();
+  const { user } = useUserStore();
+
+  const displayName = user?.firstName
+    ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
+    : "there";
 
   useEffect(() => {
     fetchUserProofs();
@@ -67,7 +76,7 @@ export default function MyPostsPage() {
             <div key={post.id} className="relative group">
               <FeedCard
                 avatar={
-                  post.talent?.avatar ||
+                  post.talent?.avatarUrl ||
                   "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
                 }
                 name={`${post.talent?.firstName || "Me"} ${post.talent?.lastName || ""}`}
@@ -80,6 +89,7 @@ export default function MyPostsPage() {
                 description={post.caption}
                 salutes={post.salutesCount || 0}
                 onSalute={() => saluteProof(post.id)}
+                onShare={() => setSelectedProof(post)}
               />
 
               {/* Overlay Actions */}
@@ -130,6 +140,32 @@ export default function MyPostsPage() {
       <CreateProofModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      <ProofDetailModal
+        isOpen={!!selectedProof}
+        onClose={() => setSelectedProof(null)}
+        proof={
+          selectedProof
+            ? {
+                image: selectedProof.mediaUrl,
+                rank: 1,
+                name: selectedProof.talent
+                  ? `${selectedProof.talent.firstName} ${selectedProof.talent.lastName}`
+                  : displayName,
+                avatar:
+                  selectedProof.talent?.avatarUrl ||
+                  user?.avatarUrl ||
+                  "/placeholder-avatar.png",
+                proofboardLink: selectedProof.talent?.username
+                  ? `/u/${selectedProof.talent.username}`
+                  : user?.username
+                  ? `/u/${user.username}`
+                  : "/u/anonymous",
+                id: selectedProof.id,
+              }
+            : null
+        }
       />
     </div>
   );

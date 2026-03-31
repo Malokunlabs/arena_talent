@@ -5,7 +5,9 @@ import {
   AdminProof,
   ProofFilter,
   KanbanColumn,
+  CollaborationKanbanColumn,
 } from "@/services/adminService";
+import { apiClient } from "@/services/apiClient";
 
 interface AdminState {
   stats: DashboardStats | null;
@@ -36,6 +38,9 @@ interface AdminState {
   fetchKanbanBoard: () => Promise<void>;
   updateRequestStatus: (id: string, status: string) => Promise<void>;
   kanbanBoard: KanbanColumn[];
+  collaborationKanbanBoard: CollaborationKanbanColumn[];
+  fetchCollaborationKanbanBoard: () => Promise<void>;
+  updateCollaborationRequestStatus: (id: string, status: string) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -48,6 +53,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     pageCount: 0,
   },
   kanbanBoard: [],
+  collaborationKanbanBoard: [],
   isLoading: false,
   error: null,
 
@@ -145,10 +151,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       const board = await adminService.getTalentRequestsKanban();
       set({ kanbanBoard: board, isLoading: false });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
         isLoading: false,
-        error: error.message || "Failed to fetch kanban board",
+        error: (error as Error).message || "Failed to fetch kanban board",
       });
     }
   },
@@ -161,6 +167,30 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Update request failed", error);
+    }
+  },
+
+  fetchCollaborationKanbanBoard: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const board = await adminService.getCollaborationRequestsKanban();
+      set({ collaborationKanbanBoard: board, isLoading: false });
+    } catch (error: unknown) {
+      set({
+        isLoading: false,
+        error: (error as Error).message || "Failed to fetch collaboration kanban board",
+      });
+    }
+  },
+
+  updateCollaborationRequestStatus: async (id, status) => {
+    try {
+      // We might need a specific admin update method for collab requests if generic one isn't enough
+      // For now using the service directly if it exists, or adding it.
+      await apiClient.patch(`/admin/collaboration-requests/${id}`, { status });
+      await get().fetchCollaborationKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Update collab request failed", error);
     }
   },
 }));

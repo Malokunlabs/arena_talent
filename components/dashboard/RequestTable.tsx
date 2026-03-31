@@ -12,19 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 
 export interface Request {
   id: string;
   sender: {
     name: string;
-    avatar: string;
+    avatar?: string;
     email: string;
   };
   details: string;
@@ -77,13 +71,19 @@ export default function RequestTable({
             <TableRow key={request.id} className="hover:bg-gray-50/50">
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-100">
-                    <Image
-                      src={request.sender.avatar}
-                      alt={request.sender.name}
-                      fill
-                      className="object-cover"
-                    />
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
+                    {request.sender.avatar ? (
+                      <Image
+                        src={request.sender.avatar}
+                        alt={request.sender.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="text-[#7300E5] font-bold text-xs">
+                        {request.sender.name.charAt(0)}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900">

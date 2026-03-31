@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient";
+import { PiStatus } from "./piService";
 
 export interface Proof {
   id: string;
@@ -85,5 +86,9 @@ export const proofService = {
     }).toString();
 
     return apiClient.get(`/proofs/me?${query}`);
+  },
+
+  async shareProof(id: string): Promise<PiStatus> {
+    return apiClient.post<PiStatus>(`/proofs/${id}/share`, {});
   },
 };

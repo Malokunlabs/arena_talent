@@ -18,9 +18,7 @@ export default function TalentCard({ talent, onRequest }: TalentCardProps) {
   const availabilityStatus = talent.isAvailable ? "Available" : "Busy";
 
   // Use a default avatar if none provided
-  const avatarUrl =
-    talent.avatarUrl ||
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop";
+  const avatarUrl = talent.avatarUrl || talent.avatar || "/placeholder-avatar.png";
 
   return (
     <div className="bg-white rounded-3xl p-5 border border-gray-100 flex flex-col gap-5 hover:shadow-md transition-all duration-200">

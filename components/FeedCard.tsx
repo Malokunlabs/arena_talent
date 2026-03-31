@@ -16,6 +16,7 @@ interface FeedCardProps {
   salutes: number;
   onClick?: () => void;
   onSalute?: () => void;
+  onShare?: () => void;
 }
 
 const badgeColors = {
@@ -38,6 +39,7 @@ export default function FeedCard({
   salutes,
   onClick,
   onSalute,
+  onShare,
 }: FeedCardProps) {
   return (
     <div
@@ -118,7 +120,13 @@ export default function FeedCard({
           <span>{salutes} Salutes</span>
         </button>
 
-        <button className="flex items-center gap-2 px-3 py-2 rounded-full text-gray-500 hover:bg-gray-50 transition-colors">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onShare?.();
+          }}
+          className="flex items-center gap-2 px-3 py-2 rounded-full text-gray-500 hover:bg-gray-50 transition-colors"
+        >
           <Share2 className="w-5 h-5" />
           <span className="text-sm font-medium">Share</span>
         </button>

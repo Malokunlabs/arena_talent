@@ -1,43 +1,58 @@
 "use client";
 
-import React, { useState } from "react";
-import RequestTable, { Request } from "@/components/dashboard/RequestTable";
-
-const INITIAL_JOBS: Request[] = [
-  {
-    id: "1",
-    sender: {
-      name: "Tech Corp Inc.",
-      avatar:
-        "https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=2673&auto=format&fit=crop",
-      email: "hiring@techcorp.com",
-    },
-    details: "Full-time Field Ops Manager",
-    date: "Jan 15, 2025",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    sender: {
-      name: "Urban Boutique",
-      avatar:
-        "https://images.unsplash.com/photo-1541577141970-eebc83bece0e?q=80&w=2658&auto=format&fit=crop",
-      email: "manager@urbanboutique.com",
-    },
-    details: "Mystery Shopper - Weekly Gig",
-    date: "Jan 10, 2025",
-    status: "Stalled",
-  },
-];
+import React, { useEffect } from "react";
+import RequestTable, { Request as JobRequest } from "@/components/dashboard/RequestTable";
+import { useTalentRequestStore } from "@/store/useTalentRequestStore";
+import { Loader2 } from "lucide-react";
+import { TalentRequest } from "@/services/talentService";
 
 export default function JobRequestsPage() {
-  const [requests, setRequests] = useState(INITIAL_JOBS);
+  const { requests, isLoading, fetchReceivedRequests, updateStatus } = useTalentRequestStore();
 
-  const handleStatusChange = (id: string, newStatus: Request["status"]) => {
-    setRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, status: newStatus } : req)),
-    );
+  useEffect(() => {
+    fetchReceivedRequests();
+  }, [fetchReceivedRequests]);
+
+  // Map API requests to UI Request format
+  const mappedRequests: JobRequest[] = (requests || []).map((req: TalentRequest) => {
+    // Map API status to UI status
+    let mappedStatus: JobRequest["status"] = "Pending";
+    if (req.status === "COMPLETED") mappedStatus = "Accepted";
+    if (req.status === "DECLINED") mappedStatus = "Rejected";
+    // Add other mappings as needed
+
+    return {
+      id: req.id,
+      sender: {
+        name: req.companyName,
+        email: req.email,
+      },
+      details: `${req.requestType}: ${req.projectBrief.substring(0, 50)}...`,
+      date: new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(req.createdAt)),
+      status: mappedStatus,
+    };
+  });
+
+  const handleStatusUpdate = async (id: string, status: string) => {
+    // Map UI status back to API status
+    let apiStatus = "NEW";
+    if (status === "Accepted") apiStatus = "COMPLETED"; // Or follow the pipeline
+    if (status === "Rejected") apiStatus = "DECLINED";
+
+    await updateStatus(id, apiStatus);
   };
+
+  if (isLoading && requests.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#7300E5]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -49,10 +64,10 @@ export default function JobRequestsPage() {
       </div>
 
       <RequestTable
-        requests={requests}
-        onAccept={(id) => handleStatusChange(id, "Accepted")}
-        onReject={(id) => handleStatusChange(id, "Rejected")}
-        onStall={(id) => handleStatusChange(id, "Stalled")}
+        requests={mappedRequests}
+        onAccept={(id) => handleStatusUpdate(id, "Accepted")}
+        onReject={(id) => handleStatusUpdate(id, "Rejected")}
+        onStall={(id) => handleStatusUpdate(id, "Stalled")}
         onView={(req) => console.log("View", req)}
       />
     </div>

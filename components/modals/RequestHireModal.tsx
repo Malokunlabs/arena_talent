@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +28,6 @@ interface RequestHireModalProps {
   isOpen: boolean;
   onClose: () => void;
   talentName?: string;
-  talentAvatar?: string;
   talentId?: string;
 }
 
@@ -37,7 +35,6 @@ export default function RequestHireModal({
   isOpen,
   onClose,
   talentName = "Agatha",
-  talentAvatar,
   talentId,
 }: RequestHireModalProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -50,10 +47,14 @@ export default function RequestHireModal({
     phone: "",
     requestType: "",
     projectBrief: "",
+    city: "",
     location: "",
     budgetMin: "",
     budgetMax: "",
     timeline: "",
+    requesterName: "",
+    requesterEmail: "",
+    notes: "",
     terms: false,
   });
 
@@ -116,11 +117,15 @@ export default function RequestHireModal({
         budgetMin: minBudget,
         budgetMax: maxBudget,
         phone: formData.phone,
+        city: formData.city,
         location: formData.location,
         timeline: formData.timeline,
+        requesterName: formData.requesterName,
+        requesterEmail: formData.requesterEmail,
+        notes: formData.notes,
       });
       setIsSubmitted(true);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled in store but we can show toast here if needed
       toast({
         title: "Request Failed",
@@ -138,10 +143,14 @@ export default function RequestHireModal({
       phone: "",
       requestType: "",
       projectBrief: "",
+      city: "",
       location: "",
       budgetMin: "",
       budgetMax: "",
       timeline: "",
+      requesterName: "",
+      requesterEmail: "",
+      notes: "",
       terms: false,
     });
     onClose();
@@ -154,7 +163,7 @@ export default function RequestHireModal({
         <DialogContent className="sm:max-w-[425px] flex flex-col items-center justify-center text-center p-10 gap-6">
           <div className="h-24 w-24 rounded-full bg-[#E8F8F0] flex items-center justify-center">
             <div className="h-16 w-16 rounded-full bg-[#16A34A] flex items-center justify-center text-white">
-              <Check className="h-8 w-8 stroke-[3]" />
+              <Check className="h-8 w-8 stroke-3" />
             </div>
           </div>
           <div className="space-y-2">
@@ -236,6 +245,36 @@ export default function RequestHireModal({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="requesterName" className="text-sm font-semibold">
+                Your Name *
+              </Label>
+              <Input
+                id="requesterName"
+                value={formData.requesterName}
+                onChange={handleChange}
+                placeholder="Ada Okonkwo"
+                required
+                className="h-12 rounded-lg border-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="requesterEmail" className="text-sm font-semibold">
+                Your Email *
+              </Label>
+              <Input
+                id="requesterEmail"
+                type="email"
+                value={formData.requesterEmail}
+                onChange={handleChange}
+                placeholder="ada@orbitfoods.com"
+                required
+                className="h-12 rounded-lg border-gray-200"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="requestType" className="text-sm font-semibold">
               What you need *
@@ -270,17 +309,32 @@ export default function RequestHireModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location" className="text-sm font-semibold">
-              Location
-            </Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="e.g., Lagos, Abuja"
-              className="h-12 rounded-lg border-gray-200"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="city" className="text-sm font-semibold">
+                City *
+              </Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="e.g., Lagos"
+                required
+                className="h-12 rounded-lg border-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location" className="text-sm font-semibold">
+                Specific Location
+              </Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="e.g., Ikeja"
+                className="h-12 rounded-lg border-gray-200"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -315,6 +369,19 @@ export default function RequestHireModal({
               onChange={handleChange}
               placeholder="e.g., ASAP, 2 weeks, Dec 2025"
               className="h-12 rounded-lg border-gray-200"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes" className="text-sm font-semibold">
+              Additional Notes
+            </Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              placeholder="Any other details..."
+              className="min-h-[80px] rounded-lg border-gray-200 resize-none"
             />
           </div>
 

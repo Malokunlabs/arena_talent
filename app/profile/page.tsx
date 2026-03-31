@@ -4,12 +4,16 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Calendar, Flame } from "lucide-react";
+import PIProgressBar from "@/components/pi/PIProgressBar";
+import { PiStatus } from "@/services/piService";
 import { Button } from "@/components/ui/button";
 import FeedCard from "@/components/FeedCard";
 import RequestHireModal from "@/components/modals/RequestHireModal";
 import CollaborateModal from "@/components/modals/CollaborateModal";
+import ProofDetailModal from "@/components/modals/ProofDetailModal";
 import { useTalentStore } from "@/store/useTalentStore";
 import { useProofStore } from "@/store/useProofStore";
+import { Proof } from "@/services/proofService";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,6 +30,7 @@ export default function ProfilePage() {
   const [activeModal, setActiveModal] = useState<"hire" | "collaborate" | null>(
     null,
   );
+  const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
 
   useEffect(() => {
     if (username) {
@@ -69,11 +74,12 @@ export default function ProfilePage() {
     );
   }
 
-  const { talent, stats, proofs } = selectedTalentProfile;
+  const { talent, proofs } = selectedTalentProfile;
   const fullName = `${talent.firstName} ${talent.lastName}`;
   const avatarUrl =
+    talent.avatarUrl ||
     talent.avatar ||
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop";
+    "/placeholder-avatar.png";
 
   return (
     <main className="min-h-screen pt-24 pb-12 bg-gray-50/50">
@@ -125,12 +131,12 @@ export default function ProfilePage() {
                   <Calendar className="w-4 h-4" />
                   <span>
                     Joined{" "}
-                    {new Date(
-                      talent.createdAt || Date.now(),
-                    ).toLocaleDateString("en-US", {
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {talent.createdAt
+                      ? new Date(talent.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "Unknown"}
                   </span>
                 </div>
               </div>
@@ -166,28 +172,18 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Progress Index - Using stats from API */}
-            <div className="space-y-2 pt-2">
-              <div className="flex items-baseline justify-between">
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Progress Index
-                </h3>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-[#7300E5]">
-                    {stats.totalSalutes}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-1 block -mt-1">
-                    Salutes
-                  </span>
-                </div>
-              </div>
-              <div className="h-2 w-full bg-[#F3E8FF] rounded-full overflow-hidden">
-                <div className="h-full w-[70%] bg-[#7300E5] rounded-full" />
-              </div>
-              <p className="text-xs text-[#7300E5] font-medium">
-                {stats.totalGigs} Total Gigs Completed
-              </p>
-            </div>
+            {/* Progress Index - Real PI data from talent object */}
+            {(() => {
+              const syntheticPiStatus: PiStatus = {
+                piScore: talent.piScore ?? 0,
+                progressIndex: talent.progressIndex ?? 0,
+                level: talent.progressIndex ?? 0,
+                piToNextLevel: talent.piToNextLevel ?? 0,
+                nextLevelPi: talent.nextLevelPi ?? null,
+              };
+              return <PIProgressBar piStatus={syntheticPiStatus} />;
+            })()}
+
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
@@ -226,6 +222,7 @@ export default function ProfilePage() {
                     description={item.caption}
                     salutes={item.salutesCount || 0}
                     onSalute={() => checkAuth(() => saluteProof(item.id))}
+                    onShare={() => setSelectedProof(item)}
                   />
                 ))
               ) : (
@@ -243,13 +240,29 @@ export default function ProfilePage() {
         isOpen={activeModal === "hire"}
         onClose={() => setActiveModal(null)}
         talentName={fullName}
-        talentAvatar={avatarUrl}
         talentId={talent.id}
       />
       <CollaborateModal
         isOpen={activeModal === "collaborate"}
         onClose={() => setActiveModal(null)}
         partnerName={fullName}
+        partnerId={talent.id}
+      />
+      <ProofDetailModal
+        isOpen={!!selectedProof}
+        onClose={() => setSelectedProof(null)}
+        proof={
+          selectedProof
+            ? {
+                image: selectedProof.mediaUrl,
+                rank: 1,
+                name: fullName,
+                avatar: avatarUrl,
+                proofboardLink: `arena.com/${talent.username}`,
+                id: selectedProof.id,
+              }
+            : null
+        }
       />
     </main>
   );

@@ -1,43 +1,59 @@
 "use client";
 
-import React, { useState } from "react";
-import RequestTable, { Request } from "@/components/dashboard/RequestTable";
-
-const INITIAL_REQUESTS: Request[] = [
-  {
-    id: "1",
-    sender: {
-      name: "Segun Balogun",
-      avatar:
-        "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=2574&auto=format&fit=crop",
-      email: "segun@example.com",
-    },
-    details: "Product Advertisement - Video Editing",
-    date: "Oct 24, 2024",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    sender: {
-      name: "Chioma Okeke",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2574&auto=format&fit=crop",
-      email: "chioma@agency.com",
-    },
-    details: "UGC Campaign for Skincare Brand",
-    date: "Oct 22, 2024",
-    status: "Accepted",
-  },
-];
+import React, { useEffect } from "react";
+import RequestTable, { Request as CollabRequestUI } from "@/components/dashboard/RequestTable";
+import { useCollaborationStore } from "@/store/useCollaborationStore";
+import { Loader2 } from "lucide-react";
+import { CollaborationRequest, CollaborationStatus } from "@/services/collaborationService";
 
 export default function CollaborateRequestsPage() {
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
+  const { requests, isLoading, fetchRequests, updateStatus } = useCollaborationStore();
 
-  const handleStatusChange = (id: string, newStatus: Request["status"]) => {
-    setRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, status: newStatus } : req)),
-    );
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  // Map API requests to UI Request format
+  const mappedRequests: CollabRequestUI[] = (requests || []).map((req: CollaborationRequest) => {
+    // Map API status to UI status
+    let mappedStatus: CollabRequestUI["status"] = "Pending";
+    if (req.status === "ACCEPTED") mappedStatus = "Accepted";
+    if (req.status === "DECLINED" || req.status === "CANCELLED") mappedStatus = "Rejected";
+    if (req.status === "COMPLETED") mappedStatus = "Accepted"; // Or another appropriate mapping
+
+    return {
+      id: req.id,
+      sender: {
+        name: req.fromUser?.username || "Unknown",
+        avatar: req.fromUser?.avatarUrl,
+        email: req.fromUser?.email || "",
+      },
+      details: `${req.title}: ${req.description.substring(0, 50)}...`,
+      date: new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(req.createdAt)),
+      status: mappedStatus,
+    };
+  });
+
+  const handleStatusUpdate = async (id: string, status: string) => {
+    // Map UI status back to API status
+    let apiStatus: CollaborationStatus = "PENDING";
+    if (status === "Accepted") apiStatus = "ACCEPTED";
+    if (status === "Rejected") apiStatus = "DECLINED";
+    
+    await updateStatus(id, apiStatus);
   };
+
+  if (isLoading && requests.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#7300E5]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -51,10 +67,10 @@ export default function CollaborateRequestsPage() {
       </div>
 
       <RequestTable
-        requests={requests}
-        onAccept={(id) => handleStatusChange(id, "Accepted")}
-        onReject={(id) => handleStatusChange(id, "Rejected")}
-        onStall={(id) => handleStatusChange(id, "Stalled")}
+        requests={mappedRequests}
+        onAccept={(id) => handleStatusUpdate(id, "Accepted")}
+        onReject={(id) => handleStatusUpdate(id, "Rejected")}
+        onStall={(id) => handleStatusUpdate(id, "Stalled")}
         onView={(req) => console.log("View", req)}
       />
     </div>

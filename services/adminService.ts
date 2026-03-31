@@ -101,6 +101,10 @@ export const adminService = {
     return apiClient.get("/admin/talent-requests/kanban");
   },
 
+  async getCollaborationRequestsKanban(): Promise<CollaborationKanbanColumn[]> {
+    return apiClient.get("/admin/collaboration-requests/kanban");
+  },
+
   async updateTalentRequest(
     id: string,
     data: Partial<TalentRequest>,
@@ -150,6 +154,34 @@ export interface TalentRequest {
 export interface KanbanColumn {
   status: string;
   items: TalentRequest[];
+}
+
+export interface CollaborationRequestAdmin {
+  id: string;
+  fromUserId: string;
+  toUserId: string | null;
+  title: string;
+  description: string;
+  status: string;
+  city: string;
+  startDate: string;
+  createdAt: string;
+  updatedAt: string;
+  fromUser?: {
+    firstName: string;
+    lastName: string;
+    avatarUrl?: string;
+  };
+  toUser?: {
+    firstName: string;
+    lastName: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface CollaborationKanbanColumn {
+  status: string;
+  items: CollaborationRequestAdmin[];
 }
 
 export interface Pulse {
