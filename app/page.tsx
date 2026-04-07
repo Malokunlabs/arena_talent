@@ -1,25 +1,38 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useState, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import DailyPulse from "@/components/DailyPulse";
 import ProofCard from "@/components/ProofCard";
+import FeedCard from "@/components/FeedCard";
+import FeedSkeleton from "@/components/FeedSkeleton";
 import { Briefcase } from "lucide-react";
 
 // Modals
 import ProofDetailModal from "@/components/modals/ProofDetailModal";
 import CreateProofModal from "@/components/modals/CreateProofModal";
 import DailyPulseModal from "@/components/modals/DailyPulseModal";
+import { useProofStore } from "@/store/useProofStore";
+import { Proof } from "@/services/proofService";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useToast } from "@/hooks/use-toast";
 
-interface Proof {
-  id: number;
-  rank: number;
-  image: string;
-  avatar: string;
-  name: string;
-  description: string;
-  proofboardLink: string;
+// Helper to calculate time ago
+function timeAgo(dateString?: string) {
+  if (!dateString) return "Just now";
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 export default function Home() {
@@ -28,45 +41,45 @@ export default function Home() {
   >(null);
   const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
 
-  const proofs: Proof[] = [
-    {
-      id: 1,
-      rank: 1,
-      image:
-        "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2670&auto=format&fit=crop",
+  const { proofs, fetchProofs, isLoading, saluteProof } = useProofStore();
+  const { isAuthenticated } = useAuthStore();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchProofs();
+  }, [fetchProofs]);
+
+  // Check auth helper
+  const checkAuth = (action: () => void) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to perform this action.",
+        variant: "destructive",
+      });
+      return;
+    }
+    action();
+  };
+
+  // Map proofs for the "Proofs of the week" section — only featured ones
+  const featuredProofs = (proofs || [])
+    .filter((p) => p.isFeatured === true)
+    .slice(0, 3)
+    .map((p, index) => ({
+      ...p,
+      rank: index + 1,
+      image: p.mediaUrl,
       avatar:
+        p.talent?.avatarUrl ||
         "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
-      name: "Ebibere Rinebai",
-      description: "Reached 100 completed gigs milestone",
-      proofboardLink: "/ebibere_rinebai",
-    },
-    {
-      id: 2,
-      rank: 2,
-      image:
-        "https://images.unsplash.com/photo-1551024601-563de87ee505?q=80&w=2602&auto=format&fit=crop",
-      avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=2459&auto=format&fit=crop",
-      name: "Funke Alade",
-      description: "Reached 100 completed gigs milestone",
-      proofboardLink: "/funke_alade",
-    },
-    {
-      id: 3,
-      rank: 3,
-      image:
-        "https://images.unsplash.com/photo-1513279922550-250c2129b13a?q=80&w=2670&auto=format&fit=crop",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=2487&auto=format&fit=crop",
-      name: "Idubamo Erekosima",
-      description: "Reached 100 completed gigs milestone",
-      proofboardLink: "/idubamo_erekosima",
-    },
-  ];
+      name: `${p.talent?.firstName || "Anonymous"} ${p.talent?.lastName || ""}`,
+      description: p.title,
+    }));
 
   const categories = ["All", "Trending", "Nearby", "My network"];
 
-  const handleProofClick = (proof: Proof) => {
+  const handleProofClick = (proof: any) => {
     setSelectedProof(proof);
     setActiveModal("detail");
   };
@@ -90,21 +103,21 @@ export default function Home() {
             </div>
             {/* Daily Pulse Trigger */}
             <div
-              onClick={() => setActiveModal("pulse")}
+              onClick={() => checkAuth(() => setActiveModal("pulse"))}
               className="cursor-pointer transition-transform active:scale-95"
             >
               <DailyPulse />
             </div>
           </div>
 
-          {proofs.length > 0 ? (
+          {!isLoading && featuredProofs.length > 0 ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-primary">
                   Proofs of the week
                 </h2>
                 <Button
-                  onClick={() => setActiveModal("create")}
+                  onClick={() => checkAuth(() => setActiveModal("create"))}
                   className="rounded-full bg-primary hover:bg-primary/90 font-bold px-6"
                 >
                   Share proof (+10 Pt)
@@ -112,7 +125,7 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {proofs.map((proof) => (
+                {featuredProofs.map((proof) => (
                   <ProofCard
                     key={proof.id}
                     rank={proof.rank}
@@ -125,7 +138,7 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          ) : (
+          ) : !isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-6 text-center">
               <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-2">
                 <Briefcase className="w-10 h-10 text-gray-300" />
@@ -139,13 +152,13 @@ export default function Home() {
                 </p>
               </div>
               <Button
-                onClick={() => setActiveModal("create")}
+                onClick={() => checkAuth(() => setActiveModal("create"))}
                 className="rounded-full bg-primary hover:bg-primary/90 font-bold px-8 py-6 text-base shadow-lg shadow-primary/20"
               >
                 Share proof (+10 Pt)
               </Button>
             </div>
-          )}
+          ) : null}
         </section>
 
         {/* Filter Section */}
@@ -166,19 +179,40 @@ export default function Home() {
           </div>
           <Button
             variant="ghost"
-            onClick={() => setActiveModal("pulse")}
+            onClick={() => checkAuth(() => setActiveModal("pulse"))}
             className="text-primary font-bold hover:bg-primary/5"
           >
             Answer Daily pulse
           </Button>
         </section>
 
-        {/* Feed Placeholder (for context) */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-40 grayscale pointer-events-none select-none">
-          {/* Placeholders to show layout structure below filters */}
-          <div className="aspect-4/5 bg-gray-200 rounded-2xl"></div>
-          <div className="aspect-4/5 bg-gray-200 rounded-2xl"></div>
-          <div className="aspect-4/5 bg-gray-200 rounded-2xl"></div>
+        {/* Feed Section with Skeleton Loading */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, index) => (
+                <FeedSkeleton key={index} />
+              ))
+            : (proofs || []).map((proof) => (
+                <FeedCard
+                  key={proof.id}
+                  avatar={
+                    proof.talent?.avatarUrl ||
+                    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
+                  } // Fallback avatarUrl
+                  name={`${proof.talent?.firstName || "Anonymous"} ${proof.talent?.lastName || ""}`}
+                  location={proof.talent?.location || "Global"}
+                  timeAgo={timeAgo(proof.createdAt)}
+                  badge="Win"
+                  image={proof.mediaUrl}
+                  tags={proof.tags || []}
+                  title={proof.title}
+                  description={proof.caption || ""}
+                  salutes={proof.salutesCount || 0}
+                  onSalute={() => checkAuth(() => saluteProof(proof.id))}
+                  onClick={() => handleProofClick(proof)}
+                  onShare={() => handleProofClick(proof)}
+                />
+              ))}
         </section>
       </div>
 
@@ -186,7 +220,24 @@ export default function Home() {
       <ProofDetailModal
         isOpen={activeModal === "detail"}
         onClose={closeModals}
-        proof={selectedProof}
+        proof={
+          selectedProof
+            ? {
+                image: selectedProof.mediaUrl,
+                rank: 1,
+                name: `${selectedProof.talent?.firstName || "Anonymous"} ${
+                  selectedProof.talent?.lastName || ""
+                }`.trim(),
+                avatar:
+                  selectedProof.talent?.avatarUrl ||
+                  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
+                proofboardLink: selectedProof.talent?.username
+                  ? `/u/${selectedProof.talent.username}`
+                  : "/u/anonymous",
+                id: selectedProof.id,
+              }
+            : null
+        }
       />
       <CreateProofModal
         isOpen={activeModal === "create"}

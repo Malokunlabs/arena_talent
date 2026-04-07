@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
+import NextImage from "next/image";
+
 import { Copy, X } from "lucide-react";
 import {
   Dialog,
@@ -9,12 +10,14 @@ import {
   DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useProofStore } from "@/store/useProofStore";
 
 interface ProofDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   proof: {
+    id: string;
     image: string;
     rank: number;
     name: string;
@@ -28,22 +31,51 @@ export default function ProofDetailModal({
   onClose,
   proof,
 }: ProofDetailModalProps) {
+  const { toast } = useToast();
+  const { shareProof } = useProofStore();
+
   if (!proof) return null;
+
+  const handleShare = async (platform: string) => {
+    try {
+      const exactProofLink = `${window.location.origin}/proofs/${proof.id}`;
+
+      if (platform === "copy") {
+        await navigator.clipboard.writeText(exactProofLink);
+        toast({
+          title: "Link Copied!",
+          description: "Proof link copied to clipboard.",
+        });
+      } else {
+        // Open share intents here if needed for specific platforms
+        toast({
+          title: `Shared to ${platform}`,
+          description: "Opening share dialogue...",
+        });
+      }
+
+      // Trigger the PI reward API call
+      await shareProof(proof.id);
+    } catch (err) {
+      console.error("Share failed", err);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 overflow-hidden bg-white border-none rounded-3xl sm:max-w-lg">
         <DialogTitle className="sr-only">Proof Details</DialogTitle>
-        <div className="relative aspect-square w-full bg-gray-100">
-          <Image
-            src={proof.image}
-            alt={`Proof by ${proof.name}`}
+        <div className="relative aspect-4/5 max-h-[55vh] w-full bg-gray-100">
+          <NextImage
+            src={proof.image || "/placeholder-proof.png"}
+            alt={`Proof by ${proof.name || "user"}`}
             fill
+            unoptimized
             className="object-cover"
           />
           <DialogClose className="absolute top-4 right-4 rounded-full bg-white p-2 text-gray-900 transition-opacity hover:bg-gray-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            {/* <X className="h-4 w-4" /> */}
+            {/* <span className="sr-only">Close</span> */}
           </DialogClose>
         </div>
         <div className="p-6 text-center space-y-5">
@@ -58,7 +90,10 @@ export default function ProofDetailModal({
 
           <div className="flex items-center justify-center gap-4">
             {/* Instagram */}
-            <button className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-linear-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888]">
+            <button
+              onClick={() => handleShare("Instagram")}
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-linear-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888]"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -77,7 +112,10 @@ export default function ProofDetailModal({
             </button>
 
             {/* WhatsApp */}
-            <button className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-[#25D366]">
+            <button
+              onClick={() => handleShare("WhatsApp")}
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-[#25D366]"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -90,7 +128,10 @@ export default function ProofDetailModal({
             </button>
 
             {/* X (Twitter) */}
-            <button className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-black">
+            <button
+              onClick={() => handleShare("X")}
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-black"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -103,33 +144,18 @@ export default function ProofDetailModal({
             </button>
 
             {/* Copy Link */}
-            <button className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-gray-500">
+            <button
+              onClick={() => handleShare("copy")}
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-opacity hover:opacity-90 bg-gray-500"
+            >
               <Copy className="w-6 h-6" />
             </button>
           </div>
 
-          <div className="text-sm">
+          <div className="text-sm pb-4">
             <span className="text-gray-500">Your public proofboard: </span>
-            <span className="text-primary font-semibold">
+            <span className="text-[#7300E5] font-bold">
               {proof.proofboardLink}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-gray-50 border-t border-gray-100">
-          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
-            <Image
-              src={proof.avatar}
-              alt={proof.name}
-              fill
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col text-left">
-            <span className="font-bold text-sm text-gray-900">
-              {proof.name}
-            </span>
-            <span className="text-xs text-gray-500">
-              Reached 100 completed gigs milestone
             </span>
           </div>
         </div>

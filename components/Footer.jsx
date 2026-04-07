@@ -1,11 +1,26 @@
-import Image from "next/image";
-import Link from "next/link";
+"use client";
 import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  Phone,
+} from "lucide-react";
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) return null;
+
   return (
-    <div className="relative bg-[#0b0013] text-white">
+    <footer className="bg-black text-white pt-16 pb-8">
       <div className="mb-10 footer_main padding_default width_wrap">
         <div className="pt-20 pb-5">
           <div className="grid grid-cols-1 md:grid-cols-2">
@@ -130,6 +145,6 @@ export default function Footer() {
           reserved.
         </p>
       </div>
-    </div>
+    </footer>
   );
 }

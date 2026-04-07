@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "../ui/input";
@@ -14,7 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
+import { useProofStore } from "@/store/useProofStore";
+import { mediaService } from "@/services/mediaService";
+import { toast } from "sonner";
 
 interface CreateProofModalProps {
   isOpen: boolean;
@@ -26,12 +28,79 @@ export default function CreateProofModal({
   onClose,
 }: CreateProofModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    caption: "",
+    tags: "",
+  });
+
+  const { createProof, isLoading } = useProofStore();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, category: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.category || !formData.caption) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (!file) {
+      toast.error("Please upload media");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      // Step 1 & 2 & 3: Upload file to R2 and get public URL
+      const mediaUrl = await mediaService.upload(file, "proofs");
+
+      // Parse tags
+      const tags = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+
+      // Step 3: Link media to the proof record
+      const success = await createProof({
+        title: formData.title,
+        category: formData.category,
+        caption: formData.caption,
+        mediaUrl,
+        tags,
+      });
+
+      if (success) {
+        toast.success("Proof published successfully!");
+        setFormData({ title: "", category: "", caption: "", tags: "" });
+        setFile(null);
+        onClose();
+      }
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const isBusy = isUploading || isLoading;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -72,6 +141,7 @@ export default function CreateProofModal({
                 className="hidden"
                 accept="image/*,video/*"
                 onChange={handleFileChange}
+                disabled={isBusy}
               />
             </label>
           </div>
@@ -83,8 +153,11 @@ export default function CreateProofModal({
             </Label>
             <Input
               id="title"
+              value={formData.title}
+              onChange={handleChange}
               placeholder="What did you accomplish"
               className="rounded-xl border-gray-200"
+              disabled={isBusy}
             />
           </div>
 
@@ -93,14 +166,19 @@ export default function CreateProofModal({
             <Label htmlFor="category" className="font-bold text-sm">
               Category *
             </Label>
-            <Select>
+            <Select
+              onValueChange={handleCategoryChange}
+              value={formData.category}
+              disabled={isBusy}
+            >
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Select options" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ugc">UGC Content</SelectItem>
-                <SelectItem value="design">Design</SelectItem>
-                <SelectItem value="dev">Development</SelectItem>
+                <SelectItem value="UGC Content">UGC Content</SelectItem>
+                <SelectItem value="Design">Design</SelectItem>
+                <SelectItem value="Development">Development</SelectItem>
+                <SelectItem value="Logistics">Logistics</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -108,12 +186,16 @@ export default function CreateProofModal({
           {/* Caption */}
           <div className="space-y-2">
             <Label htmlFor="caption" className="font-bold text-sm">
-              Caption * (0/220)
+              Caption * ({formData.caption.length}/220)
             </Label>
             <Textarea
               id="caption"
+              value={formData.caption}
+              onChange={handleChange}
               placeholder="Tell your story"
               className="rounded-xl border-gray-200 min-h-[100px]"
+              maxLength={220}
+              disabled={isBusy}
             />
           </div>
 
@@ -124,22 +206,36 @@ export default function CreateProofModal({
             </Label>
             <Input
               id="tags"
+              value={formData.tags}
+              onChange={handleChange}
               placeholder="e.g., UGC, VoxPop, Lagos"
               className="rounded-xl border-gray-200"
+              disabled={isBusy}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
-              onClick={onClose}
+              onClick={handleSubmit}
+              disabled={isBusy}
               className="flex-1 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl py-6"
             >
-              Publish Proof (+10 Pt)
+              {isUploading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Uploading...
+                </span>
+              ) : isLoading ? (
+                "Publishing..."
+              ) : (
+                "Publish Proof (+10 Pt)"
+              )}
             </Button>
             <Button
               variant="outline"
               onClick={onClose}
+              disabled={isBusy}
               className="flex-1 border-[#7300E5] text-gray-600 hover:text-gray-900 border-opacity-30 rounded-xl py-6"
             >
               Cancel

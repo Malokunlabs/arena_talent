@@ -1,0 +1,159 @@
+List Requests
+Fetches a paginated list of talent requests with optional filtering.
+
+Endpoint: GET /admin/talent-requests
+Query Parameters:
+page: number (default: 1)
+limit: number (default: 20)
+status: NEW | TRIAGED | ... (optional)
+search: string (company, email, type, city) (optional)
+Response:
+
+{
+    "data": [
+        {
+            "id": "0d9a6356-cdeb-4783-911e-3ba1629b7869",
+            "talentId": "7ef36038-33f6-4213-800e-8308e3ee61f1",
+            "companyName": "mike dev",
+            "email": "mikedoe@gmail.com",
+            "requestType": "Mystery Shop",
+            "projectBrief": "hehehe",
+            "budgetMin": 2000,
+            "budgetMax": 20000,
+            "city": null,
+            "location": "abuja",
+            "phone": "08063704557",
+            "timeline": "asap",
+            "requesterName": null,
+            "requesterEmail": null,
+            "notes": null,
+            "assignedAdmin": null,
+            "requester": null,
+            "status": "NEW",
+            "createdAt": "2026-02-13T00:16:01.248Z",
+            "updatedAt": "2026-02-13T00:16:01.248Z"
+        },
+        {
+            "id": "7bc70308-dafb-49ed-bc08-b4baa2df3d3a",
+            "talentId": "7ef36038-33f6-4213-800e-8308e3ee61f1",
+            "companyName": "mike dev",
+            "email": "mikedoe@gmail.com",
+            "requestType": "UGC Video",
+            "projectBrief": "just come and work",
+            "budgetMin": 100,
+            "budgetMax": 1000,
+            "city": null,
+            "location": "abuja",
+            "phone": "08063704557",
+            "timeline": "asap",
+            "requesterName": null,
+            "requesterEmail": null,
+            "notes": null,
+            "assignedAdmin": null,
+            "requester": null,
+            "status": "NEW",
+            "createdAt": "2026-02-13T00:09:48.830Z",
+            "updatedAt": "2026-02-13T00:09:48.830Z"
+        }
+    ],
+    "meta": {
+        "page": 1,
+        "limit": 20,
+        "total": 2,
+        "pageCount": 1
+    }
+}
+
+Get Kanban Board
+Fetches requests grouped by status columns for a Kanban view.
+
+Endpoint: GET /admin/talent-requests/kanban
+Response:
+[
+    {
+        "status": "NEW",
+        "items": [
+            {
+                "id": "0d9a6356-cdeb-4783-911e-3ba1629b7869",
+                "talentId": "7ef36038-33f6-4213-800e-8308e3ee61f1",
+                "companyName": "mike dev",
+                "email": "mikedoe@gmail.com",
+                "requestType": "Mystery Shop",
+                "projectBrief": "hehehe",
+                "budgetMin": 2000,
+                "budgetMax": 20000,
+                "city": null,
+                "location": "abuja",
+                "phone": "08063704557",
+                "timeline": "asap",
+                "requesterName": null,
+                "requesterEmail": null,
+                "notes": null,
+                "assignedAdmin": null,
+                "requester": null,
+                "status": "NEW",
+                "createdAt": "2026-02-13T00:16:01.248Z",
+                "updatedAt": "2026-02-13T00:16:01.248Z"
+            },
+            {
+                "id": "7bc70308-dafb-49ed-bc08-b4baa2df3d3a",
+                "talentId": "7ef36038-33f6-4213-800e-8308e3ee61f1",
+                "companyName": "mike dev",
+                "email": "mikedoe@gmail.com",
+                "requestType": "UGC Video",
+                "projectBrief": "just come and work",
+                "budgetMin": 100,
+                "budgetMax": 1000,
+                "city": null,
+                "location": "abuja",
+                "phone": "08063704557",
+                "timeline": "asap",
+                "requesterName": null,
+                "requesterEmail": null,
+                "notes": null,
+                "assignedAdmin": null,
+                "requester": null,
+                "status": "NEW",
+                "createdAt": "2026-02-13T00:09:48.830Z",
+                "updatedAt": "2026-02-13T00:09:48.830Z"
+            }
+        ]
+    },
+    {
+        "status": "TRIAGED",
+        "items": []
+    },
+    {
+        "status": "AWAITING_CREATOR",
+        "items": []
+    },
+    {
+        "status": "AWAITING_PAYMENT",
+        "items": []
+    },
+    {
+        "status": "IN_FULFILLMENT",
+        "items": []
+    },
+    {
+        "status": "COMPLETED",
+        "items": []
+    },
+    {
+        "status": "DECLINED",
+        "items": []
+    }
+]
+
+Update Request
+Updates status or administrative details of a request.
+
+Endpoint: PATCH /admin/talent-requests/:id
+Body:
+{
+  "status": "TRIAGED", // Optional
+  "assignedAdmin": "admin@arena.app", // Optional
+  "notes": "Spoke to client, budget approved.", // Optional
+  "city": "Lagos", // Optional
+  "timeline": "Urgent - 2 days" // Optional
+}
