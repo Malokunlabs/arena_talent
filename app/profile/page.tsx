@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Calendar, Flame } from "lucide-react";
@@ -17,7 +17,7 @@ import { Proof } from "@/services/proofService";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
 
-export default function ProfilePage() {
+function ProfileContent() {
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
 
@@ -265,5 +265,21 @@ export default function ProfilePage() {
         }
       />
     </main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen pt-24 pb-12 bg-gray-50/50">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center py-20">Loading Profile...</div>
+          </div>
+        </main>
+      }
+    >
+      <ProfileContent />
+    </Suspense>
   );
 }
