@@ -220,7 +220,7 @@ export default function ProofModerationPage() {
                       <div className="relative h-8 w-8 rounded-full overflow-hidden">
                         <Image
                           src={
-                            proof.talent?.avatar ||
+                            proof.talent?.avatarUrl ||
                             "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
                           }
                           alt="Avatar"
