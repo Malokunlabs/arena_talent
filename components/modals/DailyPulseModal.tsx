@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { usePulseStore } from "@/store/usePulseStore";
+import { pulseService } from "@/services/pulseService";
+import { usePiStore } from "@/store/usePiStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface DailyPulseModalProps {
   isOpen: boolean;
@@ -14,97 +18,139 @@ export default function DailyPulseModal({
   isOpen,
   onClose,
 }: DailyPulseModalProps) {
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedHustle, setSelectedHustle] = useState<string | null>(null);
+  const { activePulse, clearPulse } = usePulseStore();
+  const { refreshAfterProof } = usePiStore();
+  const { toast } = useToast();
+  
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
 
-  const times = [
-    { label: "Morning (6AM-12PM)", value: "morning" },
-    { label: "Afternoon (12PM-6PM)", value: "afternoon" },
-    { label: "Evening (6PM-12AM)", value: "evening" },
-    { label: "Night (12AM-6AM)", value: "night" },
-  ];
+  const handleSubmit = async () => {
+    if (!selectedOption || !activePulse) return;
+    
+    setIsSubmitting(true);
+    try {
+      await pulseService.respondToPulse(activePulse.id, selectedOption);
+      setShowThankYou(true);
+      refreshAfterProof(5);
+      
+      // Auto close and clear after 2 seconds
+      setTimeout(() => {
+        onClose();
+        clearPulse(); // remove from active pulse so it doesn't show again
+        setShowThankYou(false);
+        setSelectedOption(null);
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "Failed to submit pulse",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  const hustles = [
-    { emoji: "🤕", value: "hurt" },
-    { emoji: "🤒", value: "sick" },
-    { emoji: "🔥", value: "fire" },
-    { emoji: "🤞🏼", value: "fingers_crossed" },
-  ];
+  const handleClose = () => {
+    if (isSubmitting) return;
+    onClose();
+    setTimeout(() => {
+      setShowThankYou(false);
+      setSelectedOption(null);
+    }, 300);
+  };
+
+  // Do not render Dialog inner content if no pulse, but Dialog needs to stay for transitions?
+  // Dialog can handle empty content as long as title is there. Wait, returning null means Dialog disappears instantly.
+  // It's better to just return an empty DialogContent if no activePulse.
+  if (!activePulse) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md p-6 bg-white rounded-3xl sm:max-w-lg">
-        <DialogTitle className="text-xl font-bold tracking-tight mb-4">
+        <DialogTitle className="text-xl font-bold tracking-tight mb-4 text-center">
           Daily Pulse
         </DialogTitle>
 
-        <div className="space-y-6">
-          {/* Question 1 */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">
-              What time of day do you prefer to complete gigs?
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {times.map((time) => (
-                <button
-                  key={time.value}
-                  onClick={() => setSelectedTime(time.value)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm font-bold transition-colors text-center",
-                    selectedTime === time.value
-                      ? "bg-[#7300E5] text-white"
-                      : "bg-[#F7EFFD] text-[#7300E5] hover:bg-purple-100",
-                  )}
-                >
-                  {time.label}
-                </button>
-              ))}
+        {showThankYou ? (
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <div className="w-16 h-16 bg-[#F7EFFD] rounded-full flex items-center justify-center text-3xl">
+              🎉
             </div>
-            {selectedTime && (
-              <p className="text-xs text-[#7300E5] font-semibold pl-1">
-                Completed +2 Pt
-              </p>
-            )}
+            <h3 className="text-xl font-bold text-gray-900">Thank you!</h3>
+            <p className="text-muted-foreground font-medium">+5 Pt</p>
           </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg text-gray-900 text-center">
+                {activePulse.question}
+              </h3>
+              
+              {activePulse.description && (
+                <p className="text-sm text-gray-500 text-center -mt-2">
+                  {activePulse.description}
+                </p>
+              )}
 
-          {/* Question 2 */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">
-              How&apos;s your hustle going today?
-            </h3>
-            <div className="flex gap-4">
-              {hustles.map((hustle) => (
-                <button
-                  key={hustle.value}
-                  onClick={() => setSelectedHustle(hustle.value)}
-                  className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all",
-                    selectedHustle === hustle.value
-                      ? "bg-[#7300E5] shadow-md scale-110"
-                      : "bg-[#F7EFFD] hover:bg-purple-100",
-                  )}
-                >
-                  {hustle.emoji}
-                </button>
-              ))}
+              {activePulse.type === "EMOJI" ? (
+                <div className="flex flex-wrap justify-center gap-4 py-4">
+                  {activePulse.options.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setSelectedOption(option)}
+                      className={cn(
+                        "w-14 h-14 rounded-full flex items-center justify-center text-3xl transition-all",
+                        selectedOption === option
+                          ? "bg-[#7300E5] shadow-md scale-110"
+                          : "bg-[#F7EFFD] hover:bg-purple-100"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 pt-2">
+                  {activePulse.options.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setSelectedOption(option)}
+                      className={cn(
+                        "px-4 py-3 rounded-xl text-sm font-bold transition-all text-center border-2",
+                        selectedOption === option
+                          ? "border-[#7300E5] bg-[#7300E5] text-white"
+                          : "border-transparent bg-[#F7EFFD] text-[#7300E5] hover:bg-purple-100"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {selectedHustle && (
-              <p className="text-xs text-[#7300E5] font-semibold pl-1">
-                Completed +2 Pt
-              </p>
-            )}
-          </div>
 
-          <div className="pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="w-full border-gray-200 text-gray-500 hover:text-gray-900 rounded-xl py-6"
-            >
-              Cancel
-            </Button>
+            <div className="pt-4 flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="flex-1 border-gray-200 text-gray-500 hover:text-gray-900 rounded-xl py-6"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!selectedOption || isSubmitting}
+                className="flex-1 bg-[#7300E5] hover:bg-[#7300E5]/90 text-white rounded-xl py-6 font-bold"
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

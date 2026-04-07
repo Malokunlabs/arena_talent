@@ -1,17 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
-import { AdminProof, adminService } from "@/services/adminService";
+import { AdminProof } from "@/services/adminService";
 import { useAdminStore } from "@/store/useAdminStore";
 
 interface ProofDetailModalProps {
@@ -57,19 +52,13 @@ export default function ProofDetailModal({
 
   const handleVerify = async () => {
     setLoadingAction("verify");
-    // Verify usually just means approve? Or is it separate?
-    // Based on UI, Verify is a button. "Proof verified" state exists.
-    // Assuming Verify = Approve + Verify Talent or maybe just a visual state in this context?
-    // Let's assume it maps to Approve for now or a separate verify endpoint if exists.
-    // Wait, the image shows "Proof verified" as a state in the dropdown.
-    // Let's implement it as a specialized approve or just allow it as "Verify".
-    // Since we don't have a specific "Verify" endpoint in dummy.txt, I'll map it to Approve for now but using the Verified tag logic.
     await approveProof(proof.id);
     setLoadingAction(null);
     onActionComplete("verified", proof);
   };
 
-  const timeAgo = (dateStr: string) => {
+  const timeAgo = (dateStr?: string) => {
+    if (!dateStr) return "Just now";
     const date = new Date(dateStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -87,7 +76,7 @@ export default function ProofDetailModal({
               <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
                 <AvatarImage
                   src={
-                    proof.talent?.avatar ||
+                    proof.talent?.avatarUrl ||
                     "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
                   }
                 />
@@ -154,7 +143,7 @@ export default function ProofDetailModal({
 
           <div className="flex gap-3 pt-4">
             <Button
-              onClick={handleVerify}
+              onClick={handleApprove}
               disabled={!!loadingAction}
               className="flex-1 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl"
             >
@@ -169,6 +158,8 @@ export default function ProofDetailModal({
               Reject
             </Button>
             <Button
+              onClick={handleVerify}
+              disabled={!!loadingAction}
               variant="outline"
               className="border-gray-200 font-bold rounded-xl"
             >

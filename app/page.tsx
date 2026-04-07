@@ -17,6 +17,7 @@ import DailyPulseModal from "@/components/modals/DailyPulseModal";
 import { useProofStore } from "@/store/useProofStore";
 import { Proof } from "@/services/proofService";
 import { useAuthStore } from "@/store/useAuthStore";
+import { usePulseStore } from "@/store/usePulseStore";
 import { useToast } from "@/hooks/use-toast";
 
 // Helper to calculate time ago
@@ -43,11 +44,18 @@ export default function Home() {
 
   const { proofs, fetchProofs, isLoading, saluteProof } = useProofStore();
   const { isAuthenticated } = useAuthStore();
+  const { activePulse, fetchActivePulse } = usePulseStore();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchProofs();
   }, [fetchProofs]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchActivePulse();
+    }
+  }, [isAuthenticated, fetchActivePulse]);
 
   // Check auth helper
   const checkAuth = (action: () => void) => {
@@ -102,12 +110,14 @@ export default function Home() {
               </p>
             </div>
             {/* Daily Pulse Trigger */}
-            <div
-              onClick={() => checkAuth(() => setActiveModal("pulse"))}
-              className="cursor-pointer transition-transform active:scale-95"
-            >
-              <DailyPulse />
-            </div>
+            {activePulse && (
+              <div
+                onClick={() => checkAuth(() => setActiveModal("pulse"))}
+                className="cursor-pointer transition-transform active:scale-95"
+              >
+                <DailyPulse />
+              </div>
+            )}
           </div>
 
           {!isLoading && featuredProofs.length > 0 ? (
@@ -177,13 +187,15 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <Button
-            variant="ghost"
-            onClick={() => checkAuth(() => setActiveModal("pulse"))}
-            className="text-primary font-bold hover:bg-primary/5"
-          >
-            Answer Daily pulse
-          </Button>
+          {activePulse && (
+            <Button
+              variant="ghost"
+              onClick={() => checkAuth(() => setActiveModal("pulse"))}
+              className="text-primary font-bold hover:bg-primary/5"
+            >
+              Answer Daily pulse
+            </Button>
+          )}
         </section>
 
         {/* Feed Section with Skeleton Loading */}

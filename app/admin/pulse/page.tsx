@@ -389,6 +389,15 @@ export default function PulseManagerPage() {
     fetchPulses(1);
   };
 
+  const handleUpdateStatus = async (id: string, status: "LIVE" | "CLOSED") => {
+    try {
+      await adminService.updatePulseStatus(id, status);
+      fetchPulses(meta.page);
+    } catch {
+      // errors handled by apiClient toast
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -517,7 +526,17 @@ export default function PulseManagerPage() {
                   <TableCell className="text-sm text-gray-500">
                     {fmt(pulse.expiresAt)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right flex items-center justify-end gap-2">
+                    {pulse.status === "DRAFT" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        onClick={() => handleUpdateStatus(pulse.id, "LIVE")}
+                      >
+                        Publish
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

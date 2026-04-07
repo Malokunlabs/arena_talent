@@ -119,11 +119,15 @@ export const adminService = {
     if (filter.status && filter.status !== "All")
       params.append("status", filter.status);
     if (filter.search) params.append("search", filter.search);
-    return apiClient.get(`/admin/pulses?${params.toString()}`);
+    return apiClient.get(`/pulse?${params.toString()}`);
   },
 
   async createPulse(data: CreatePulseData): Promise<Pulse> {
-    return apiClient.post("/admin/pulses", data);
+    return apiClient.post("/pulse", data);
+  },
+
+  async updatePulseStatus(id: string, status: "DRAFT" | "LIVE" | "CLOSED"): Promise<Pulse> {
+    return apiClient.patch(`/pulse/${id}`, { status });
   },
 };
 
