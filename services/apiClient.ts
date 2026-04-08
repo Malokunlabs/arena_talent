@@ -38,18 +38,6 @@ class ApiClient {
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, config);
 
-    if (response.status === 401) {
-      // Token expired or invalid
-      useAuthStore.getState().logout();
-
-      // Redirect to login page if in browser
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-
-      throw new Error("Session expired. Please login again.");
-    }
-
     let result: ApiResponse<T>;
     try {
       result = await response.json();
@@ -58,7 +46,27 @@ class ApiClient {
         status: response.status,
         message: "Failed to parse response",
         data: {} as T,
-      };
+      } as ApiResponse<T>;
+    }
+
+    if (response.status === 401) {
+      const errMsg = (result.message || (result as unknown as Record<string, unknown>).error || "").toString().toLowerCase();
+      const isUnverified = errMsg.includes("verif");
+      const isAuthEndpoint = endpoint.startsWith("/auth/login") || endpoint.startsWith("/auth/register") || endpoint.startsWith("/auth/resend");
+      const isAuthFlow = typeof window !== "undefined" && (
+        window.location.pathname.includes("/signup") ||
+        window.location.pathname.includes("/login") ||
+        window.location.pathname.includes("/verify-email") ||
+        window.location.pathname === "/"
+      );
+
+      if (!isUnverified && !isAuthEndpoint && !isAuthFlow) {
+        useAuthStore.getState().logout();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        throw new Error("Session expired. Please login again.");
+      }
     }
 
     if (!response.ok) {
