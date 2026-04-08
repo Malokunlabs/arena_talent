@@ -154,6 +154,12 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
       return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      const errMsg = (error.message || "").toLowerCase();
+      if (errMsg.includes("verif") || errMsg.includes("unverified")) {
+        set({ isLoading: false });
+        // Return true so the signup page handles the router.push("/verify-email")
+        return true; 
+      }
       set({
         isLoading: false,
         error: error.message || "Registration failed",
@@ -180,6 +186,20 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
       return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      const errMsg = (error.message || "").toLowerCase();
+      if (errMsg.includes("verif") || errMsg.includes("unverified")) {
+        try {
+          // Send a new token using the API
+          await authService.resendVerification({ email });
+        } catch {
+          // ignore
+        }
+        if (typeof window !== "undefined") {
+          window.location.href = "/verify-email";
+        }
+        set({ isLoading: false });
+        return false;
+      }
       set({
         isLoading: false,
         error: error.message || "Login failed",

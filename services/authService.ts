@@ -77,4 +77,8 @@ export const authService = {
   logout(): void {
     tokenStorage.removeToken();
   },
+
+  async resendVerification(data: { email: string }): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>("/auth/resend-verification", data);
+  },
 };
