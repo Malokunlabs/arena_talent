@@ -17,6 +17,7 @@ interface FeedCardProps {
   onClick?: () => void;
   onSalute?: () => void;
   onShare?: () => void;
+  actions?: React.ReactNode;
 }
 
 const badgeColors = {
@@ -40,6 +41,7 @@ export default function FeedCard({
   onClick,
   onSalute,
   onShare,
+  actions,
 }: FeedCardProps) {
   return (
     <div
@@ -65,13 +67,18 @@ export default function FeedCard({
             </div>
           </div>
         </div>
-        <div
-          className={cn(
-            "px-3 py-1 rounded-full text-xs font-bold",
-            badgeColors[badge] || badgeColors.Win,
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold",
+              badgeColors[badge] || badgeColors.Win,
+            )}
+          >
+            {badge}
+          </div>
+          {actions && (
+            <div onClick={(e) => e.stopPropagation()}>{actions}</div>
           )}
-        >
-          {badge}
         </div>
       </div>
 

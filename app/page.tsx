@@ -52,6 +52,12 @@ export default function Home() {
   }, [fetchProofs]);
 
   useEffect(() => {
+    // Always try — service returns null silently if unauthenticated
+    fetchActivePulse();
+  }, [fetchActivePulse]);
+
+  useEffect(() => {
+    // Re-fetch when user logs in
     if (isAuthenticated) {
       fetchActivePulse();
     }

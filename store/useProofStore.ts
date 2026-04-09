@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { proofService, Proof, CreateProofData } from "@/services/proofService";
+import { proofService, Proof, CreateProofData, UpdateProofData } from "@/services/proofService";
 import { usePiStore } from "./usePiStore";
 import { toast } from "sonner";
 
@@ -11,6 +11,8 @@ interface ProofState {
 
   fetchProofs: (filter?: string) => Promise<void>;
   createProof: (data: CreateProofData) => Promise<boolean>;
+  updateProof: (id: string, data: UpdateProofData) => Promise<boolean>;
+  deleteProof: (id: string) => Promise<boolean>;
   addUserProof: (proof: Proof) => void;
   saluteProof: (id: string) => Promise<void>;
   fetchUserProofs: () => Promise<void>;
@@ -62,6 +64,34 @@ export const useProofStore = create<ProofState>((set) => ({
 
   addUserProof: (proof: Proof) => {
     set((state) => ({ userProofs: [proof, ...state.userProofs] }));
+  },
+
+  updateProof: async (id, data) => {
+    try {
+      const updated = await proofService.updateProof(id, data);
+      set((state) => ({
+        proofs: state.proofs.map((p) => (p.id === id ? updated : p)),
+        userProofs: state.userProofs.map((p) => (p.id === id ? updated : p)),
+      }));
+      return true;
+    } catch (error) {
+      console.error("Failed to update proof:", error);
+      return false;
+    }
+  },
+
+  deleteProof: async (id) => {
+    try {
+      await proofService.deleteProof(id);
+      set((state) => ({
+        proofs: state.proofs.filter((p) => p.id !== id),
+        userProofs: state.userProofs.filter((p) => p.id !== id),
+      }));
+      return true;
+    } catch (error) {
+      console.error("Failed to delete proof:", error);
+      return false;
+    }
   },
 
   saluteProof: async (id: string) => {
