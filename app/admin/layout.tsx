@@ -15,16 +15,21 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useUserStore } from "@/store/useUserStore";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
   { icon: ShieldCheck, label: "Proof Moderation", href: "/admin/moderation" },
   { icon: Briefcase, label: "Hire Requests", href: "/admin/requests" },
-  { icon: Users, label: "Collaborations", href: "#" },
+  {
+    icon: Users,
+    label: "Collaborations",
+    href: "/admin/collaboration-requests",
+  },
   { icon: Activity, label: "Pulse Manager", href: "/admin/pulse" },
   { icon: UserCheck, label: "Talent Directory", href: "/admin/talents" },
   { icon: CreditCard, label: "Finance & Payouts", href: "/admin/finance" },
@@ -37,7 +42,15 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { clearUser } = useUserStore();
+
+  const handleLogout = () => {
+    logout();
+    clearUser();
+    router.push("/");
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -89,14 +102,13 @@ export default function AdminLayout({
                   <p className="font-medium text-gray-900">Admin</p>
                   <p className="text-gray-500 text-xs truncate w-24">
                     {user?.email}
-
                   </p>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={logout}
+                onClick={handleLogout}
                 className="text-gray-400 hover:text-red-500"
               >
                 <LogOut className="h-4 w-4" />

@@ -1,6 +1,40 @@
 import { apiClient } from "@/services/apiClient";
 import { Proof } from "@/services/proofService";
 
+export interface AdminTalent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  username?: string;
+  phone?: string;
+  avatarUrl?: string;
+  location?: string;
+  bio?: string;
+  isEmailVerified: boolean;
+  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TalentListResponse {
+  data: AdminTalent[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    pageCount: number;
+  };
+}
+
+export interface TalentFilter {
+  page?: number;
+  limit?: number;
+  search?: string;
+  verificationStatus?: "PENDING" | "VERIFIED" | "REJECTED";
+  isEmailVerified?: boolean;
+}
+
 export interface DashboardStats {
   proofs: {
     total: number;
@@ -119,15 +153,38 @@ export const adminService = {
     if (filter.status && filter.status !== "All")
       params.append("status", filter.status);
     if (filter.search) params.append("search", filter.search);
-    return apiClient.get(`/pulse?${params.toString()}`);
+    return apiClient.get(`/admin/pulses?${params.toString()}`);
   },
 
   async createPulse(data: CreatePulseData): Promise<Pulse> {
-    return apiClient.post("/pulse", data);
+    return apiClient.post("/admin/pulses", data);
   },
 
   async updatePulseStatus(id: string, status: "DRAFT" | "LIVE" | "CLOSED"): Promise<Pulse> {
     return apiClient.patch(`/pulse/${id}`, { status });
+  },
+
+  // Talent Directory
+  async getTalents(filter: TalentFilter = {}): Promise<TalentListResponse> {
+    const params = new URLSearchParams();
+    if (filter.page) params.append("page", filter.page.toString());
+    if (filter.limit) params.append("limit", filter.limit.toString());
+    if (filter.search) params.append("search", filter.search);
+    if (filter.verificationStatus) params.append("verificationStatus", filter.verificationStatus);
+    if (filter.isEmailVerified !== undefined) params.append("isEmailVerified", String(filter.isEmailVerified));
+    return apiClient.get(`/admin/talents?${params.toString()}`);
+  },
+
+  async verifyTalent(id: string): Promise<AdminTalent> {
+    return apiClient.patch(`/admin/talents/${id}/verify`, {});
+  },
+
+  async unverifyTalent(id: string): Promise<AdminTalent> {
+    return apiClient.patch(`/admin/talents/${id}/unverify`, {});
+  },
+
+  async deleteTalent(id: string): Promise<void> {
+    return apiClient.delete(`/admin/talents/${id}`);
   },
 };
 

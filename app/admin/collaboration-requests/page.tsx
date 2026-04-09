@@ -3,13 +3,21 @@
 import React, { useEffect } from "react";
 import { useAdminStore } from "@/store/useAdminStore";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, User, MapPin, Calendar } from "lucide-react";
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  MapPin,
+  Calendar,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 
 export default function CollaborationRequestsPage() {
-  const { collaborationKanbanBoard, fetchCollaborationKanbanBoard, isLoading } = useAdminStore();
+  const { collaborationKanbanBoard, fetchCollaborationKanbanBoard, isLoading } =
+    useAdminStore();
 
   useEffect(() => {
     fetchCollaborationKanbanBoard();
@@ -25,7 +33,11 @@ export default function CollaborationRequestsPage() {
 
   const getColumn = (status: string) => {
     return (
-      collaborationKanbanBoard.find((c: any) => c.status === status) || { status, items: [] }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      collaborationKanbanBoard.find((c: any) => c.status === status) || {
+        status,
+        items: [],
+      }
     );
   };
 
@@ -45,8 +57,12 @@ export default function CollaborationRequestsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Collaboration Requests</h1>
-        <p className="text-muted-foreground">Manage peer-to-peer collaboration requests</p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Collaboration Requests
+        </h1>
+        <p className="text-muted-foreground">
+          Manage peer-to-peer collaboration requests
+        </p>
       </div>
 
       <div className="flex items-center justify-between">
@@ -69,31 +85,45 @@ export default function CollaborationRequestsPage() {
                   {col.items.length}
                 </span>
               </div>
-              
+
               <div className="flex flex-col gap-3">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {col.items.map((item: any) => (
-                  <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                  <div
+                    key={item.id}
+                    className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3"
+                  >
                     <div className="flex items-center justify-between">
-                      <Badge className={`${getStatusColor(item.status)} border-none text-[10px] py-0`}>
+                      <Badge
+                        className={`${getStatusColor(item.status)} border-none text-[10px] py-0`}
+                      >
                         {item.status}
                       </Badge>
                       <span className="text-[10px] text-gray-400">
                         {new Date(item.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    
-                    <h3 className="font-bold text-gray-900 text-sm line-clamp-1">{item.title}</h3>
-                    
+
+                    <h3 className="font-bold text-gray-900 text-sm line-clamp-1">
+                      {item.title}
+                    </h3>
+
                     <div className="flex items-center gap-2">
                       <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-100">
                         {item.fromUser?.avatarUrl ? (
-                          <Image src={item.fromUser.avatarUrl} alt="" fill className="object-cover" />
+                          <Image
+                            src={item.fromUser.avatarUrl}
+                            alt=""
+                            fill
+                            className="object-cover"
+                          />
                         ) : (
                           <User className="w-3 h-3 text-gray-400 absolute inset-0 m-auto" />
                         )}
                       </div>
                       <span className="text-xs text-gray-600 font-medium truncate">
-                        {item.fromUser?.firstName} → {item.toUser?.firstName || "Public"}
+                        {item.fromUser?.firstName} →{" "}
+                        {item.toUser?.firstName || "Public"}
                       </span>
                     </div>
 
@@ -109,7 +139,7 @@ export default function CollaborationRequestsPage() {
                     </div>
                   </div>
                 ))}
-                
+
                 {col.items.length === 0 && (
                   <div className="h-24 border-2 border-dashed border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 text-xs italic">
                     No requests in {columnTitles[status]}

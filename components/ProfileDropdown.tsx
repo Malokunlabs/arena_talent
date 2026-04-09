@@ -15,7 +15,11 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
 
-export default function ProfileDropdown() {
+interface ProfileDropdownProps {
+  onClose?: () => void;
+}
+
+export default function ProfileDropdown({ onClose }: ProfileDropdownProps) {
   const router = useRouter();
   const { logout } = useAuthStore();
   const { user, clearUser } = useUserStore();
@@ -23,6 +27,7 @@ export default function ProfileDropdown() {
   const handleLogout = () => {
     logout();
     clearUser();
+    onClose?.();
     router.push("/");
   };
 
@@ -73,7 +78,7 @@ export default function ProfileDropdown() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="cursor-pointer">
+          <Link href="/dashboard" className="cursor-pointer" onClick={() => onClose?.()}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
           </Link>
