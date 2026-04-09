@@ -23,16 +23,7 @@ export interface PulseResponse {
   createdAt: string;
 }
 
-export interface CreatePulseDto {
-  type: PulseType;
-  question: string;
-  description?: string;
-  options: string[];
-  audience?: string;
-  expiresAt?: string;
-}
-
-export const pulseService = {
+ export const pulseService = {
   // User Endpoints
   async getActivePulse(): Promise<Pulse | null> {
     try {
@@ -44,18 +35,5 @@ export const pulseService = {
 
   async respondToPulse(id: string, value: string): Promise<PulseResponse> {
     return apiClient.post<PulseResponse>(`/pulse/${id}/respond`, { value });
-  },
-
-  // Admin Endpoints
-  async getPulses(): Promise<Pulse[]> {
-    return apiClient.get<Pulse[]>("/pulse");
-  },
-
-  async createPulse(data: CreatePulseDto): Promise<Pulse> {
-    return apiClient.post<Pulse>("/pulse", data);
-  },
-
-  async updatePulseStatus(id: string, status: PulseStatus): Promise<Pulse> {
-    return apiClient.patch<Pulse>(`/pulse/${id}`, { status });
   },
 };

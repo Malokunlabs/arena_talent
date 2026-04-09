@@ -6,6 +6,9 @@ import {
   ProofFilter,
   KanbanColumn,
   CollaborationKanbanColumn,
+  AdminTalent,
+  TalentListResponse,
+  TalentFilter,
 } from "@/services/adminService";
 import { apiClient } from "@/services/apiClient";
 
@@ -41,6 +44,13 @@ interface AdminState {
   collaborationKanbanBoard: CollaborationKanbanColumn[];
   fetchCollaborationKanbanBoard: () => Promise<void>;
   updateCollaborationRequestStatus: (id: string, status: string) => Promise<void>;
+  // Talent Directory
+  talents: AdminTalent[];
+  talentsMeta: TalentListResponse["meta"];
+  fetchTalents: (filter?: TalentFilter) => Promise<void>;
+  verifyTalent: (id: string) => Promise<void>;
+  unverifyTalent: (id: string) => Promise<void>;
+  deleteTalent: (id: string) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -54,6 +64,8 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
   kanbanBoard: [],
   collaborationKanbanBoard: [],
+  talents: [],
+  talentsMeta: { page: 1, limit: 20, total: 0, pageCount: 0 },
   isLoading: false,
   error: null,
 
@@ -185,12 +197,57 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   updateCollaborationRequestStatus: async (id, status) => {
     try {
-      // We might need a specific admin update method for collab requests if generic one isn't enough
-      // For now using the service directly if it exists, or adding it.
       await apiClient.patch(`/admin/collaboration-requests/${id}`, { status });
       await get().fetchCollaborationKanbanBoard();
     } catch (error: unknown) {
       console.error("Update collab request failed", error);
+    }
+  },
+
+  fetchTalents: async (filter) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await adminService.getTalents(filter);
+      set({ talents: response.data, talentsMeta: response.meta, isLoading: false });
+    } catch (error: unknown) {
+      set({ isLoading: false, error: (error as Error).message || "Failed to fetch talents" });
+    }
+  },
+
+  verifyTalent: async (id) => {
+    try {
+      const updated = await adminService.verifyTalent(id);
+      set((state) => ({
+        talents: state.talents.map((t) => (t.id === id ? updated : t)),
+      }));
+    } catch (error: unknown) {
+      console.error("Verify talent failed", error);
+    }
+  },
+
+  unverifyTalent: async (id) => {
+    try {
+      const updated = await adminService.unverifyTalent(id);
+      set((state) => ({
+        talents: state.talents.map((t) => (t.id === id ? updated : t)),
+      }));
+    } catch (error: unknown) {
+      console.error("Unverify talent failed", error);
+    }
+  },
+
+  deleteTalent: async (id) => {
+    try {
+      await adminService.deleteTalent(id);
+      set((state) => ({
+        talents: state.talents.filter((t) => t.id !== id),
+        talentsMeta: {
+          ...state.talentsMeta,
+          total: state.talentsMeta.total - 1,
+        },
+      }));
+    } catch (error: unknown) {
+      console.error("Delete talent failed", error);
     }
   },
 }));

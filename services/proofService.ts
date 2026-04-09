@@ -42,6 +42,13 @@ export interface CreateProofData {
   tags: string[];
 }
 
+export interface UpdateProofData {
+  title?: string;
+  category?: string;
+  caption?: string;
+  tags?: string[];
+}
+
 export interface GetProofsParams {
   page?: number;
   limit?: number;
@@ -68,6 +75,14 @@ export const proofService = {
 
   async createProof(data: CreateProofData): Promise<Proof> {
     return apiClient.post("/proofs", data);
+  },
+
+  async updateProof(id: string, data: UpdateProofData): Promise<Proof> {
+    return apiClient.patch(`/proofs/${id}`, data);
+  },
+
+  async deleteProof(id: string): Promise<void> {
+    return apiClient.delete(`/proofs/${id}`);
   },
 
   async saluteProof(id: string): Promise<void> {

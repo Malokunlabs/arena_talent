@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Trash2, Edit, Archive, MoreVertical, Plus } from "lucide-react";
+import { Trash2, Edit, MoreVertical, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import FeedCard from "@/components/FeedCard";
 import FeedSkeleton from "@/components/FeedSkeleton";
 import {
@@ -11,19 +14,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import CreateProofModal from "@/components/modals/CreateProofModal";
 import ProofDetailModal from "@/components/modals/ProofDetailModal";
 import { useProofStore } from "@/store/useProofStore";
 import { useUserStore } from "@/store/useUserStore";
 import { Proof } from "@/services/proofService";
 
-// Helper to calculate time ago (duplicated for now, could move to utils)
 function timeAgo(dateString?: string) {
   if (!dateString) return "Just now";
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -33,11 +42,174 @@ function timeAgo(dateString?: string) {
   return `${days}d ago`;
 }
 
+// ── Edit Modal ──────────────────────────────────────────────────────────────
+function EditProofModal({
+  proof,
+  onClose,
+}: {
+  proof: Proof;
+  onClose: () => void;
+}) {
+  const { updateProof } = useProofStore();
+  const [title, setTitle] = useState(proof.title);
+  const [category, setCategory] = useState(proof.category);
+  const [caption, setCaption] = useState(proof.caption || "");
+  const [tagsInput, setTagsInput] = useState((proof.tags || []).join(", "));
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const tags = tagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const ok = await updateProof(proof.id, { title, category, caption, tags });
+    setIsSaving(false);
+    if (ok) onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit Proof</DialogTitle>
+          <DialogDescription>
+            Update the details of your proof below.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-title">Title</Label>
+            <Input
+              id="edit-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Proof title"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-category">Category</Label>
+            <Input
+              id="edit-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. Design, Dev, Music"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-caption">Caption</Label>
+            <Textarea
+              id="edit-caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Tell us about this proof..."
+              className="resize-none min-h-[100px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-tags">Tags</Label>
+            <Input
+              id="edit-tags"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="design, ui, frontend (comma-separated)"
+            />
+            <p className="text-xs text-gray-400">Separate tags with commas</p>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !title.trim()}
+            className="bg-[#7300E5] hover:bg-[#5f00bd] text-white"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Delete Confirm Modal ────────────────────────────────────────────────────
+function DeleteProofDialog({
+  proof,
+  onClose,
+}: {
+  proof: Proof;
+  onClose: () => void;
+}) {
+  const { deleteProof } = useProofStore();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    const ok = await deleteProof(proof.id);
+    setIsDeleting(false);
+    if (ok) onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>Delete Proof</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to permanently delete{" "}
+            <span className="font-semibold text-gray-900">
+              &quot;{proof.title}&quot;
+            </span>
+            ? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete Proof"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main Page ───────────────────────────────────────────────────────────────
 export default function MyPostsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
-  
-  const { userProofs, fetchUserProofs, isLoading, saluteProof } = useProofStore();
+  const [editingProof, setEditingProof] = useState<Proof | null>(null);
+  const [deletingProof, setDeletingProof] = useState<Proof | null>(null);
+
+  const { userProofs, fetchUserProofs, isLoading, saluteProof } =
+    useProofStore();
   const { user } = useUserStore();
 
   const displayName = user?.firstName
@@ -73,7 +245,7 @@ export default function MyPostsPage() {
           ))
         ) : userProofs.length > 0 ? (
           userProofs.map((post) => (
-            <div key={post.id} className="relative group">
+            <div key={post.id}>
               <FeedCard
                 avatar={
                   post.talent?.avatarUrl ||
@@ -90,35 +262,37 @@ export default function MyPostsPage() {
                 salutes={post.salutesCount || 0}
                 onSalute={() => saluteProof(post.id)}
                 onShare={() => setSelectedProof(post)}
+                onClick={() => setSelectedProof(post)}
+                actions={
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-full p-0 hover:bg-gray-100"
+                      >
+                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        className="text-gray-700 cursor-pointer"
+                        onClick={() => setEditingProof(post)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer"
+                        onClick={() => setDeletingProof(post)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                }
               />
-
-              {/* Overlay Actions */}
-              <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      className="h-8 w-8 rounded-full p-0 shadow-md"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem className="text-gray-700">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-gray-700">
-                      <Archive className="w-4 h-4 mr-2" />
-                      Archive
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
             </div>
           ))
         ) : (
@@ -160,13 +334,27 @@ export default function MyPostsPage() {
                 proofboardLink: selectedProof.talent?.username
                   ? `/u/${selectedProof.talent.username}`
                   : user?.username
-                  ? `/u/${user.username}`
-                  : "/u/anonymous",
+                    ? `/u/${user.username}`
+                    : "/u/anonymous",
                 id: selectedProof.id,
               }
             : null
         }
       />
+
+      {editingProof && (
+        <EditProofModal
+          proof={editingProof}
+          onClose={() => setEditingProof(null)}
+        />
+      )}
+
+      {deletingProof && (
+        <DeleteProofDialog
+          proof={deletingProof}
+          onClose={() => setDeletingProof(null)}
+        />
+      )}
     </div>
   );
 }

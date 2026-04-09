@@ -158,7 +158,7 @@ const Navbar = () => {
               {isAuthenticated ? (
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-600">Logged in</span>
-                  <ProfileDropdown />
+                  <ProfileDropdown onClose={() => setShowNav(false)} />
                 </div>
               ) : (
                 <>
