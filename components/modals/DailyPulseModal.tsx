@@ -62,10 +62,7 @@ export default function DailyPulseModal({
     }, 300);
   };
 
-  // Do not render Dialog inner content if no pulse, but Dialog needs to stay for transitions?
-  // Dialog can handle empty content as long as title is there. Wait, returning null means Dialog disappears instantly.
-  // It's better to just return an empty DialogContent if no activePulse.
-  if (!activePulse) return null;
+  const hasValidPulse = activePulse && activePulse.question && (activePulse.options || []).length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -82,6 +79,19 @@ export default function DailyPulseModal({
             <h3 className="text-xl font-bold text-gray-900">Thank you!</h3>
             <p className="text-muted-foreground font-medium">+5 Pt</p>
           </div>
+        ) : !hasValidPulse ? (
+          <div className="flex flex-col items-center justify-center py-8 space-y-4 text-center">
+            <h3 className="text-xl font-bold text-gray-900">You&apos;re all caught up! ✨</h3>
+            <p className="text-gray-500">
+              We&apos;ll have fresh tasks soon. Check back later to earn more points.
+            </p>
+            <Button
+              onClick={handleClose}
+              className="mt-4 bg-[#7300E5] hover:bg-[#7300E5]/90 text-white font-bold rounded-xl px-10"
+            >
+              Got it
+            </Button>
+          </div>
         ) : (
           <div className="space-y-6">
             <div className="space-y-4">
@@ -97,7 +107,7 @@ export default function DailyPulseModal({
 
               {activePulse.type === "EMOJI" ? (
                 <div className="flex flex-wrap justify-center gap-4 py-4">
-                  {activePulse.options.map((option) => (
+                  {(activePulse.options || []).map((option) => (
                     <button
                       key={option}
                       onClick={() => setSelectedOption(option)}
@@ -114,7 +124,7 @@ export default function DailyPulseModal({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3 pt-2">
-                  {activePulse.options.map((option) => (
+                  {(activePulse.options || []).map((option) => (
                     <button
                       key={option}
                       onClick={() => setSelectedOption(option)}
