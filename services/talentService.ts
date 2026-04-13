@@ -24,6 +24,8 @@ export interface Talent {
 }
 
 export interface TalentStats {
+  totalPendingJobRequests: number;
+  totalCompletedJobRequests: number;
   totalProofs: number;
   totalSalutes: number;
   rating: number;
@@ -76,14 +78,16 @@ export const talentService = {
     return apiClient.post("/talent-requests", data);
   },
 
-  async getReceivedTalentRequests(params: { page?: number; limit?: number } = {}): Promise<{
+  async getReceivedTalentRequests(
+    params: { page?: number; limit?: number } = {},
+  ): Promise<{
     data: TalentRequest[];
     meta: { total: number; page: number; limit: number };
   }> {
     const query = new URLSearchParams();
     if (params.page) query.append("page", params.page.toString());
     if (params.limit) query.append("limit", params.limit.toString());
-    
+
     return apiClient.get(`/talent-requests?${query.toString()}`);
   },
 
@@ -109,6 +113,7 @@ export interface TalentRequest {
   requesterEmail?: string;
   notes?: string;
   status: string;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -34,8 +34,8 @@ export const useTalentRequestStore = create<TalentRequestState>((set) => ({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result: any = await talentService.getReceivedTalentRequests(params);
       set({
-        requests: result?.data ? result.data : (Array.isArray(result) ? result : []),
-        pagination: result?.meta || { total: 0, page: 1, limit: 20 },
+        requests: result?.data ? result.data : (result?.items ? result.items : (Array.isArray(result) ? result : [])),
+        pagination: result?.meta || { total: result?.total || 0, page: result?.page || 1, limit: result?.limit || 20 },
         isLoading: false,
       });
     } catch (error: unknown) {

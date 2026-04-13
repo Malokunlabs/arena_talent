@@ -112,12 +112,12 @@ export default function DashboardHome() {
         />
         <StatCard
           title="Pending Requests"
-          value={stats ? String(stats.totalGigs ?? 0) : "—"}
+          value={stats ? String(stats.totalPendingJobRequests ?? 0) : "—"}
           icon={Clock}
         />
         <StatCard
           title="Completed Jobs"
-          value={stats ? String(stats.totalGigs ?? 0) : "—"}
+          value={stats ? String(stats.totalCompletedJobRequests ?? 0) : "—"}
           icon={Award}
         />
         <StatCard
@@ -205,8 +205,8 @@ export default function DashboardHome() {
                 proofboardLink: selectedProof.talent?.username
                   ? `arena.com/${selectedProof.talent.username}`
                   : user?.username
-                  ? `arena.com/${user.username}`
-                  : "arena.com",
+                    ? `arena.com/${user.username}`
+                    : "arena.com",
                 id: selectedProof.id,
               }
             : null
