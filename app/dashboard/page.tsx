@@ -202,11 +202,15 @@ export default function DashboardHome() {
                   selectedProof.talent?.avatarUrl ||
                   user?.avatarUrl ||
                   "/placeholder-avatar.png",
+                username:
+                  selectedProof.talent?.username ||
+                  user?.username ||
+                  "anonymous",
                 proofboardLink: selectedProof.talent?.username
-                  ? `arena.com/${selectedProof.talent.username}`
+                  ? `/talent/${selectedProof.talent.username}`
                   : user?.username
-                    ? `arena.com/${user.username}`
-                    : "arena.com",
+                    ? `/talent/${user.username}`
+                    : "/talent",
                 id: selectedProof.id,
               }
             : null

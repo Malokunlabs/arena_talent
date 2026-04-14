@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, X, Star, FileCheck } from "lucide-react";
+import { Check, X, Star } from "lucide-react";
 
 interface ActionFeedbackModalProps {
   isOpen: boolean;
@@ -26,13 +26,13 @@ export default function ActionFeedbackModal({
       case "verified":
         return (
           <div className="h-20 w-20 rounded-full border-4 border-green-500 flex items-center justify-center text-green-500">
-            <Check className="h-10 w-10 stroke-[3]" />
+            <Check className="h-10 w-10 stroke-3" />
           </div>
         );
       case "rejected":
         return (
           <div className="h-20 w-20 rounded-full border-4 border-red-100 bg-red-50 flex items-center justify-center text-red-500">
-            <X className="h-10 w-10 stroke-[3]" />
+            <X className="h-10 w-10 stroke-3" />
           </div>
         );
       case "featured":
@@ -49,9 +49,9 @@ export default function ActionFeedbackModal({
       <DialogContent className="max-w-sm p-8 flex flex-col items-center text-center bg-white border-none shadow-2xl rounded-3xl">
         <div className="mb-4">{getIcon()}</div>
 
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">
+        <DialogTitle className="text-2xl font-bold text-gray-900 tracking-tight mb-2">
           {message}
-        </h2>
+        </DialogTitle>
 
         <p className="text-gray-500 mb-8">
           <span className="text-[#7300E5] font-semibold">

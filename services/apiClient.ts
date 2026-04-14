@@ -56,8 +56,7 @@ class ApiClient {
       const isAuthFlow = typeof window !== "undefined" && (
         window.location.pathname.includes("/signup") ||
         window.location.pathname.includes("/login") ||
-        window.location.pathname.includes("/verify-email") ||
-        window.location.pathname === "/"
+        window.location.pathname.includes("/verify-email")
       );
 
       if (!isUnverified && !isAuthEndpoint && !isAuthFlow) {

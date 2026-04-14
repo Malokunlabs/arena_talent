@@ -3,7 +3,7 @@
 import React from "react";
 import NextImage from "next/image";
 
-import { Copy, X } from "lucide-react";
+import { Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ interface ProofDetailModalProps {
     rank: number;
     name: string;
     avatar: string;
+    username: string;
     proofboardLink: string;
   } | null;
 }
@@ -38,7 +39,7 @@ export default function ProofDetailModal({
 
   const handleShare = async (platform: string) => {
     try {
-      const exactProofLink = `${window.location.origin}/proofs/${proof.id}`;
+      const exactProofLink = `${window.location.origin}/talent/${proof.username}`;
 
       if (platform === "copy") {
         await navigator.clipboard.writeText(exactProofLink);

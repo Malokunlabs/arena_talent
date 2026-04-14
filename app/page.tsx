@@ -249,9 +249,10 @@ export default function Home() {
                 avatar:
                   selectedProof.talent?.avatarUrl ||
                   "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
+                username: selectedProof.talent?.username || "anonymous",
                 proofboardLink: selectedProof.talent?.username
-                  ? `/u/${selectedProof.talent.username}`
-                  : "/u/anonymous",
+                  ? `/talent/${selectedProof.talent.username}`
+                  : "/talent",
                 id: selectedProof.id,
               }
             : null

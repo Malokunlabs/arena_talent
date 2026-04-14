@@ -28,16 +28,10 @@ interface AdminState {
   fetchProofs: (filter?: ProofFilter) => Promise<void>;
   approveProof: (id: string, message?: string) => Promise<void>;
   rejectProof: (id: string, reason: string, message?: string) => Promise<void>;
-  featureProof: (
-    id: string,
-    isFeatured: boolean,
-    message?: string,
-  ) => Promise<void>;
-  shadowLimitProof: (
-    id: string,
-    shadowLimited: boolean,
-    message?: string,
-  ) => Promise<void>;
+  flagProof: (id: string, message?: string) => Promise<void>;
+  quickFeatureProof: (id: string) => Promise<void>;
+  toggleFeatureProof: (id: string, isFeatured: boolean) => Promise<void>;
+  toggleShadowLimitProof: (id: string, shadowLimited: boolean) => Promise<void>;
   fetchKanbanBoard: () => Promise<void>;
   updateRequestStatus: (id: string, status: string) => Promise<void>;
   kanbanBoard: KanbanColumn[];
@@ -74,11 +68,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const stats = await adminService.getDashboardStats();
       set({ stats, isLoading: false });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
         isLoading: false,
-        error: error.message || "Failed to fetch dashboard stats",
+        error: (error as Error).message || "Failed to fetch dashboard stats",
       });
     }
   },
@@ -92,11 +85,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         proofsMeta: response.meta,
         isLoading: false,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
         isLoading: false,
-        error: error.message || "Failed to fetch proofs",
+        error: (error as Error).message || "Failed to fetch proofs",
       });
     }
   },
@@ -107,8 +99,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Approve failed", error);
     }
   },
@@ -119,41 +110,58 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Reject failed", error);
     }
   },
 
-  featureProof: async (id, isFeatured, message) => {
+  flagProof: async (id, message) => {
     try {
-      const updatedProof = await adminService.featureProof(
-        id,
-        isFeatured,
-        message,
-      );
+      const updatedProof = await adminService.flagProof(id, message);
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Feature failed", error);
+    } catch (error: unknown) {
+      console.error("Flag failed", error);
     }
   },
 
-  shadowLimitProof: async (id, shadowLimited, message) => {
+  quickFeatureProof: async (id) => {
     try {
-      const updatedProof = await adminService.shadowLimitProof(
+      const updatedProof = await adminService.quickFeatureProof(id);
+      set((state) => ({
+        proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
+      }));
+    } catch (error: unknown) {
+      console.error("Quick feature failed", error);
+    }
+  },
+
+  toggleFeatureProof: async (id, isFeatured) => {
+    try {
+      const updatedProof = await adminService.toggleFeatureProof(
         id,
-        shadowLimited,
-        message,
+        isFeatured,
       );
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Shadow limit failed", error);
+    } catch (error: unknown) {
+      console.error("Feature toggle failed", error);
+    }
+  },
+
+  toggleShadowLimitProof: async (id, shadowLimited) => {
+    try {
+      const updatedProof = await adminService.toggleShadowLimitProof(
+        id,
+        shadowLimited,
+      );
+      set((state) => ({
+        proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
+      }));
+    } catch (error: unknown) {
+      console.error("Shadow limit toggle failed", error);
     }
   },
 
@@ -162,7 +170,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const board = await adminService.getTalentRequestsKanban();
       set({ kanbanBoard: board, isLoading: false });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: unknown) {
       set({
         isLoading: false,
@@ -173,11 +180,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   updateRequestStatus: async (id, status) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await adminService.updateTalentRequest(id, { status: status as any });
+      await adminService.updateTalentRequest(id, { status: status as never });
       await get().fetchKanbanBoard();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Update request failed", error);
     }
   },

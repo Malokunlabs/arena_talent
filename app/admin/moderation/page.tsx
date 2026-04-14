@@ -33,6 +33,7 @@ import {
   Download,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import ProofDetailModal from "@/components/admin/ProofDetailModal";
 import ActionFeedbackModal from "@/components/admin/ActionFeedbackModal";
 
@@ -43,7 +44,7 @@ export default function ProofModerationPage() {
   const [selectedProof, setSelectedProof] = useState<AdminProof | null>(null);
   const [feedbackState, setFeedbackState] = useState<{
     isOpen: boolean;
-    type: "approved" | "rejected" | "featured" | "verified";
+    type: "approved" | "rejected" | "featured" | "verified" | "flagged";
     message: string;
     subMessage: string;
   }>({
@@ -89,7 +90,7 @@ export default function ProofModerationPage() {
   };
 
   const handleActionComplete = (
-    type: "approved" | "rejected" | "featured" | "verified",
+    type: "approved" | "rejected" | "featured" | "verified" | "flagged",
     proof: AdminProof,
   ) => {
     let message = "";
@@ -111,6 +112,10 @@ export default function ProofModerationPage() {
       case "verified":
         message = "Proof verified";
         subMessage += "has been verified";
+        break;
+      case "flagged":
+        message = "Proof flagged";
+        subMessage += "has been flagged";
         break;
     }
 
@@ -247,7 +252,7 @@ export default function ProofModerationPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2 text-gray-400">
+                    <div className="flex items-center justify-end gap-1 text-gray-400">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -259,28 +264,52 @@ export default function ProofModerationPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:text-green-600"
+                        className={cn(
+                          "h-8 w-8 hover:text-green-600",
+                          proof.status === "APPROVED" && "text-green-600",
+                        )}
+                        onClick={() =>
+                          useAdminStore.getState().approveProof(proof.id).then(() => handleActionComplete("approved", proof))
+                        }
                       >
                         <Check className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:text-red-600"
+                        className={cn(
+                          "h-8 w-8 hover:text-red-600",
+                          proof.status === "REJECTED" && "text-red-600",
+                        )}
+                        onClick={() =>
+                          useAdminStore.getState().rejectProof(proof.id, "Content does not meet guidelines").then(() => handleActionComplete("rejected", proof))
+                        }
                       >
                         <X className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:text-blue-600"
+                        className={cn(
+                          "h-8 w-8 hover:text-orange-600",
+                          proof.status === "FLAGGED" && "text-orange-600",
+                        )}
+                        onClick={() =>
+                          useAdminStore.getState().flagProof(proof.id).then(() => handleActionComplete("flagged", proof))
+                        }
                       >
                         <ShieldAlert className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:text-yellow-500"
+                        className={cn(
+                          "h-8 w-8 hover:text-yellow-500",
+                          proof.isFeatured && "text-yellow-500",
+                        )}
+                        onClick={() =>
+                          useAdminStore.getState().toggleFeatureProof(proof.id, !proof.isFeatured).then(() => handleActionComplete("featured", proof))
+                        }
                       >
                         <Star className="h-4 w-4" />
                       </Button>

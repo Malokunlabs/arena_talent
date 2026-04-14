@@ -258,7 +258,8 @@ function ProfileContent() {
                 rank: 1,
                 name: fullName,
                 avatar: avatarUrl,
-                proofboardLink: `arena.com/${talent.username}`,
+                username: talent.username,
+                proofboardLink: `/talent/${talent.username}`,
                 id: selectedProof.id,
               }
             : null

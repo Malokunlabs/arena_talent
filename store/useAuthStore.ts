@@ -49,13 +49,7 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
 
   initAuth: () => {
     const token = tokenStorage.getToken();
-    if (token) {
-      // In a real app we might validate the token or fetch the user here
-      // For now we just set auth to true.
-      // Ideally we should persist the user object too or fetch it.
-      // Let's assume for now we don't have the user obj on init unless we fetch it.
-      set({ token, isAuthenticated: true });
-    }
+    set({ token, isAuthenticated: !!token });
   },
 
   setFullName: (name) =>

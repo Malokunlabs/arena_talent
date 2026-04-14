@@ -15,6 +15,7 @@ const Navbar = () => {
   const [showNav, setShowNav] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const { isAuthenticated, initAuth } = useAuthStore();
   const { fetchUser } = useUserStore();
   const pathname = usePathname();
@@ -29,6 +30,12 @@ const Navbar = () => {
     // Initialize auth state from localStorage
     initAuth();
   }, [initAuth]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setMounted(true);
+    });
+  }, []);
 
   useEffect(() => {
     // Fetch user data when authenticated
@@ -97,7 +104,12 @@ const Navbar = () => {
 
           {/* Right Buttons (Desktop) */}
           <div className="hidden lg:flex items-center gap-4">
-            {isAuthenticated ? (
+            {!mounted ? (
+              <div className="flex gap-4">
+                <div className="w-20 h-10 bg-gray-100 animate-pulse rounded-lg" />
+                <div className="w-20 h-10 bg-gray-100 animate-pulse rounded-lg" />
+              </div>
+            ) : isAuthenticated ? (
               <ProfileDropdown />
             ) : (
               <>
@@ -155,7 +167,12 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="flex flex-col gap-3 mt-4">
-              {isAuthenticated ? (
+              {!mounted ? (
+                <div className="space-y-3">
+                  <div className="w-full h-12 bg-gray-100 animate-pulse rounded-lg" />
+                  <div className="w-full h-12 bg-gray-100 animate-pulse rounded-lg" />
+                </div>
+              ) : isAuthenticated ? (
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-600">Logged in</span>
                   <ProfileDropdown onClose={() => setShowNav(false)} />
