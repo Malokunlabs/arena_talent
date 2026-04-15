@@ -177,7 +177,7 @@ function ProfileContent() {
               const syntheticPiStatus: PiStatus = {
                 piScore: talent.piScore ?? 0,
                 progressIndex: talent.progressIndex ?? 0,
-                level: talent.progressIndex ?? 0,
+                level: (talent.progressIndex ?? 0) > 0 ? talent.progressIndex! : 1,
                 piToNextLevel: talent.piToNextLevel ?? 0,
                 nextLevelPi: talent.nextLevelPi ?? null,
               };

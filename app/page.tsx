@@ -118,7 +118,7 @@ export default function Home() {
             {/* Daily Pulse Trigger */}
             {activePulse && (
               <div
-                onClick={() => checkAuth(() => setActiveModal("pulse"))}
+                onClick={() => setActiveModal("pulse")}
                 className="cursor-pointer transition-transform active:scale-95"
               >
                 <DailyPulse />
@@ -196,7 +196,7 @@ export default function Home() {
           {activePulse && (
             <Button
               variant="ghost"
-              onClick={() => checkAuth(() => setActiveModal("pulse"))}
+              onClick={() => setActiveModal("pulse")}
               className="text-primary font-bold hover:bg-primary/5"
             >
               Answer Daily pulse
