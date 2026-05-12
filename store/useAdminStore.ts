@@ -9,8 +9,9 @@ import {
   AdminTalent,
   TalentListResponse,
   TalentFilter,
+  TalentRequest,
+  CollaborationRequestAdmin,
 } from "@/services/adminService";
-import { apiClient } from "@/services/apiClient";
 
 interface AdminState {
   stats: DashboardStats | null;
@@ -33,11 +34,16 @@ interface AdminState {
   toggleFeatureProof: (id: string, isFeatured: boolean) => Promise<void>;
   toggleShadowLimitProof: (id: string, shadowLimited: boolean) => Promise<void>;
   fetchKanbanBoard: () => Promise<void>;
-  updateRequestStatus: (id: string, status: string) => Promise<void>;
+  acceptTalentRequest: (id: string) => Promise<void>;
+  rejectTalentRequest: (id: string) => Promise<void>;
+  completeTalentRequest: (id: string) => Promise<void>;
+  updateTalentRequest: (id: string, data: Partial<TalentRequest>) => Promise<void>;
   kanbanBoard: KanbanColumn[];
   collaborationKanbanBoard: CollaborationKanbanColumn[];
   fetchCollaborationKanbanBoard: () => Promise<void>;
-  updateCollaborationRequestStatus: (id: string, status: string) => Promise<void>;
+  acceptCollaborationRequest: (id: string) => Promise<void>;
+  rejectCollaborationRequest: (id: string) => Promise<void>;
+  updateCollaborationRequest: (id: string, data: Partial<CollaborationRequestAdmin>) => Promise<void>;
   // Talent Directory
   talents: AdminTalent[];
   talentsMeta: TalentListResponse["meta"];
@@ -178,12 +184,36 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  updateRequestStatus: async (id, status) => {
+  acceptTalentRequest: async (id) => {
     try {
-      await adminService.updateTalentRequest(id, { status: status as never });
+      await adminService.acceptTalentRequest(id);
       await get().fetchKanbanBoard();
     } catch (error: unknown) {
-      console.error("Update request failed", error);
+      console.error("Accept talent request failed", error);
+    }
+  },
+  rejectTalentRequest: async (id) => {
+    try {
+      await adminService.rejectTalentRequest(id);
+      await get().fetchKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Reject talent request failed", error);
+    }
+  },
+  completeTalentRequest: async (id) => {
+    try {
+      await adminService.completeTalentRequest(id);
+      await get().fetchKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Complete talent request failed", error);
+    }
+  },
+  updateTalentRequest: async (id, data) => {
+    try {
+      await adminService.updateTalentRequest(id, data);
+      await get().fetchKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Update talent request failed", error);
     }
   },
 
@@ -200,12 +230,28 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  updateCollaborationRequestStatus: async (id, status) => {
+  acceptCollaborationRequest: async (id) => {
     try {
-      await apiClient.patch(`/admin/collaboration-requests/${id}`, { status });
+      await adminService.acceptCollaborationRequest(id);
       await get().fetchCollaborationKanbanBoard();
     } catch (error: unknown) {
-      console.error("Update collab request failed", error);
+      console.error("Accept collaboration request failed", error);
+    }
+  },
+  rejectCollaborationRequest: async (id) => {
+    try {
+      await adminService.rejectCollaborationRequest(id);
+      await get().fetchCollaborationKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Reject collaboration request failed", error);
+    }
+  },
+  updateCollaborationRequest: async (id, data) => {
+    try {
+      await adminService.updateCollaborationRequest(id, data);
+      await get().fetchCollaborationKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Update collaboration request failed", error);
     }
   },
 

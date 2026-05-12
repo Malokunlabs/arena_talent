@@ -4,19 +4,13 @@ import React, { useEffect, useState } from "react";
 import { useAdminStore } from "@/store/useAdminStore";
 import RequestCard from "@/components/admin/RequestCard";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, Calendar, MapPin, Banknote, Mail, Building } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import AdminRequestDetailsModal, { AdminRequestData } from "@/components/admin/AdminRequestDetailsModal";
 import { TalentRequest } from "@/services/adminService";
-import { Badge } from "@/components/ui/badge";
 
 export default function HireRequestsPage() {
-  const { kanbanBoard, fetchKanbanBoard, isLoading } = useAdminStore();
+  const { kanbanBoard, fetchKanbanBoard, acceptTalentRequest, rejectTalentRequest, completeTalentRequest } = useAdminStore();
   const [selectedRequest, setSelectedRequest] = useState<TalentRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,21 +18,9 @@ export default function HireRequestsPage() {
     fetchKanbanBoard();
   }, [fetchKanbanBoard]);
 
-  // Reordering columns to match visual flow if needed, or trusting API order.
   // API returns "NEW", "TRIAGED", etc.
   // Design shows: New | Awaiting Creator | Awaiting Payments
   //               In Fulfillment | Review | Completed
-
-  // Let's create a visual mapping of the columns
-  const columnOrder = [
-    "NEW",
-    "TRIAGED",
-    "AWAITING_CREATOR",
-    "AWAITING_PAYMENT",
-    "IN_FULFILLMENT",
-    "COMPLETED", // "Review" is not in dummy.txt, maybe check status name?
-    // dummy.txt: NEW, TRIAGED, AWAITING_CREATOR, AWAITING_PAYMENT, IN_FULFILLMENT, COMPLETED, DECLINED
-  ];
 
   // Map API statuses to Display Titles
   const columnTitles: Record<string, string> = {
@@ -56,6 +38,53 @@ export default function HireRequestsPage() {
     return (
       kanbanBoard.find((c) => c.status === status) || { status, items: [] }
     );
+  };
+
+  // Map selectedRequest to AdminRequestData
+  const getModalData = (): AdminRequestData | null => {
+    if (!selectedRequest) return null;
+
+    const formatMoney = (amount: number) => {
+      return new Intl.NumberFormat("en-NG", {
+        style: "currency",
+        currency: "NGN",
+        maximumFractionDigits: 0,
+      }).format(amount);
+    };
+
+    return {
+      personalInfo: {
+        nameLabel: "Company Name *",
+        nameValue: selectedRequest.companyName,
+        emailLabel: "Email *",
+        emailValue: selectedRequest.email,
+        phoneLabel: "Phone",
+        phoneValue: "N/A", // Add phone to API later if needed
+      },
+      sections: [
+        {
+          label: "What you need",
+          value: selectedRequest.requestType,
+        },
+        {
+          label: "Project Brief",
+          value: selectedRequest.projectBrief,
+        },
+        {
+          label: "Location",
+          value: selectedRequest.location || selectedRequest.city || "Remote",
+        },
+        {
+          label: "Budget Range (N)",
+          value: `${formatMoney(selectedRequest.budgetMin)} - ${formatMoney(selectedRequest.budgetMax)}`,
+        },
+        {
+          label: "Desired Timeline",
+          value: selectedRequest.timeline === "asap" ? "ASAP" : new Date(selectedRequest.timeline).toLocaleDateString(),
+        },
+      ],
+      status: selectedRequest.status,
+    };
   };
 
   return (
@@ -173,91 +202,29 @@ export default function HireRequestsPage() {
       </div>
 
       {/* Details Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-2xl font-bold">Request Details</DialogTitle>
-          </DialogHeader>
-
-          {selectedRequest && (
-            <div className="space-y-6">
-              {/* Company Header */}
-              <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center text-[#7300E5]">
-                  <Building className="w-7 h-7" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">{selectedRequest.companyName}</h3>
-                  <div className="flex items-center gap-3 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5" />
-                      {selectedRequest.email}
-                    </span>
-                  </div>
-                </div>
-                <div className="ml-auto">
-                  <Badge className="bg-[#7300E5] text-white border-none py-1 px-3">
-                    {selectedRequest.status}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Core Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Request Type</p>
-                    <p className="font-bold text-gray-900 text-lg">{selectedRequest.requestType}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Budget Range</p>
-                    <div className="flex items-center gap-2 font-bold text-[#7300E5]">
-                      <Banknote className="w-4 h-4" />
-                      <span>
-                        {new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(selectedRequest.budgetMin)} 
-                         - 
-                        {new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(selectedRequest.budgetMax)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Location / City</p>
-                    <p className="font-semibold text-gray-700 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      {selectedRequest.location || selectedRequest.city || "Remote"}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Timeline</p>
-                    <p className="font-semibold text-gray-700 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      {selectedRequest.timeline === "asap" ? "ASAP" : new Date(selectedRequest.timeline).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Project Brief */}
-              <div className="space-y-2">
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Project Brief</p>
-                <div className="p-4 bg-gray-50 rounded-2xl text-gray-700 text-sm leading-relaxed border border-gray-100">
-                  {selectedRequest.projectBrief}
-                </div>
-              </div>
-
-              {/* Created Date */}
-              <div className="pt-4 border-t border-gray-100 text-[10px] text-gray-400 font-medium">
-                Request ID: {selectedRequest.id} • Created on {new Date(selectedRequest.createdAt).toLocaleString()}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AdminRequestDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        data={getModalData()}
+        onAccept={async () => {
+          if (selectedRequest) {
+            await acceptTalentRequest(selectedRequest.id);
+            setIsModalOpen(false);
+          }
+        }}
+        onReject={async () => {
+          if (selectedRequest) {
+            await rejectTalentRequest(selectedRequest.id);
+            setIsModalOpen(false);
+          }
+        }}
+        onComplete={async () => {
+          if (selectedRequest) {
+            await completeTalentRequest(selectedRequest.id);
+            setIsModalOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }

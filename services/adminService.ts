@@ -165,6 +165,33 @@ export const adminService = {
     return apiClient.patch(`/admin/talent-requests/${id}`, data);
   },
 
+  async acceptTalentRequest(id: string): Promise<TalentRequest> {
+    return apiClient.patch(`/admin/talent-requests/${id}/accept`, {});
+  },
+
+  async rejectTalentRequest(id: string): Promise<TalentRequest> {
+    return apiClient.patch(`/admin/talent-requests/${id}/reject`, {});
+  },
+
+  async completeTalentRequest(id: string): Promise<TalentRequest> {
+    return apiClient.patch(`/admin/talent-requests/${id}/complete`, {});
+  },
+
+  async acceptCollaborationRequest(id: string): Promise<CollaborationRequestAdmin> {
+    return apiClient.patch(`/admin/collaboration-requests/${id}/accept`, {});
+  },
+
+  async rejectCollaborationRequest(id: string): Promise<CollaborationRequestAdmin> {
+    return apiClient.patch(`/admin/collaboration-requests/${id}/reject`, {});
+  },
+
+  async updateCollaborationRequest(
+    id: string,
+    data: Partial<CollaborationRequestAdmin>,
+  ): Promise<CollaborationRequestAdmin> {
+    return apiClient.patch(`/admin/collaboration-requests/${id}`, data);
+  },
+
   async getPulses(filter: PulseFilter = {}): Promise<PulseResponse> {
     const params = new URLSearchParams();
     if (filter.page) params.append("page", filter.page.toString());

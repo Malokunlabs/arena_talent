@@ -14,16 +14,11 @@ import {
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import AdminRequestDetailsModal, { AdminRequestData } from "@/components/admin/AdminRequestDetailsModal";
 import { CollaborationRequestAdmin } from "@/services/adminService";
 
 export default function CollaborationRequestsPage() {
-  const { collaborationKanbanBoard, fetchCollaborationKanbanBoard, isLoading } =
+  const { collaborationKanbanBoard, fetchCollaborationKanbanBoard, acceptCollaborationRequest, rejectCollaborationRequest } =
     useAdminStore();
   const [selectedCollab, setSelectedCollab] = useState<CollaborationRequestAdmin | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,6 +58,48 @@ export default function CollaborationRequestsPage() {
       default:
         return "bg-purple-100 text-purple-700";
     }
+  };
+
+  const getModalData = (): AdminRequestData | null => {
+    if (!selectedCollab) return null;
+
+    return {
+      personalInfo: {
+        nameLabel: "Initiator Name",
+        nameValue: selectedCollab.fromUser ? `${selectedCollab.fromUser.firstName || ""} ${selectedCollab.fromUser.lastName || ""}`.trim() : "Unknown",
+        emailLabel: "Partner Name",
+        emailValue: selectedCollab.toUser ? `${selectedCollab.toUser.firstName || ""} ${selectedCollab.toUser.lastName || ""}`.trim() : "Public",
+        phoneLabel: "Phone",
+        phoneValue: "N/A", // Not in current API
+      },
+      sections: [
+        {
+          label: "Project Title",
+          value: selectedCollab.title,
+        },
+        {
+          label: "Project Brief",
+          value: selectedCollab.description,
+        },
+        {
+          label: "Location",
+          value: selectedCollab.city || "Remote",
+        },
+        {
+          label: "Desired Timeline",
+          value: new Date(selectedCollab.startDate).toLocaleDateString(),
+        },
+        ...(selectedCollab.roles && selectedCollab.roles.length > 0
+          ? [
+              {
+                label: "Roles Locked",
+                value: selectedCollab.roles.join(", "),
+              },
+            ]
+          : []),
+      ],
+      status: selectedCollab.status,
+    };
   };
 
   return (
@@ -179,108 +216,24 @@ export default function CollaborationRequestsPage() {
         </Button>
       </div>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-2xl font-bold">Collaboration Details</DialogTitle>
-          </DialogHeader>
-          
-          {selectedCollab && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
-                    {selectedCollab.fromUser?.avatarUrl ? (
-                      <Image
-                        src={selectedCollab.fromUser.avatarUrl}
-                        alt=""
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-8 h-8 text-gray-400" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900">
-                      {selectedCollab.fromUser?.firstName} {selectedCollab.fromUser?.lastName}
-                    </h3>
-                    <p className="text-gray-500 text-sm italic">Initiator</p>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-[#7300E5]">→</div>
-                <div className="flex items-center gap-4 text-right">
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900">
-                      {selectedCollab.toUser?.firstName} {selectedCollab.toUser?.lastName}
-                    </h3>
-                    <p className="text-gray-500 text-sm italic">Partner</p>
-                  </div>
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
-                    {selectedCollab.toUser?.avatarUrl ? (
-                      <Image
-                        src={selectedCollab.toUser.avatarUrl}
-                        alt=""
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-8 h-8 text-gray-400" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Project Title</p>
-                  <p className="font-bold text-gray-900 capitalize">{selectedCollab.title}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Status</p>
-                  <Badge className={`${getStatusColor(selectedCollab.status)} border-none py-1 px-3`}>
-                    {selectedCollab.status}
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">City</p>
-                  <p className="font-semibold">{selectedCollab.city || "Remote"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Start Date</p>
-                  <p className="font-semibold">
-                    {new Intl.DateTimeFormat("en-US", {
-                      dateStyle: "medium",
-                    }).format(new Date(selectedCollab.startDate))}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Description</p>
-                <div className="p-4 bg-gray-50 rounded-2xl text-gray-700 text-sm leading-relaxed">
-                  {selectedCollab.description}
-                </div>
-              </div>
-
-              {selectedCollab.roles && selectedCollab.roles.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Roles Locked</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCollab.roles.map((role: string) => (
-                      <Badge key={role} variant="secondary" className="bg-purple-50 text-[#7300E5] border-none font-bold">
-                        {role}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Details Modal */}
+      <AdminRequestDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        data={getModalData()}
+        onAccept={async () => {
+          if (selectedCollab) {
+            await acceptCollaborationRequest(selectedCollab.id);
+            setIsModalOpen(false);
+          }
+        }}
+        onReject={async () => {
+          if (selectedCollab) {
+            await rejectCollaborationRequest(selectedCollab.id);
+            setIsModalOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }
