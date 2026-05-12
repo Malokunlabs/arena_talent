@@ -4,13 +4,13 @@ import React from "react";
 import { TalentRequest } from "@/services/adminService";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Calendar, MapPin, Banknote } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface RequestCardProps {
   request: TalentRequest;
+  onClick?: () => void;
 }
 
-export default function RequestCard({ request }: RequestCardProps) {
+export default function RequestCard({ request, onClick }: RequestCardProps) {
   // Format budget
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
@@ -30,7 +30,10 @@ export default function RequestCard({ request }: RequestCardProps) {
   };
 
   return (
-    <Card className="border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white">
+    <Card 
+      onClick={onClick}
+      className="border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white"
+    >
       <CardHeader className="p-4 pb-2 space-y-0">
         <h3 className="font-bold text-sm text-gray-900 line-clamp-1">
           {request.requestType}

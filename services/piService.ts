@@ -14,12 +14,14 @@ export interface LevelEntry {
 }
 
 export function getBarFillPercent(status: PiStatus): number {
-  if (status.nextLevelPi === null) return 100;
-  return Math.min((status.piScore / status.nextLevelPi) * 100, 100);
+  const nextTarget = status.nextLevelPi || (status.piToNextLevel > 0 ? status.piScore + status.piToNextLevel : null);
+  if (!nextTarget) return 100;
+  return Math.min((status.piScore / nextTarget) * 100, 100);
 }
 
 export function getPiSubLabel(status: PiStatus): string {
-  if (status.nextLevelPi === null) return "Max level reached 🏆";
+  const hasNext = (status.nextLevelPi && status.nextLevelPi > 0) || status.piToNextLevel > 0;
+  if (!hasNext) return "Max level reached 🏆";
   return `${status.piToNextLevel} PI to Level ${status.level + 1}`;
 }
 

@@ -56,16 +56,25 @@ class ApiClient {
       const isAuthFlow = typeof window !== "undefined" && (
         window.location.pathname.includes("/signup") ||
         window.location.pathname.includes("/login") ||
-        window.location.pathname.includes("/verify-email") ||
-        window.location.pathname === "/"
+        window.location.pathname.includes("/verify-email")
+      );
+
+      const publicRoutes = ["/", "/talent", "/signup", "/login", "/reset-password", "/forgot-password", "/verify-email"];
+      const isPublicRoute = publicRoutes.some(route => 
+        route === "/" ? typeof window !== "undefined" && window.location.pathname === "/" : typeof window !== "undefined" && window.location.pathname.startsWith(route)
       );
 
       if (!isUnverified && !isAuthEndpoint && !isAuthFlow) {
         useAuthStore.getState().logout();
-        if (typeof window !== "undefined") {
+        
+        // Only redirect if NOT on a public route
+        if (!isPublicRoute && typeof window !== "undefined") {
           window.location.href = "/login";
         }
-        throw new Error("Session expired. Please login again.");
+        
+        if (!isPublicRoute) {
+          throw new Error("Session expired. Please login again.");
+        }
       }
     }
 

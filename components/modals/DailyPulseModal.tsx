@@ -8,6 +8,8 @@ import { usePulseStore } from "@/store/usePulseStore";
 import { pulseService } from "@/services/pulseService";
 import { usePiStore } from "@/store/usePiStore";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useRouter } from "next/navigation";
 
 interface DailyPulseModalProps {
   isOpen: boolean;
@@ -20,7 +22,9 @@ export default function DailyPulseModal({
 }: DailyPulseModalProps) {
   const { activePulse, clearPulse } = usePulseStore();
   const { refreshAfterProof } = usePiStore();
+  const { isAuthenticated } = useAuthStore();
   const { toast } = useToast();
+  const router = useRouter();
   
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +55,11 @@ export default function DailyPulseModal({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSignIn = () => {
+    onClose();
+    router.push("/login");
   };
 
   const handleClose = () => {
@@ -140,7 +149,15 @@ export default function DailyPulseModal({
                   ))}
                 </div>
               )}
-            </div>
+            {!isAuthenticated && (
+              <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-start gap-3">
+                <span className="text-xl">💡</span>
+                <p className="text-xs text-purple-700 leading-relaxed font-medium">
+                  You&apos;re viewing this as a guest. <strong>Sign in</strong> to start earning points for your insights!
+                </p>
+              </div>
+            )}
+          </div>
 
             <div className="pt-4 flex gap-3">
               <Button
@@ -151,13 +168,22 @@ export default function DailyPulseModal({
               >
                 Cancel
               </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!selectedOption || isSubmitting}
-                className="flex-1 bg-[#7300E5] hover:bg-[#7300E5]/90 text-white rounded-xl py-6 font-bold"
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!selectedOption || isSubmitting}
+                  className="flex-1 bg-[#7300E5] hover:bg-[#7300E5]/90 text-white rounded-xl py-6 font-bold"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSignIn}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl py-6 font-bold shadow-lg shadow-primary/20"
+                >
+                  Sign in to earn +5 Pt
+                </Button>
+              )}
             </div>
           </div>
         )}

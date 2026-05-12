@@ -177,7 +177,7 @@ function ProfileContent() {
               const syntheticPiStatus: PiStatus = {
                 piScore: talent.piScore ?? 0,
                 progressIndex: talent.progressIndex ?? 0,
-                level: talent.progressIndex ?? 0,
+                level: (talent.progressIndex ?? 0) > 0 ? talent.progressIndex! : 1,
                 piToNextLevel: talent.piToNextLevel ?? 0,
                 nextLevelPi: talent.nextLevelPi ?? null,
               };
@@ -258,7 +258,8 @@ function ProfileContent() {
                 rank: 1,
                 name: fullName,
                 avatar: avatarUrl,
-                proofboardLink: `arena.com/${talent.username}`,
+                username: talent.username,
+                proofboardLink: `/talent/${talent.username}`,
                 id: selectedProof.id,
               }
             : null

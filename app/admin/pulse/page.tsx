@@ -306,6 +306,258 @@ function CreatePulseModal({ isOpen, onClose, onSuccess }: CreateModalProps) {
 
 // ─── Success Modal ───────────────────────────────────────────────────────────
 
+// ─── Details / Edit Modal ───────────────────────────────────────────────────
+
+interface DetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  pulse: Pulse | null;
+  onUpdate: () => void;
+}
+
+function PulseDetailsModal({
+  isOpen,
+  onClose,
+  pulse,
+  onUpdate,
+}: DetailsModalProps) {
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [form, setForm] = useState<Partial<CreatePulseData & { status: string }>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && pulse) {
+      setMode("view");
+      setForm({
+        type: pulse.type as "POLL" | "EMOJI" | "BRAND",
+        question: pulse.question,
+        audience: pulse.audience,
+        options: [...pulse.options],
+        description: pulse.description,
+        status: pulse.status,
+        expiresAt: pulse.expiresAt ? pulse.expiresAt.slice(0, 16) : "",
+      });
+    }
+  }, [isOpen, pulse]);
+
+  const handleSave = async () => {
+    if (!pulse) return;
+    setSaving(true);
+    try {
+      await adminService.updatePulse(pulse.id, form);
+      onUpdate();
+      setMode("view");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = () => {
+    // Placeholder as requested
+    alert("Delete API coming soon!");
+  };
+
+  if (!pulse) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg overflow-y-auto max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold flex items-center justify-between pr-8">
+            {mode === "view" ? "Pulse Details" : "Edit Pulse"}
+            <Badge className={`${statusColor(pulse.status)} border-none ml-4`}>
+              {pulse.status}
+            </Badge>
+          </DialogTitle>
+        </DialogHeader>
+
+        {mode === "view" ? (
+          <div className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-500 font-bold uppercase">Type</p>
+                <Badge variant="secondary" className="bg-purple-50 text-[#7300E5] border-none font-bold">
+                  {pulse.type}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-500 font-bold uppercase">Responses</p>
+                <p className="font-bold text-lg">{pulse.totalResponses}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Question</p>
+              <p className="text-lg font-semibold text-gray-900 leading-tight">
+                {pulse.question}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Audience</p>
+              <p className="font-medium text-gray-700">{pulse.audience}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">Options</p>
+              <div className="grid grid-cols-1 gap-2">
+                {pulse.options.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[10px] font-bold text-gray-400 border border-gray-100 italic">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700">{opt}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {pulse.description && (
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-500 font-bold uppercase">Description</p>
+                <p className="text-sm text-gray-600 leading-relaxed italic">
+                  &ldquo;{pulse.description}&rdquo;
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Expires</p>
+                <p className="text-xs font-semibold">{fmt(pulse.expiresAt)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => setMode("edit")}
+                  className="bg-[#7300E5] hover:bg-[#6200c4] text-white rounded-xl font-bold px-6"
+                >
+                  Edit Pulse
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleDelete}
+                  className="rounded-xl border-red-200 text-red-500 hover:bg-red-50 font-bold"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 mt-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm({ ...form, status: v as "DRAFT" | "LIVE" | "CLOSED" })}
+              >
+                <SelectTrigger className="bg-gray-50 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="LIVE">Live</SelectItem>
+                  <SelectItem value="CLOSED">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase">Question</label>
+              <Input
+                value={form.question}
+                onChange={(e) => setForm({ ...form, question: e.target.value })}
+                className="bg-gray-50 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase">Audience</label>
+              <Input
+                value={form.audience}
+                onChange={(e) => setForm({ ...form, audience: e.target.value })}
+                className="bg-gray-50 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase">Options</label>
+              <div className="space-y-2">
+                {form.options?.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      value={opt}
+                      onChange={(e) => {
+                        const next = [...(form.options || [])];
+                        next[i] = e.target.value;
+                        setForm({ ...form, options: next });
+                      }}
+                      className="bg-gray-100 border-none rounded-xl"
+                    />
+                    {(form.options || []).length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm({
+                            ...form,
+                            options: (form.options || []).filter((_, idx) => idx !== i),
+                          });
+                        }}
+                        className="text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      options: [...(form.options || []), ""],
+                    })
+                  }
+                  className="text-xs text-[#7300E5] font-bold hover:underline"
+                >
+                  + Add option
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase">Expires At</label>
+              <Input
+                type="datetime-local"
+                value={form.expiresAt}
+                onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
+                className="bg-gray-50 rounded-xl"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-4">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-[#7300E5] hover:bg-[#6200c4] text-white rounded-xl font-bold"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setMode("view")}
+                className="rounded-xl font-bold"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SuccessModal({
   isOpen,
   onClose,
@@ -349,6 +601,8 @@ export default function PulseManagerPage() {
   const [status, setStatus] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedPulse, setSelectedPulse] = useState<Pulse | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const fetchPulses = useCallback(
     async (page = 1) => {
@@ -357,7 +611,7 @@ export default function PulseManagerPage() {
         const res = await adminService.getPulses({
           page,
           limit: 20,
-          status: status === "All" ? undefined : status,
+          status: status === "All" ? undefined : (status as "DRAFT" | "LIVE" | "CLOSED"),
           search: search || undefined,
         });
         setPulses(res.data);
@@ -489,8 +743,15 @@ export default function PulseManagerPage() {
               </TableRow>
             ) : (
               pulses.map((pulse) => (
-                <TableRow key={pulse.id} className="hover:bg-gray-50/50">
-                  <TableCell>
+                <TableRow 
+                  key={pulse.id} 
+                  className="hover:bg-gray-50/50 cursor-pointer"
+                  onClick={() => {
+                    setSelectedPulse(pulse);
+                    setShowDetails(true);
+                  }}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Input
                       type="checkbox"
                       className="h-4 w-4 rounded border-gray-300"
@@ -526,7 +787,7 @@ export default function PulseManagerPage() {
                   <TableCell className="text-sm text-gray-500">
                     {fmt(pulse.expiresAt)}
                   </TableCell>
-                  <TableCell className="text-right flex items-center justify-end gap-2">
+                  <TableCell className="text-right flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                     {pulse.status === "DRAFT" && (
                       <Button
                         variant="ghost"
@@ -595,6 +856,12 @@ export default function PulseManagerPage() {
       <SuccessModal
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}
+      />
+      <PulseDetailsModal
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        pulse={selectedPulse}
+        onUpdate={() => fetchPulses(meta.page)}
       />
     </div>
   );

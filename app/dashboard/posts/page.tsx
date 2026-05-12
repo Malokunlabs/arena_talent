@@ -331,11 +331,15 @@ export default function MyPostsPage() {
                   selectedProof.talent?.avatarUrl ||
                   user?.avatarUrl ||
                   "/placeholder-avatar.png",
+                username:
+                  selectedProof.talent?.username ||
+                  user?.username ||
+                  "anonymous",
                 proofboardLink: selectedProof.talent?.username
-                  ? `/u/${selectedProof.talent.username}`
+                  ? `/talent/${selectedProof.talent.username}`
                   : user?.username
-                    ? `/u/${user.username}`
-                    : "/u/anonymous",
+                    ? `/talent/${user.username}`
+                    : "/talent",
                 id: selectedProof.id,
               }
             : null

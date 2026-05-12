@@ -97,8 +97,18 @@ export const adminService = {
     return apiClient.get(`/admin/proofs?${params.toString()}`);
   },
 
+  async updateProofStatus(
+    id: string,
+    data: { status: string; message?: string; reason?: string },
+  ): Promise<AdminProof> {
+    return apiClient.patch(`/admin/proofs/${id}/status`, data);
+  },
+
   async approveProof(id: string, message?: string): Promise<AdminProof> {
-    return apiClient.patch(`/admin/proofs/${id}/approve`, { message });
+    return this.updateProofStatus(id, {
+      status: "APPROVED",
+      message: message || "Great work! Your proof is now live.",
+    });
   },
 
   async rejectProof(
@@ -106,28 +116,37 @@ export const adminService = {
     reason: string,
     message?: string,
   ): Promise<AdminProof> {
-    return apiClient.patch(`/admin/proofs/${id}/reject`, { reason, message });
-  },
-
-  async featureProof(
-    id: string,
-    isFeatured: boolean,
-    message?: string,
-  ): Promise<AdminProof> {
-    return apiClient.patch(`/admin/proofs/${id}/feature`, {
-      isFeatured,
-      message,
+    return this.updateProofStatus(id, {
+      status: "REJECTED",
+      reason,
+      message: message || "Content does not meet guidelines",
     });
   },
 
-  async shadowLimitProof(
+  async flagProof(id: string, message?: string): Promise<AdminProof> {
+    return this.updateProofStatus(id, {
+      status: "FLAGGED",
+      message: message || "This post contains potentially sensitive content.",
+    });
+  },
+
+  async quickFeatureProof(id: string): Promise<AdminProof> {
+    return this.updateProofStatus(id, { status: "FEATURE" });
+  },
+
+  async toggleFeatureProof(
+    id: string,
+    isFeatured: boolean,
+  ): Promise<AdminProof> {
+    return apiClient.patch(`/admin/proofs/${id}/feature`, { isFeatured });
+  },
+
+  async toggleShadowLimitProof(
     id: string,
     shadowLimited: boolean,
-    message?: string,
   ): Promise<AdminProof> {
     return apiClient.patch(`/admin/proofs/${id}/shadow-limit`, {
       shadowLimited,
-      message,
     });
   },
 
@@ -146,6 +165,33 @@ export const adminService = {
     return apiClient.patch(`/admin/talent-requests/${id}`, data);
   },
 
+  async acceptTalentRequest(id: string): Promise<TalentRequest> {
+    return apiClient.patch(`/admin/talent-requests/${id}/accept`, {});
+  },
+
+  async rejectTalentRequest(id: string): Promise<TalentRequest> {
+    return apiClient.patch(`/admin/talent-requests/${id}/reject`, {});
+  },
+
+  async completeTalentRequest(id: string): Promise<TalentRequest> {
+    return apiClient.patch(`/admin/talent-requests/${id}/complete`, {});
+  },
+
+  async acceptCollaborationRequest(id: string): Promise<CollaborationRequestAdmin> {
+    return apiClient.patch(`/admin/collaboration-requests/${id}/accept`, {});
+  },
+
+  async rejectCollaborationRequest(id: string): Promise<CollaborationRequestAdmin> {
+    return apiClient.patch(`/admin/collaboration-requests/${id}/reject`, {});
+  },
+
+  async updateCollaborationRequest(
+    id: string,
+    data: Partial<CollaborationRequestAdmin>,
+  ): Promise<CollaborationRequestAdmin> {
+    return apiClient.patch(`/admin/collaboration-requests/${id}`, data);
+  },
+
   async getPulses(filter: PulseFilter = {}): Promise<PulseResponse> {
     const params = new URLSearchParams();
     if (filter.page) params.append("page", filter.page.toString());
@@ -160,8 +206,12 @@ export const adminService = {
     return apiClient.post("/admin/pulses", data);
   },
 
+  async updatePulse(id: string, data: Partial<CreatePulseData & { status: string }>): Promise<Pulse> {
+    return apiClient.patch(`/admin/pulses/${id}`, data);
+  },
+
   async updatePulseStatus(id: string, status: "DRAFT" | "LIVE" | "CLOSED"): Promise<Pulse> {
-    return apiClient.patch(`/pulse/${id}`, { status });
+    return apiClient.patch(`/admin/pulses/${id}`, { status });
   },
 
   // Talent Directory
@@ -228,6 +278,8 @@ export interface CollaborationRequestAdmin {
   startDate: string;
   createdAt: string;
   updatedAt: string;
+  roles?: string[];
+  tags?: string[];
   fromUser?: {
     firstName: string;
     lastName: string;
@@ -276,7 +328,7 @@ export interface CreatePulseData {
   audience: string;
   options: string[];
   description?: string;
-  status: "DRAFT" | "LIVE";
+  status: "DRAFT" | "LIVE" | "CLOSED";
   expiresAt?: string;
 }
 

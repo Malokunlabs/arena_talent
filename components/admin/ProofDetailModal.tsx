@@ -8,13 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { AdminProof } from "@/services/adminService";
 import { useAdminStore } from "@/store/useAdminStore";
+import { cn } from "@/lib/utils";
 
 interface ProofDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   proof: AdminProof;
   onActionComplete: (
-    type: "approved" | "rejected" | "featured" | "verified",
+    type: "approved" | "rejected" | "featured" | "verified" | "flagged",
     proof: AdminProof,
   ) => void;
 }
@@ -25,7 +26,13 @@ export default function ProofDetailModal({
   proof,
   onActionComplete,
 }: ProofDetailModalProps) {
-  const { approveProof, rejectProof, featureProof } = useAdminStore();
+  const {
+    approveProof,
+    rejectProof,
+    flagProof,
+    toggleFeatureProof,
+    toggleShadowLimitProof,
+  } = useAdminStore();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const handleApprove = async () => {
@@ -37,17 +44,31 @@ export default function ProofDetailModal({
 
   const handleReject = async () => {
     setLoadingAction("reject");
-    // Hardcoded reason for now, could be a prompt
     await rejectProof(proof.id, "Content does not meet guidelines");
     setLoadingAction(null);
     onActionComplete("rejected", proof);
   };
 
-  const handleFeature = async () => {
+  const handleFlag = async () => {
+    setLoadingAction("flag");
+    await flagProof(proof.id);
+    setLoadingAction(null);
+    onActionComplete("flagged", proof);
+  };
+
+  const handleToggleFeature = async () => {
     setLoadingAction("feature");
-    await featureProof(proof.id, !proof.isFeatured);
+    await toggleFeatureProof(proof.id, !proof.isFeatured);
     setLoadingAction(null);
     onActionComplete("featured", proof);
+  };
+
+  const handleToggleShadowLimit = async () => {
+    setLoadingAction("shadow");
+    await toggleShadowLimitProof(proof.id, !proof.shadowLimited);
+    setLoadingAction(null);
+    // No explicit feedback modal for shadow limit, just refresh the UI
+    onActionComplete("verified", proof);
   };
 
   const handleVerify = async () => {
@@ -101,7 +122,7 @@ export default function ProofDetailModal({
           </div>
         </div>
 
-        <div className="relative aspect-[4/3] w-full bg-gray-100">
+        <div className="relative aspect-[16/10] w-full bg-gray-100">
           {proof.mediaUrl && (
             <Image
               src={proof.mediaUrl}
@@ -112,13 +133,13 @@ export default function ProofDetailModal({
           )}
         </div>
 
-        <div className="p-6 space-y-4">
-          <div className="flex gap-2">
+        <div className="p-5 space-y-4">
+          <div className="flex flex-wrap gap-2">
             {proof.tags?.map((tag, i) => (
               <Badge
                 key={i}
                 variant="secondary"
-                className="bg-purple-50 text-purple-700 hover:bg-purple-50"
+                className="bg-purple-50 text-purple-700 hover:bg-purple-50 text-[10px]"
               >
                 #{tag}
               </Badge>
@@ -126,8 +147,10 @@ export default function ProofDetailModal({
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-lg font-bold text-gray-900">{proof.title}</h2>
-            <p className="text-sm text-gray-500 leading-relaxed">
+            <h2 className="text-base font-bold text-gray-900 leading-tight">
+              {proof.title}
+            </h2>
+            <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
               {proof.caption}
             </p>
           </div>
@@ -135,17 +158,27 @@ export default function ProofDetailModal({
           <div className="flex items-center gap-2">
             <Badge
               variant="secondary"
-              className="rounded-full bg-purple-50 text-purple-700 px-3 py-1"
+              className="rounded-full bg-purple-50 text-purple-700 px-2 py-0.5 text-[10px]"
             >
               {proof.salutesCount} Salutes
             </Badge>
+            {proof.isFeatured && (
+              <Badge className="rounded-full bg-yellow-100 text-yellow-700 text-[10px]">
+                Featured
+              </Badge>
+            )}
+            {proof.shadowLimited && (
+              <Badge className="rounded-full bg-gray-100 text-gray-700 text-[10px]">
+                Shadow Limited
+              </Badge>
+            )}
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
               onClick={handleApprove}
               disabled={!!loadingAction}
-              className="flex-1 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl"
+              className="bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl h-10 text-sm"
             >
               Approve
             </Button>
@@ -153,25 +186,47 @@ export default function ProofDetailModal({
               onClick={handleReject}
               disabled={!!loadingAction}
               variant="outline"
-              className="flex-1 border-red-200 text-red-500 hover:bg-red-50 font-bold rounded-xl"
+              className="border-red-200 text-red-500 hover:bg-red-50 font-bold rounded-xl h-10 text-sm"
             >
               Reject
+            </Button>
+            <Button
+              onClick={handleFlag}
+              disabled={!!loadingAction}
+              variant="outline"
+              className="border-orange-200 text-orange-500 hover:bg-orange-50 font-bold rounded-xl h-10 text-sm"
+            >
+              Flag
+            </Button>
+            <Button
+              onClick={handleToggleFeature}
+              disabled={!!loadingAction}
+              variant="outline"
+              className={cn(
+                "border-gray-200 font-bold rounded-xl h-10 text-sm",
+                proof.isFeatured && "bg-yellow-50 text-yellow-600 border-yellow-200",
+              )}
+            >
+              {proof.isFeatured ? "Unfeature" : "Feature"}
+            </Button>
+            <Button
+              onClick={handleToggleShadowLimit}
+              disabled={!!loadingAction}
+              variant="outline"
+              className={cn(
+                "border-gray-200 font-bold rounded-xl h-10 text-sm",
+                proof.shadowLimited && "bg-gray-100 text-gray-900 border-gray-300",
+              )}
+            >
+              {proof.shadowLimited ? "Unshadow" : "Shadow Limit"}
             </Button>
             <Button
               onClick={handleVerify}
               disabled={!!loadingAction}
               variant="outline"
-              className="border-gray-200 font-bold rounded-xl"
+              className="border-gray-200 font-bold rounded-xl h-10 text-sm"
             >
               Verify
-            </Button>
-            <Button
-              onClick={handleFeature}
-              disabled={!!loadingAction}
-              variant="outline"
-              className="border-gray-200 font-bold rounded-xl"
-            >
-              Feature
             </Button>
           </div>
         </div>

@@ -118,7 +118,7 @@ export default function Home() {
             {/* Daily Pulse Trigger */}
             {activePulse && (
               <div
-                onClick={() => checkAuth(() => setActiveModal("pulse"))}
+                onClick={() => setActiveModal("pulse")}
                 className="cursor-pointer transition-transform active:scale-95"
               >
                 <DailyPulse />
@@ -196,7 +196,7 @@ export default function Home() {
           {activePulse && (
             <Button
               variant="ghost"
-              onClick={() => checkAuth(() => setActiveModal("pulse"))}
+              onClick={() => setActiveModal("pulse")}
               className="text-primary font-bold hover:bg-primary/5"
             >
               Answer Daily pulse
@@ -249,9 +249,10 @@ export default function Home() {
                 avatar:
                   selectedProof.talent?.avatarUrl ||
                   "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
+                username: selectedProof.talent?.username || "anonymous",
                 proofboardLink: selectedProof.talent?.username
-                  ? `/u/${selectedProof.talent.username}`
-                  : "/u/anonymous",
+                  ? `/talent/${selectedProof.talent.username}`
+                  : "/talent",
                 id: selectedProof.id,
               }
             : null

@@ -9,8 +9,9 @@ import {
   AdminTalent,
   TalentListResponse,
   TalentFilter,
+  TalentRequest,
+  CollaborationRequestAdmin,
 } from "@/services/adminService";
-import { apiClient } from "@/services/apiClient";
 
 interface AdminState {
   stats: DashboardStats | null;
@@ -28,22 +29,21 @@ interface AdminState {
   fetchProofs: (filter?: ProofFilter) => Promise<void>;
   approveProof: (id: string, message?: string) => Promise<void>;
   rejectProof: (id: string, reason: string, message?: string) => Promise<void>;
-  featureProof: (
-    id: string,
-    isFeatured: boolean,
-    message?: string,
-  ) => Promise<void>;
-  shadowLimitProof: (
-    id: string,
-    shadowLimited: boolean,
-    message?: string,
-  ) => Promise<void>;
+  flagProof: (id: string, message?: string) => Promise<void>;
+  quickFeatureProof: (id: string) => Promise<void>;
+  toggleFeatureProof: (id: string, isFeatured: boolean) => Promise<void>;
+  toggleShadowLimitProof: (id: string, shadowLimited: boolean) => Promise<void>;
   fetchKanbanBoard: () => Promise<void>;
-  updateRequestStatus: (id: string, status: string) => Promise<void>;
+  acceptTalentRequest: (id: string) => Promise<void>;
+  rejectTalentRequest: (id: string) => Promise<void>;
+  completeTalentRequest: (id: string) => Promise<void>;
+  updateTalentRequest: (id: string, data: Partial<TalentRequest>) => Promise<void>;
   kanbanBoard: KanbanColumn[];
   collaborationKanbanBoard: CollaborationKanbanColumn[];
   fetchCollaborationKanbanBoard: () => Promise<void>;
-  updateCollaborationRequestStatus: (id: string, status: string) => Promise<void>;
+  acceptCollaborationRequest: (id: string) => Promise<void>;
+  rejectCollaborationRequest: (id: string) => Promise<void>;
+  updateCollaborationRequest: (id: string, data: Partial<CollaborationRequestAdmin>) => Promise<void>;
   // Talent Directory
   talents: AdminTalent[];
   talentsMeta: TalentListResponse["meta"];
@@ -74,11 +74,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const stats = await adminService.getDashboardStats();
       set({ stats, isLoading: false });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
         isLoading: false,
-        error: error.message || "Failed to fetch dashboard stats",
+        error: (error as Error).message || "Failed to fetch dashboard stats",
       });
     }
   },
@@ -92,11 +91,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         proofsMeta: response.meta,
         isLoading: false,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
         isLoading: false,
-        error: error.message || "Failed to fetch proofs",
+        error: (error as Error).message || "Failed to fetch proofs",
       });
     }
   },
@@ -107,8 +105,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Approve failed", error);
     }
   },
@@ -119,41 +116,58 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Reject failed", error);
     }
   },
 
-  featureProof: async (id, isFeatured, message) => {
+  flagProof: async (id, message) => {
     try {
-      const updatedProof = await adminService.featureProof(
-        id,
-        isFeatured,
-        message,
-      );
+      const updatedProof = await adminService.flagProof(id, message);
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Feature failed", error);
+    } catch (error: unknown) {
+      console.error("Flag failed", error);
     }
   },
 
-  shadowLimitProof: async (id, shadowLimited, message) => {
+  quickFeatureProof: async (id) => {
     try {
-      const updatedProof = await adminService.shadowLimitProof(
+      const updatedProof = await adminService.quickFeatureProof(id);
+      set((state) => ({
+        proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
+      }));
+    } catch (error: unknown) {
+      console.error("Quick feature failed", error);
+    }
+  },
+
+  toggleFeatureProof: async (id, isFeatured) => {
+    try {
+      const updatedProof = await adminService.toggleFeatureProof(
         id,
-        shadowLimited,
-        message,
+        isFeatured,
       );
       set((state) => ({
         proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
       }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Shadow limit failed", error);
+    } catch (error: unknown) {
+      console.error("Feature toggle failed", error);
+    }
+  },
+
+  toggleShadowLimitProof: async (id, shadowLimited) => {
+    try {
+      const updatedProof = await adminService.toggleShadowLimitProof(
+        id,
+        shadowLimited,
+      );
+      set((state) => ({
+        proofs: state.proofs.map((p) => (p.id === id ? updatedProof : p)),
+      }));
+    } catch (error: unknown) {
+      console.error("Shadow limit toggle failed", error);
     }
   },
 
@@ -162,7 +176,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const board = await adminService.getTalentRequestsKanban();
       set({ kanbanBoard: board, isLoading: false });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: unknown) {
       set({
         isLoading: false,
@@ -171,14 +184,36 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  updateRequestStatus: async (id, status) => {
+  acceptTalentRequest: async (id) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await adminService.updateTalentRequest(id, { status: status as any });
+      await adminService.acceptTalentRequest(id);
       await get().fetchKanbanBoard();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Update request failed", error);
+    } catch (error: unknown) {
+      console.error("Accept talent request failed", error);
+    }
+  },
+  rejectTalentRequest: async (id) => {
+    try {
+      await adminService.rejectTalentRequest(id);
+      await get().fetchKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Reject talent request failed", error);
+    }
+  },
+  completeTalentRequest: async (id) => {
+    try {
+      await adminService.completeTalentRequest(id);
+      await get().fetchKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Complete talent request failed", error);
+    }
+  },
+  updateTalentRequest: async (id, data) => {
+    try {
+      await adminService.updateTalentRequest(id, data);
+      await get().fetchKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Update talent request failed", error);
     }
   },
 
@@ -195,12 +230,28 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  updateCollaborationRequestStatus: async (id, status) => {
+  acceptCollaborationRequest: async (id) => {
     try {
-      await apiClient.patch(`/admin/collaboration-requests/${id}`, { status });
+      await adminService.acceptCollaborationRequest(id);
       await get().fetchCollaborationKanbanBoard();
     } catch (error: unknown) {
-      console.error("Update collab request failed", error);
+      console.error("Accept collaboration request failed", error);
+    }
+  },
+  rejectCollaborationRequest: async (id) => {
+    try {
+      await adminService.rejectCollaborationRequest(id);
+      await get().fetchCollaborationKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Reject collaboration request failed", error);
+    }
+  },
+  updateCollaborationRequest: async (id, data) => {
+    try {
+      await adminService.updateCollaborationRequest(id, data);
+      await get().fetchCollaborationKanbanBoard();
+    } catch (error: unknown) {
+      console.error("Update collaboration request failed", error);
     }
   },
 

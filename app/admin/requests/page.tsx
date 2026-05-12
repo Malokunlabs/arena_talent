@@ -1,34 +1,26 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAdminStore } from "@/store/useAdminStore";
 import RequestCard from "@/components/admin/RequestCard";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AdminRequestDetailsModal, { AdminRequestData } from "@/components/admin/AdminRequestDetailsModal";
+import { TalentRequest } from "@/services/adminService";
 
 export default function HireRequestsPage() {
-  const { kanbanBoard, fetchKanbanBoard, isLoading } = useAdminStore();
+  const { kanbanBoard, fetchKanbanBoard, acceptTalentRequest, rejectTalentRequest, completeTalentRequest } = useAdminStore();
+  const [selectedRequest, setSelectedRequest] = useState<TalentRequest | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchKanbanBoard();
   }, [fetchKanbanBoard]);
 
-  // Reordering columns to match visual flow if needed, or trusting API order.
   // API returns "NEW", "TRIAGED", etc.
   // Design shows: New | Awaiting Creator | Awaiting Payments
   //               In Fulfillment | Review | Completed
-
-  // Let's create a visual mapping of the columns
-  const columnOrder = [
-    "NEW",
-    "TRIAGED",
-    "AWAITING_CREATOR",
-    "AWAITING_PAYMENT",
-    "IN_FULFILLMENT",
-    "COMPLETED", // "Review" is not in dummy.txt, maybe check status name?
-    // dummy.txt: NEW, TRIAGED, AWAITING_CREATOR, AWAITING_PAYMENT, IN_FULFILLMENT, COMPLETED, DECLINED
-  ];
 
   // Map API statuses to Display Titles
   const columnTitles: Record<string, string> = {
@@ -46,6 +38,53 @@ export default function HireRequestsPage() {
     return (
       kanbanBoard.find((c) => c.status === status) || { status, items: [] }
     );
+  };
+
+  // Map selectedRequest to AdminRequestData
+  const getModalData = (): AdminRequestData | null => {
+    if (!selectedRequest) return null;
+
+    const formatMoney = (amount: number) => {
+      return new Intl.NumberFormat("en-NG", {
+        style: "currency",
+        currency: "NGN",
+        maximumFractionDigits: 0,
+      }).format(amount);
+    };
+
+    return {
+      personalInfo: {
+        nameLabel: "Company Name *",
+        nameValue: selectedRequest.companyName,
+        emailLabel: "Email *",
+        emailValue: selectedRequest.email,
+        phoneLabel: "Phone",
+        phoneValue: "N/A", // Add phone to API later if needed
+      },
+      sections: [
+        {
+          label: "What you need",
+          value: selectedRequest.requestType,
+        },
+        {
+          label: "Project Brief",
+          value: selectedRequest.projectBrief,
+        },
+        {
+          label: "Location",
+          value: selectedRequest.location || selectedRequest.city || "Remote",
+        },
+        {
+          label: "Budget Range (N)",
+          value: `${formatMoney(selectedRequest.budgetMin)} - ${formatMoney(selectedRequest.budgetMax)}`,
+        },
+        {
+          label: "Desired Timeline",
+          value: selectedRequest.timeline === "asap" ? "ASAP" : new Date(selectedRequest.timeline).toLocaleDateString(),
+        },
+      ],
+      status: selectedRequest.status,
+    };
   };
 
   return (
@@ -79,7 +118,14 @@ export default function HireRequestsPage() {
               </div>
               <div className="flex flex-col gap-3">
                 {col.items.map((item) => (
-                  <RequestCard key={item.id} request={item} />
+                  <RequestCard 
+                    key={item.id} 
+                    request={item} 
+                    onClick={() => {
+                      setSelectedRequest(item);
+                      setIsModalOpen(true);
+                    }}
+                  />
                 ))}
                 {col.items.length === 0 && (
                   <div className="h-20 border-2 border-dashed border-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs">
@@ -108,7 +154,14 @@ export default function HireRequestsPage() {
               </div>
               <div className="flex flex-col gap-3">
                 {col.items.map((item) => (
-                  <RequestCard key={item.id} request={item} />
+                  <RequestCard 
+                    key={item.id} 
+                    request={item} 
+                    onClick={() => {
+                      setSelectedRequest(item);
+                      setIsModalOpen(true);
+                    }}
+                  />
                 ))}
                 {col.items.length === 0 && (
                   <div className="h-20 border-2 border-dashed border-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs">
@@ -147,6 +200,31 @@ export default function HireRequestsPage() {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Details Modal */}
+      <AdminRequestDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        data={getModalData()}
+        onAccept={async () => {
+          if (selectedRequest) {
+            await acceptTalentRequest(selectedRequest.id);
+            setIsModalOpen(false);
+          }
+        }}
+        onReject={async () => {
+          if (selectedRequest) {
+            await rejectTalentRequest(selectedRequest.id);
+            setIsModalOpen(false);
+          }
+        }}
+        onComplete={async () => {
+          if (selectedRequest) {
+            await completeTalentRequest(selectedRequest.id);
+            setIsModalOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }

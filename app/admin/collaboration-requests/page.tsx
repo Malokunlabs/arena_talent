@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAdminStore } from "@/store/useAdminStore";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,17 +14,23 @@ import {
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import AdminRequestDetailsModal, { AdminRequestData } from "@/components/admin/AdminRequestDetailsModal";
+import { CollaborationRequestAdmin } from "@/services/adminService";
 
 export default function CollaborationRequestsPage() {
-  const { collaborationKanbanBoard, fetchCollaborationKanbanBoard, isLoading } =
+  const { collaborationKanbanBoard, fetchCollaborationKanbanBoard, acceptCollaborationRequest, rejectCollaborationRequest } =
     useAdminStore();
+  const [selectedCollab, setSelectedCollab] = useState<CollaborationRequestAdmin | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCollaborationKanbanBoard();
   }, [fetchCollaborationKanbanBoard]);
 
   const columnTitles: Record<string, string> = {
-    PENDING: "Pending",
+    NEW: "New",
+    TRIAGED: "Triaged",
+    AWAITING_CREATOR: "Awaiting Creator",
     ACCEPTED: "Accepted",
     DECLINED: "Declined",
     COMPLETED: "Completed",
@@ -54,6 +60,48 @@ export default function CollaborationRequestsPage() {
     }
   };
 
+  const getModalData = (): AdminRequestData | null => {
+    if (!selectedCollab) return null;
+
+    return {
+      personalInfo: {
+        nameLabel: "Initiator Name",
+        nameValue: selectedCollab.fromUser ? `${selectedCollab.fromUser.firstName || ""} ${selectedCollab.fromUser.lastName || ""}`.trim() : "Unknown",
+        emailLabel: "Partner Name",
+        emailValue: selectedCollab.toUser ? `${selectedCollab.toUser.firstName || ""} ${selectedCollab.toUser.lastName || ""}`.trim() : "Public",
+        phoneLabel: "Phone",
+        phoneValue: "N/A", // Not in current API
+      },
+      sections: [
+        {
+          label: "Project Title",
+          value: selectedCollab.title,
+        },
+        {
+          label: "Project Brief",
+          value: selectedCollab.description,
+        },
+        {
+          label: "Location",
+          value: selectedCollab.city || "Remote",
+        },
+        {
+          label: "Desired Timeline",
+          value: new Date(selectedCollab.startDate).toLocaleDateString(),
+        },
+        ...(selectedCollab.roles && selectedCollab.roles.length > 0
+          ? [
+              {
+                label: "Roles Locked",
+                value: selectedCollab.roles.join(", "),
+              },
+            ]
+          : []),
+      ],
+      status: selectedCollab.status,
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col space-y-2">
@@ -73,7 +121,7 @@ export default function CollaborationRequestsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {["PENDING", "ACCEPTED", "COMPLETED"].map((status) => {
+        {["NEW", "AWAITING_CREATOR", "ACCEPTED"].map((status) => {
           const col = getColumn(status);
           return (
             <div key={status} className="flex flex-col gap-4">
@@ -91,7 +139,11 @@ export default function CollaborationRequestsPage() {
                 {col.items.map((item: any) => (
                   <div
                     key={item.id}
-                    className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3"
+                    onClick={() => {
+                      setSelectedCollab(item);
+                      setIsModalOpen(true);
+                    }}
+                    className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3 cursor-pointer hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center justify-between">
                       <Badge
@@ -163,6 +215,25 @@ export default function CollaborationRequestsPage() {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Details Modal */}
+      <AdminRequestDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        data={getModalData()}
+        onAccept={async () => {
+          if (selectedCollab) {
+            await acceptCollaborationRequest(selectedCollab.id);
+            setIsModalOpen(false);
+          }
+        }}
+        onReject={async () => {
+          if (selectedCollab) {
+            await rejectCollaborationRequest(selectedCollab.id);
+            setIsModalOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }

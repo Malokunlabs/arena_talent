@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,8 +53,11 @@ export default function CollaborateModal({
     description: "",
     brief: "",
     city: "",
-    startDate: "",
+    startDate: new Date().toISOString().slice(0, 16), // Default to now
   });
+
+  const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [newSkill, setNewSkill] = useState("");
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>([
     "Video Editing",
@@ -75,6 +78,16 @@ export default function CollaborateModal({
     }
   };
 
+  const handleAddCustomSkill = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newSkill.trim();
+    if (trimmed && !selectedSkills.includes(trimmed)) {
+      setSelectedSkills([...selectedSkills, trimmed]);
+      setNewSkill("");
+      setIsAddingSkill(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -84,7 +97,7 @@ export default function CollaborateModal({
         description: formData.description,
         roles: selectedSkills,
         city: formData.city,
-        startDate: new Date().toISOString(), // Or use formData.startDate if it's a date picker
+        startDate: new Date(formData.startDate).toISOString(),
         tags: ["tech"], // Default for now
       });
       setIsSubmitted(true);
@@ -273,6 +286,60 @@ export default function CollaborateModal({
                   </button>
                 );
               })}
+
+              {/* Display custom selected skills that are not in SKILL_OPTIONS */}
+              {selectedSkills
+                .filter((s) => !SKILL_OPTIONS.includes(s))
+                .map((skill) => (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => toggleSkill(skill)}
+                    className="px-4 py-2 rounded-full text-xs font-bold bg-[#7300E5] text-white flex items-center gap-1 transition-all"
+                  >
+                    {skill}
+                    <X className="h-3 w-3" />
+                  </button>
+                ))}
+
+              {!isAddingSkill ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingSkill(true)}
+                  className="px-4 py-2 rounded-full text-xs font-bold border border-dashed border-[#7300E5] text-[#7300E5] hover:bg-[#F3E8FF] flex items-center gap-1 transition-all"
+                >
+                  <Plus className="h-3 w-3" />
+                  Others
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddCustomSkill()}
+                    placeholder="Enter skill..."
+                    autoFocus
+                    className="h-8 w-32 text-xs rounded-full border-[#7300E5]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddCustomSkill()}
+                    className="h-8 w-8 rounded-full bg-[#7300E5] text-white flex items-center justify-center"
+                  >
+                    <Check className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingSkill(false);
+                      setNewSkill("");
+                    }}
+                    className="h-8 w-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
             </div>
             {selectedSkills.length > 0 && (
               <p className="text-xs text-gray-500">
@@ -287,9 +354,9 @@ export default function CollaborateModal({
             </Label>
             <Input
               id="startDate"
+              type="datetime-local"
               value={formData.startDate}
               onChange={handleChange}
-              placeholder="Next Week"
               required
               className="h-12 rounded-lg border-gray-200"
             />
