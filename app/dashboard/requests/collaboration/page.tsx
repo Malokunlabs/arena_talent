@@ -1,198 +1,247 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import RequestTable, {
-  Request as CollabRequestUI,
-} from "@/components/dashboard/RequestTable";
 import { useCollaborationStore } from "@/store/useCollaborationStore";
-import { Loader2 } from "lucide-react";
-import {
-  CollaborationRequest,
-  CollaborationStatus,
-} from "@/services/collaborationService";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Loader2, Mail, Smartphone, MapPin, X, RefreshCw, Trash2 } from "lucide-react";
+import { CollaborationStatus } from "@/services/collaborationService";
+import { cn } from "@/lib/utils";
+
+type FilterStatus = "Pending" | "Hired" | "Rejected" | "Completed";
+
+function timeAgo(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) return `${diffInWeeks} week${diffInWeeks > 1 ? "s" : ""} ago`;
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
+  const diffInYears = Math.floor(diffInDays / 365);
+  return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
+}
+
+function mapApiStatusToUI(apiStatus: string): FilterStatus {
+  switch (apiStatus) {
+    case "PENDING":
+      return "Pending";
+    case "ACCEPTED":
+      return "Hired";
+    case "DECLINED":
+    case "CANCELLED":
+      return "Rejected";
+    case "COMPLETED":
+      return "Completed";
+    default:
+      return "Pending";
+  }
+}
 
 export default function CollaborateRequestsPage() {
-  const { requests, isLoading, fetchRequests, updateStatus } =
-    useCollaborationStore();
-  const [selectedRequest, setSelectedRequest] =
-    useState<CollaborationRequest | null>(null);
+  const { requests, isLoading, fetchRequests, updateStatus } = useCollaborationStore();
+  const [activeTab, setActiveTab] = useState<FilterStatus>("Pending");
 
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
 
-  // Map API requests to UI Request format
-  const mappedRequests: CollabRequestUI[] = (requests || []).map(
-    (req: CollaborationRequest) => {
-      // Map API status to UI status
-      let mappedStatus: CollabRequestUI["status"] = "Pending";
-      if (req.status === "ACCEPTED") mappedStatus = "Accepted";
-      if (req.status === "DECLINED" || req.status === "CANCELLED")
-        mappedStatus = "Rejected";
-      if (req.status === "COMPLETED") mappedStatus = "Accepted"; // Or another appropriate mapping
+  const mappedRequests = (requests || []).map((req) => ({
+    ...req,
+    uiStatus: mapApiStatusToUI(req.status),
+  }));
 
-      return {
-        id: req.id,
-        sender: {
-          name: req.fromUser?.username || "Unknown",
-          avatar: req.fromUser?.avatarUrl,
-          email: req.fromUser?.email || "",
-        },
-        details: `${req.title}: ${req.description.substring(0, 50)}...`,
-        date: new Intl.DateTimeFormat("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }).format(new Date(req.createdAt)),
-        status: mappedStatus,
-      };
-    },
-  );
+  const filteredRequests = mappedRequests.filter((req) => req.uiStatus === activeTab);
 
-  const handleStatusUpdate = async (id: string, status: string) => {
-    // Map UI status back to API status
-    let apiStatus: CollaborationStatus = "PENDING";
-    if (status === "Accepted") apiStatus = "ACCEPTED";
-    if (status === "Rejected") apiStatus = "DECLINED";
-
-    await updateStatus(id, apiStatus);
+  const getCounts = () => {
+    const counts = { Pending: 0, Hired: 0, Rejected: 0, Completed: 0 };
+    mappedRequests.forEach((req) => {
+      if (counts[req.uiStatus] !== undefined) {
+        counts[req.uiStatus]++;
+      }
+    });
+    return counts;
   };
 
-  if (isLoading && requests.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#7300E5]" />
-      </div>
-    );
-  }
+  const counts = getCounts();
+
+  const handleStatusUpdate = async (id: string, newStatus: CollaborationStatus) => {
+    await updateStatus(id, newStatus);
+  };
+
+  const tabs: FilterStatus[] = ["Pending", "Hired", "Rejected", "Completed"];
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Collaborate Requests
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Manage incoming requests for creative collaboration.
-        </p>
+    <div className="space-y-6 max-w-[1000px] mx-auto py-4">
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 pb-4">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab;
+          const dotColor = isActive ? "bg-[#7300E5]" : "bg-gray-400";
+          
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors text-sm font-semibold",
+                isActive
+                  ? "border-purple-100 bg-[#F4ECFF] text-[#7300E5]"
+                  : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+              )}
+            >
+              <div className={cn("w-2 h-2 rounded-full", dotColor)} />
+              {tab}
+              <span className="text-gray-900 ml-1">{counts[tab]}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <RequestTable
-        requests={mappedRequests}
-        onAccept={(id) => handleStatusUpdate(id, "Accepted")}
-        onReject={(id) => handleStatusUpdate(id, "Rejected")}
-        onStall={(id) => handleStatusUpdate(id, "Stalled")}
-        onView={(req) => {
-          const fullReq = requests.find((r) => r.id === req.id);
-          if (fullReq) setSelectedRequest(fullReq);
-        }}
-      />
+      {isLoading && requests.length === 0 ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#7300E5]" />
+        </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="py-20 text-center text-gray-400">
+          <p className="font-semibold text-lg">No {activeTab.toLowerCase()} requests yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredRequests.map((req) => (
+            <div key={req.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="space-y-4 flex-1">
+                  {/* Badge & Title */}
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1 rounded-full text-xs font-bold mb-3">
+                      🤝 Collab Request
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">{req.title}</h3>
+                    <p className="text-gray-500 text-sm mt-0.5">
+                      {req.fromUser?.firstName} {req.fromUser?.lastName} (@{req.fromUser?.username || "unknown"})
+                    </p>
+                  </div>
 
-      <Dialog
-        open={!!selectedRequest}
-        onOpenChange={(open) => !open && setSelectedRequest(null)}
-      >
-        <DialogContent className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-2xl font-bold">
-              Request Details
-            </DialogTitle>
-          </DialogHeader>
+                  {/* Details List */}
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span>{req.email || "No email"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-gray-400" />
+                      <span>{req.phone || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span>{req.city || req.locationType || "Remote"}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-400 text-base leading-none">📝</span>
+                      <span className="leading-snug">{req.description}</span>
+                    </div>
+                  </div>
 
-          {selectedRequest && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
-                  {selectedRequest.fromUser?.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedRequest.fromUser.avatarUrl}
-                      alt={selectedRequest.fromUser.username}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xl font-bold text-[#7300E5]">
-                      {selectedRequest.fromUser?.username?.charAt(0) || "U"}
+                  {/* Tags and Timeline */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {req.budget && (
+                      <div className="flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-bold">
+                        💰 ₦{req.budget}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-bold">
+                      📅 {req.startDate ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(req.startDate)) : "Flexible"}
+                    </div>
+                    {/* Display a couple of tags if present */}
+                    {req.roles?.slice(0, 2).map(role => (
+                      <div key={role} className="flex items-center gap-1.5 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full text-xs font-bold">
+                        {role}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="flex justify-end">
+                  {req.uiStatus === "Pending" && (
+                    <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold border border-yellow-100">
+                      Pending
+                    </span>
+                  )}
+                  {req.uiStatus === "Hired" && (
+                    <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-100">
+                      Hired
+                    </span>
+                  )}
+                  {req.uiStatus === "Rejected" && (
+                    <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
+                      Rejected
+                    </span>
+                  )}
+                  {req.uiStatus === "Completed" && (
+                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+                      Completed
                     </span>
                   )}
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">
-                    {selectedRequest.fromUser?.firstName}{" "}
-                    {selectedRequest.fromUser?.lastName}
-                  </h3>
-                  <p className="text-gray-500 text-sm">
-                    @{selectedRequest.fromUser?.username}
-                  </p>
-                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Title</p>
-                  <p className="font-semibold">{selectedRequest.title}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Status</p>
-                  <span className="inline-block px-3 py-1 mt-1 rounded-full text-xs font-bold bg-[#F3E8FF] text-[#7300E5]">
-                    {selectedRequest.status}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">City</p>
-                  <p className="font-semibold">
-                    {selectedRequest.city || "Remote"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">
-                    Start Date
-                  </p>
-                  <p className="font-semibold">
-                    {new Intl.DateTimeFormat("en-US", {
-                      dateStyle: "medium",
-                    }).format(new Date(selectedRequest.startDate))}
-                  </p>
-                </div>
-              </div>
+              {/* Footer Actions */}
+              <div className="mt-6 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <span className="text-xs text-gray-500 font-medium">
+                  {req.uiStatus === "Pending" ? "Requested" : req.uiStatus} {timeAgo(req.createdAt || new Date().toISOString())}
+                </span>
 
-              <div>
-                <p className="text-sm text-gray-500 font-medium mb-1">
-                  Description
-                </p>
-                <div className="p-4 bg-gray-50 rounded-xl text-gray-700 whitespace-pre-wrap">
-                  {selectedRequest.description}
-                </div>
-              </div>
+                <div className="flex items-center gap-3">
+                  {req.uiStatus === "Pending" && (
+                    <button 
+                      onClick={() => handleStatusUpdate(req.id, "DECLINED")}
+                      className="flex items-center gap-1.5 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel Request
+                    </button>
+                  )}
+                  
+                  {req.uiStatus === "Rejected" && (
+                    <>
+                      <button 
+                        onClick={() => handleStatusUpdate(req.id, "PENDING")}
+                        className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Reapply
+                      </button>
+                      <button className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        Dismiss
+                      </button>
+                    </>
+                  )}
 
-              <div className="flex flex-wrap gap-2">
-                {selectedRequest.roles?.map((role) => (
-                  <span
-                    key={role}
-                    className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"
-                  >
-                    {role}
-                  </span>
-                ))}
-                {selectedRequest.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-[#F3E8FF] text-[#7300E5] rounded-full text-xs font-semibold"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+                  {(req.uiStatus === "Hired" || req.uiStatus === "Completed") && (
+                    <>
+                      <button className="px-5 py-2 bg-[#7300E5] text-white hover:bg-[#6000c0] rounded-xl text-sm font-bold transition-colors shadow-sm">
+                        View Project
+                      </button>
+                      <button className="px-5 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors shadow-sm">
+                        Message
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

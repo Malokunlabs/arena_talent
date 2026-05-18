@@ -98,6 +98,8 @@ export default function CollaborateModal({
         roles: selectedSkills,
         city: formData.city,
         startDate: new Date(formData.startDate).toISOString(),
+        email: formData.email,
+        phone: formData.whatsapp,
         tags: ["tech"], // Default for now
       });
       setIsSubmitted(true);

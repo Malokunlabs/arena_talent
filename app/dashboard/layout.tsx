@@ -7,6 +7,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import OnboardingModal from "@/components/modals/OnboardingModal";
 import { useUserStore } from "@/store/useUserStore";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import { Menu } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
 }) {
   const { user, fetchUser } = useUserStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navLinks = [
     { name: "Arena", href: "/" },
@@ -40,6 +42,12 @@ export default function DashboardLayout({
       {/* Top Navigation */}
       <header className="fixed top-0 left-0 right-0 h-24 bg-white border-b border-gray-100 z-50 px-6 lg:px-10 flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <button
+            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <Menu className="w-6 h-6" />
+          </button>
           <Link href="/">
             <Image
               width={150}
@@ -67,7 +75,7 @@ export default function DashboardLayout({
       </header>
 
       <div className="flex pt-24 h-screen">
-        <DashboardSidebar />
+        <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <main className="flex-1 p-6 lg:p-10 overflow-x-hidden overflow-y-auto">
           {children}
         </main>

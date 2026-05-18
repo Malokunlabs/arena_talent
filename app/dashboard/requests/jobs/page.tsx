@@ -1,193 +1,241 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import RequestTable, {
-  Request as JobRequest,
-} from "@/components/dashboard/RequestTable";
 import { useTalentRequestStore } from "@/store/useTalentRequestStore";
-import { Loader2 } from "lucide-react";
-import { TalentRequest } from "@/services/talentService";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Loader2, Mail, Smartphone, MapPin, X, RefreshCw, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type FilterStatus = "Pending" | "Hired" | "Rejected" | "Completed";
+
+function timeAgo(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) return `${diffInWeeks} week${diffInWeeks > 1 ? "s" : ""} ago`;
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
+  const diffInYears = Math.floor(diffInDays / 365);
+  return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
+}
+
+function mapApiStatusToUI(apiStatus: string): FilterStatus {
+  switch (apiStatus) {
+    case "NEW":
+    case "PENDING":
+      return "Pending";
+    case "ACCEPTED":
+    case "HIRED":
+      return "Hired";
+    case "DECLINED":
+    case "CANCELLED":
+    case "REJECTED":
+      return "Rejected";
+    case "COMPLETED":
+      return "Completed";
+    default:
+      return "Pending";
+  }
+}
 
 export default function JobRequestsPage() {
-  const { requests, isLoading, fetchReceivedRequests, updateStatus } =
-    useTalentRequestStore();
-  const [selectedRequest, setSelectedRequest] = useState<TalentRequest | null>(
-    null,
-  );
+  const { requests, isLoading, fetchReceivedRequests, updateStatus } = useTalentRequestStore();
+  const [activeTab, setActiveTab] = useState<FilterStatus>("Pending");
 
   useEffect(() => {
     fetchReceivedRequests();
   }, [fetchReceivedRequests]);
 
-  // Map API requests to UI Request format
-  const mappedRequests: JobRequest[] = (requests || []).map(
-    (req: TalentRequest) => {
-      // Map API status to UI status
-      let mappedStatus: JobRequest["status"] = "Pending";
-      if (req.status === "COMPLETED") mappedStatus = "Accepted";
-      if (req.status === "DECLINED") mappedStatus = "Rejected";
-      // Add other mappings as needed
+  const mappedRequests = (requests || []).map((req) => ({
+    ...req,
+    uiStatus: mapApiStatusToUI(req.status),
+  }));
 
-      return {
-        id: req.id,
-        sender: {
-          name: req.companyName,
-          email: req.email,
-          avatar: req.avatarUrl,
-        },
-        details: `${req.requestType}: ${req.projectBrief.substring(0, 50)}...`,
-        date: new Intl.DateTimeFormat("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }).format(new Date(req.createdAt)),
-        status: mappedStatus,
-      };
-    },
-  );
+  const filteredRequests = mappedRequests.filter((req) => req.uiStatus === activeTab);
 
-  const handleStatusUpdate = async (id: string, status: string) => {
-    // Map UI status back to API status
-    let apiStatus = "NEW";
-    if (status === "Accepted") apiStatus = "COMPLETED"; // Or follow the pipeline
-    if (status === "Rejected") apiStatus = "DECLINED";
-
-    await updateStatus(id, apiStatus);
+  const getCounts = () => {
+    const counts = { Pending: 0, Hired: 0, Rejected: 0, Completed: 0 };
+    mappedRequests.forEach((req) => {
+      if (counts[req.uiStatus] !== undefined) {
+        counts[req.uiStatus]++;
+      }
+    });
+    return counts;
   };
 
-  if (isLoading && requests.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#7300E5]" />
-      </div>
-    );
-  }
+  const counts = getCounts();
+
+  const handleStatusUpdate = async (id: string, newStatus: string) => {
+    await updateStatus(id, newStatus);
+  };
+
+  const tabs: FilterStatus[] = ["Pending", "Hired", "Rejected", "Completed"];
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Job Requests</h1>
-        <p className="text-gray-500 mt-1">
-          Review and manage direct hiring requests.
-        </p>
+    <div className="space-y-6 max-w-[1000px] mx-auto py-4">
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 pb-4">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab;
+          const dotColor = isActive ? "bg-[#7300E5]" : "bg-gray-400";
+          
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors text-sm font-semibold",
+                isActive
+                  ? "border-purple-100 bg-[#F4ECFF] text-[#7300E5]"
+                  : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+              )}
+            >
+              <div className={cn("w-2 h-2 rounded-full", dotColor)} />
+              {tab}
+              <span className="text-gray-900 ml-1">{counts[tab]}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <RequestTable
-        requests={mappedRequests}
-        onAccept={(id) => handleStatusUpdate(id, "Accepted")}
-        onReject={(id) => handleStatusUpdate(id, "Rejected")}
-        onStall={(id) => handleStatusUpdate(id, "Stalled")}
-        onView={(req) => {
-          const fullReq = requests.find((r) => r.id === req.id);
-          if (fullReq) setSelectedRequest(fullReq);
-        }}
-      />
+      {isLoading && requests.length === 0 ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#7300E5]" />
+        </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="py-20 text-center text-gray-400">
+          <p className="font-semibold text-lg">No {activeTab.toLowerCase()} requests yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredRequests.map((req) => (
+            <div key={req.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="space-y-4 flex-1">
+                  {/* Badge & Title */}
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1 rounded-full text-xs font-bold mb-3">
+                      💼 Hire Request
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">{req.companyName}</h3>
+                    <p className="text-gray-500 text-sm mt-0.5">
+                      {req.requestType}
+                    </p>
+                  </div>
 
-      <Dialog
-        open={!!selectedRequest}
-        onOpenChange={(open) => !open && setSelectedRequest(null)}
-      >
-        <DialogContent className="max-w-2xl bg-white rounded-3xl p-6 sm:p-8">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-2xl font-bold">
-              Job Request Details
-            </DialogTitle>
-          </DialogHeader>
+                  {/* Details List */}
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span>{req.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-gray-400" />
+                      <span>{req.phone || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span>{req.city || req.location || "Remote"}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-400 text-base leading-none">📝</span>
+                      <span className="leading-snug">{req.projectBrief}</span>
+                    </div>
+                  </div>
 
-          {selectedRequest && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-[#F3E8FF] flex items-center justify-center border border-gray-100">
-                  {selectedRequest.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedRequest.avatarUrl}
-                      alt={selectedRequest.companyName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-2xl font-bold text-[#7300E5]">
-                      {selectedRequest.companyName.charAt(0).toUpperCase()}
+                  {/* Budget & Timeline */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <div className="flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-bold">
+                      💰 ₦{req.budgetMin?.toLocaleString() || 0} — ₦{req.budgetMax?.toLocaleString() || 0}
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-bold">
+                      📅 {req.timeline || "Flexible"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="flex justify-end">
+                  {req.uiStatus === "Pending" && (
+                    <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold border border-yellow-100">
+                      Pending
+                    </span>
+                  )}
+                  {req.uiStatus === "Hired" && (
+                    <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-100">
+                      Hired
+                    </span>
+                  )}
+                  {req.uiStatus === "Rejected" && (
+                    <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
+                      Rejected
+                    </span>
+                  )}
+                  {req.uiStatus === "Completed" && (
+                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+                      Completed
                     </span>
                   )}
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">
-                    {selectedRequest.companyName}
-                  </h3>
-                  <p className="text-gray-500 text-sm">
-                    {selectedRequest.requesterName} • {selectedRequest.email}
-                  </p>
-                </div>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Type</p>
-                  <p className="font-semibold">{selectedRequest.requestType}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Status</p>
-                  <span className="inline-block px-3 py-1 mt-1 rounded-full text-xs font-bold bg-[#F3E8FF] text-[#7300E5]">
-                    {selectedRequest.status}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Location</p>
-                  <p className="font-semibold">
-                    {selectedRequest.city || "Remote"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Budget</p>
-                  <p className="font-semibold text-green-700">
-                    ₦{selectedRequest.budgetMin.toLocaleString()} - ₦
-                    {selectedRequest.budgetMax.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Timeline</p>
-                  <p className="font-semibold">
-                    {selectedRequest.timeline || "Flexible"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Phone</p>
-                  <p className="font-semibold">
-                    {selectedRequest.phone || "N/A"}
-                  </p>
+              {/* Footer Actions */}
+              <div className="mt-6 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <span className="text-xs text-gray-500 font-medium">
+                  {req.uiStatus === "Pending" ? "Submitted" : req.uiStatus} {timeAgo(req.createdAt || new Date().toISOString())}
+                </span>
+
+                <div className="flex items-center gap-3">
+                  {req.uiStatus === "Pending" && (
+                    <button 
+                      onClick={() => handleStatusUpdate(req.id, "DECLINED")}
+                      className="flex items-center gap-1.5 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel Request
+                    </button>
+                  )}
+                  
+                  {req.uiStatus === "Rejected" && (
+                    <>
+                      <button 
+                        onClick={() => handleStatusUpdate(req.id, "NEW")}
+                        className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Reapply
+                      </button>
+                      <button className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        Dismiss
+                      </button>
+                    </>
+                  )}
+
+                  {(req.uiStatus === "Hired" || req.uiStatus === "Completed") && (
+                    <>
+                      <button className="px-5 py-2 bg-[#7300E5] text-white hover:bg-[#6000c0] rounded-xl text-sm font-bold transition-colors shadow-sm">
+                        View Project
+                      </button>
+                      <button className="px-5 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-bold transition-colors shadow-sm">
+                        Message
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-
-              <div>
-                <p className="text-sm text-gray-500 font-medium mb-1">
-                  Project Brief
-                </p>
-                <div className="p-4 bg-gray-50 rounded-xl text-gray-700 whitespace-pre-wrap">
-                  {selectedRequest.projectBrief}
-                </div>
-              </div>
-
-              {selectedRequest.notes && (
-                <div>
-                  <p className="text-sm text-gray-500 font-medium mb-1">
-                    Additional Notes
-                  </p>
-                  <div className="p-4 bg-gray-50/50 rounded-xl text-gray-600 whitespace-pre-wrap text-sm italic">
-                    {selectedRequest.notes}
-                  </div>
-                </div>
-              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

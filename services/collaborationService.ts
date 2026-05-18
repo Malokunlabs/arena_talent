@@ -15,6 +15,8 @@ export interface CollaborationRequest {
   status: CollaborationStatus;
   createdAt: string;
   updatedAt: string;
+  email?: string;
+  phone?: string;
   fromUser?: {
     id: string;
     firstName: string;
@@ -41,6 +43,8 @@ export interface CreateCollaborationRequest {
   city: string;
   startDate: string;
   tags: string[];
+  email?: string;
+  phone?: string;
 }
 
 export const collaborationService = {
