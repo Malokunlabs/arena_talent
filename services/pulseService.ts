@@ -23,6 +23,37 @@ export interface PulseResponse {
   createdAt: string;
 }
 
+export interface DayProgress {
+  day: string;
+  date: string;
+  completed: boolean;
+  isToday: boolean;
+}
+
+export interface HistoryDay extends DayProgress {
+  piEarned: number;
+}
+
+export interface Insight {
+  type: string;
+  title: string;
+  text: string;
+}
+
+export interface PulseStats {
+  currentStreak: number;
+  streakActive: boolean;
+  todayAvailablePi: number;
+  todayEarnedPi: number;
+  streakBonusAvailable: number;
+  totalPotentialToday: number;
+  totalQuestionsToday: number;
+  answeredQuestionsToday: number;
+  weekProgress: DayProgress[];
+  last7DaysHistory: HistoryDay[];
+  insights: Insight[];
+}
+
  export const pulseService = {
   // User Endpoints
   async getActivePulse(): Promise<Pulse | null> {
@@ -35,5 +66,9 @@ export interface PulseResponse {
 
   async respondToPulse(id: string, value: string): Promise<PulseResponse> {
     return apiClient.post<PulseResponse>(`/pulse/${id}/respond`, { value });
+  },
+
+  async getPulseStats(): Promise<PulseStats> {
+    return apiClient.get<PulseStats>("/pulse/stats");
   },
 };

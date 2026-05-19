@@ -11,6 +11,14 @@ export interface UserProfile {
   bio?: string;
   location?: string;
   skills?: string[];
+  isAvailable?: boolean;
+  notifyNewHireRequests?: boolean;
+  notifyCollaborationProposals?: boolean;
+  notifyDailyPulseReminders?: boolean;
+  notifyProofSalutes?: boolean;
+  notifyWeeklyDigest?: boolean;
+  notifyMarketingPromotions?: boolean;
+  isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -24,6 +32,14 @@ export interface UpdateUserData {
   avatarUrl?: string;
   username?: string;
   skills?: string[];
+  isAvailable?: boolean;
+  notifyNewHireRequests?: boolean;
+  notifyCollaborationProposals?: boolean;
+  notifyDailyPulseReminders?: boolean;
+  notifyProofSalutes?: boolean;
+  notifyWeeklyDigest?: boolean;
+  notifyMarketingPromotions?: boolean;
+  isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -36,5 +52,9 @@ export const userService = {
   async updateUserProfile(data: UpdateUserData): Promise<UserProfile> {
     // Check if apiClient supports PATCH or if we need to implement it
     return apiClient.patch("/auth/profile", data);
+  },
+
+  async deleteAccount(): Promise<{ message: string; scheduledDeletionDate: string }> {
+    return apiClient.delete("/auth/account");
   },
 };

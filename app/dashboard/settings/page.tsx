@@ -8,7 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Camera, Trash2, Save, Lock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
+import { userService } from "@/services/userService";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 // Custom Toggle Switch component
 const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => {
@@ -62,6 +65,9 @@ export default function SettingsPage() {
   const [isAddingCustomSkill, setIsAddingCustomSkill] = useState(false);
   const [customSkillInput, setCustomSkillInput] = useState("");
   const [addedCustomSkills, setAddedCustomSkills] = useState<string[]>([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteUsernameInput, setDeleteUsernameInput] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -77,6 +83,17 @@ export default function SettingsPage() {
       if (user.skills) {
         setActiveSkills(user.skills);
       }
+      setToggles({
+        newHire: user.notifyNewHireRequests ?? true,
+        collabProposals: user.notifyCollaborationProposals ?? true,
+        dailyPulse: user.notifyDailyPulseReminders ?? true,
+        proofSalutes: user.notifyProofSalutes ?? true,
+        weeklyDigest: user.notifyWeeklyDigest ?? true,
+        marketing: user.notifyMarketingPromotions ?? true,
+        availability: user.isAvailable ?? true,
+        publicProfile: user.isPublic ?? true,
+        twoFactor: false,
+      });
     }
   }, [user]);
 
@@ -157,8 +174,47 @@ export default function SettingsPage() {
     }
   };
 
-  const handleToggle = (key: keyof typeof toggles) => {
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleToggle = async (key: keyof typeof toggles) => {
+    const newValue = !toggles[key];
+    setToggles((prev) => ({ ...prev, [key]: newValue }));
+
+    const keyMap: Record<string, string> = {
+      newHire: "notifyNewHireRequests",
+      collabProposals: "notifyCollaborationProposals",
+      dailyPulse: "notifyDailyPulseReminders",
+      proofSalutes: "notifyProofSalutes",
+      weeklyDigest: "notifyWeeklyDigest",
+      marketing: "notifyMarketingPromotions",
+      availability: "isAvailable",
+      publicProfile: "isPublic",
+    };
+
+    const apiField = keyMap[key];
+    if (apiField) {
+      const success = await updateUser({ [apiField]: newValue });
+      if (!success) {
+        toast.error("Failed to update setting");
+        setToggles((prev) => ({ ...prev, [key]: !newValue }));
+      }
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteUsernameInput !== user?.username) {
+      toast.error("Username does not match");
+      return;
+    }
+    
+    setIsDeletingAccount(true);
+    try {
+      await userService.deleteAccount();
+      useUserStore.getState().clearUser();
+      window.location.href = '/login';
+    } catch (error) {
+      toast.error("Failed to delete account");
+      setIsDeletingAccount(false);
+      setIsDeleteModalOpen(false);
+    }
   };
 
   return (
@@ -536,11 +592,60 @@ export default function SettingsPage() {
           <p className="text-xs text-gray-500 mb-5 font-medium">
             Permanently delete your account, all proofs, and data. This cannot be undone.
           </p>
-          <button className="flex items-center gap-2 border border-red-500 text-red-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors">
+          <button 
+            onClick={() => {
+              setDeleteUsernameInput("");
+              setIsDeleteModalOpen(true);
+            }}
+            className="flex items-center gap-2 border border-red-500 text-red-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors"
+          >
             <Trash2 className="w-4 h-4" /> Delete Account
           </button>
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md p-6 bg-white rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-red-600">Delete Account</DialogTitle>
+            <DialogDescription className="text-gray-500 mt-2">
+              Are you sure you want to delete your account? This action will schedule your account for deletion in 7 days. You can recover it before then by logging back in.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-6">
+            <Label className="text-sm font-bold text-gray-700 mb-2 block">
+              Type your username <span className="text-red-500 font-mono font-normal">({user?.username})</span> to confirm
+            </Label>
+            <Input
+              value={deleteUsernameInput}
+              onChange={(e) => setDeleteUsernameInput(e.target.value)}
+              placeholder={user?.username || "username"}
+              className="h-12 rounded-xl border-gray-200"
+            />
+          </div>
+
+          <DialogFooter className="gap-3 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="rounded-xl font-bold"
+              disabled={isDeletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleteUsernameInput !== user?.username || isDeletingAccount}
+              className="rounded-xl font-bold bg-red-600 hover:bg-red-700"
+            >
+              {isDeletingAccount ? "Deleting..." : "Confirm Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

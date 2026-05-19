@@ -14,7 +14,7 @@ const navGroups = [
     items: [
       { title: "Overview", href: "/dashboard", iconSrc: "/dashboard-icons/overview-icon.svg" },
       { title: "My Proofs", href: "/dashboard/proofs", iconSrc: "/dashboard-icons/my-proof-icon.svg" },
-      { title: "Daily Pulse", href: "/dashboard/daily-pulse", iconSrc: "/dashboard-icons/daily-pulse.svg" },
+      { title: "Daily Pulse", href: "/dashboard/pulse", iconSrc: "/dashboard-icons/daily-pulse.svg" },
       { title: "Arena Feed", href: "/dashboard/arena-feed", iconSrc: "/dashboard-icons/arena-feed.svg" },
     ],
   },
