@@ -141,7 +141,7 @@ export default function CollaborateRequestsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-gray-400" />
-                      <span>{req.city || req.locationType || "Remote"}</span>
+                      <span>{req.city || "Remote"}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-gray-400 text-base leading-none">📝</span>
@@ -151,11 +151,7 @@ export default function CollaborateRequestsPage() {
 
                   {/* Tags and Timeline */}
                   <div className="flex flex-wrap items-center gap-3 pt-1">
-                    {req.budget && (
-                      <div className="flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-bold">
-                        💰 ₦{req.budget}
-                      </div>
-                    )}
+
                     <div className="flex items-center gap-1.5 bg-[#F4ECFF] text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-bold">
                       📅 {req.startDate ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(req.startDate)) : "Flexible"}
                     </div>

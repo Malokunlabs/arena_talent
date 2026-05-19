@@ -8,7 +8,15 @@ import { Settings, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 
-const navGroups = [
+type NavItem = {
+  title: string;
+  href: string;
+  iconSrc?: string;
+  LucideIcon?: React.ElementType;
+  badge?: number | string;
+};
+
+const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: "MENU",
     items: [

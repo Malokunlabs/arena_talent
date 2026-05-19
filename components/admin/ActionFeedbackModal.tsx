@@ -8,7 +8,7 @@ import { Check, X, Star } from "lucide-react";
 interface ActionFeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: "approved" | "rejected" | "featured" | "verified";
+  type: "approved" | "rejected" | "featured" | "verified" | "flagged";
   message: string;
   subMessage: string;
 }
@@ -39,6 +39,12 @@ export default function ActionFeedbackModal({
         return (
           <div className="h-20 w-20 rounded-full border-4 border-green-500 flex items-center justify-center text-green-500">
             <Star className="h-10 w-10 fill-green-500 stroke-none" />
+          </div>
+        );
+      case "flagged":
+        return (
+          <div className="h-20 w-20 rounded-full border-4 border-orange-100 bg-orange-50 flex items-center justify-center text-orange-500">
+            <X className="h-10 w-10 stroke-3" />
           </div>
         );
     }
