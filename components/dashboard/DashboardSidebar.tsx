@@ -30,6 +30,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "TALENT",
     items: [
       { title: "My Profile", href: "/dashboard/profile", iconSrc: "/dashboard-icons/my-profile-icon.svg" },
+      { title: "Badges", href: "/dashboard/badges", iconSrc: "/dashboard-icons/my-profile-icon.svg" },
       { title: "Hire Requests", href: "/dashboard/requests/jobs", iconSrc: "/dashboard-icons/hire-request-icon.svg" },
       { title: "Collaborations", href: "/dashboard/requests/collaboration", iconSrc: "/dashboard-icons/collaborations-icon.svg" },
     ],

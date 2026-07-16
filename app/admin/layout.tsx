@@ -12,6 +12,7 @@ import {
   LogOut,
   Bell,
   Search,
+  BadgeCheck,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -32,6 +33,7 @@ const sidebarLinks = [
   },
   { icon: Activity, label: "Pulse Manager", href: "/admin/pulse" },
   { icon: UserCheck, label: "Talent Directory", href: "/admin/talents" },
+  { icon: BadgeCheck, label: "Badges", href: "/admin/badges" },
   { icon: CreditCard, label: "Finance & Payouts", href: "/admin/finance" },
   { icon: BarChart3, label: "Reports", href: "/admin/reports" },
 ];
