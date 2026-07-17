@@ -2,7 +2,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { Inter_Tight } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { Metadata } from "next";
 
 const interTight = Inter_Tight({
@@ -26,7 +25,6 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Toaster />
-        <Footer />
       </body>
     </html>
   );

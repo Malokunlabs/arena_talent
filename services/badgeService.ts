@@ -99,6 +99,12 @@ export interface BadgeApplication {
   updatedAt: string;
 }
 
+export interface MyApplicationsResponse {
+  all: BadgeApplication[];
+  pending: BadgeApplication[];
+  verified: BadgeApplication[];
+}
+
 export interface BadgeDashboard {
   myApplications: BadgeApplication[];
   badges: SkillBadge[];
@@ -115,9 +121,17 @@ const badgeService = {
     return apiClient.get<SkillBadge>(`/skill-badges/${slug}`);
   },
 
-  /** User badge dashboard */
-  getDashboard(): Promise<BadgeDashboard> {
-    return apiClient.get<BadgeDashboard>("/skill-badges/dashboard");
+  /** User badge dashboard — composed from two real endpoints */
+  async getDashboard(): Promise<BadgeDashboard> {
+    const [badges, appsResponse] = await Promise.all([
+      apiClient.get<SkillBadge[]>("/skill-badges"),
+      apiClient.get<MyApplicationsResponse>("/skill-badges/me/applications"),
+    ]);
+    // Backend returns { all, pending, verified } — flatten to all applications
+    const myApplications = Array.isArray(appsResponse)
+      ? appsResponse
+      : appsResponse?.all ?? [];
+    return { badges, myApplications };
   },
 
   /** Get user's single application by badge slug */

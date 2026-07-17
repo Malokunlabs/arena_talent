@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, Trash2, Save, Lock, Loader2 } from "lucide-react";
+import { mediaService } from "@/services/mediaService";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 import { userService } from "@/services/userService";
@@ -68,6 +69,38 @@ export default function SettingsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteUsernameInput, setDeleteUsernameInput] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingAvatar(true);
+    try {
+      const url = await mediaService.upload(file, "avatars");
+      const success = await updateUser({ avatarUrl: url });
+      if (success) {
+        toast.success("Profile photo updated");
+      } else {
+        toast.error("Failed to save photo");
+      }
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset so same file can be re-selected
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    const success = await updateUser({ avatarUrl: "" });
+    if (success) {
+      toast.success("Profile photo removed");
+    } else {
+      toast.error("Failed to remove photo");
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -237,27 +270,63 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex items-center gap-6 mb-8">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[#7300E5] flex-shrink-0 relative border border-gray-200 flex items-center justify-center">
-            {user?.avatarUrl ? (
-              <Image
-                src={user.avatarUrl}
-                alt="Avatar"
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <span className="text-white font-bold text-3xl tracking-widest uppercase">
-                {`${formData.firstName.charAt(0) || "U"}${formData.lastName.charAt(0) || ""}`}
-              </span>
+          {/* Hidden file input */}
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+
+          {/* Avatar preview */}
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
+            <div className="w-full h-full rounded-full overflow-hidden bg-[#7300E5] border border-gray-200 flex items-center justify-center">
+              {user?.avatarUrl ? (
+                <Image
+                  src={user.avatarUrl}
+                  alt="Avatar"
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold text-3xl tracking-widest uppercase">
+                  {`${formData.firstName.charAt(0) || "U"}${formData.lastName.charAt(0) || ""}`}
+                </span>
+              )}
+            </div>
+            {/* Upload spinner overlay */}
+            {isUploadingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              </div>
             )}
           </div>
+
           <div className="flex flex-col gap-3">
-            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              <Camera className="w-4 h-4" /> Change Photo
+            <button
+              type="button"
+              disabled={isUploadingAvatar}
+              onClick={() => avatarInputRef.current?.click()}
+              className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+              {isUploadingAvatar ? "Uploading..." : "Change Photo"}
             </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              <Trash2 className="w-4 h-4" /> Remove
-            </button>
+            {user?.avatarUrl && (
+              <button
+                type="button"
+                disabled={isUploadingAvatar}
+                onClick={handleRemoveAvatar}
+                className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" /> Remove
+              </button>
+            )}
           </div>
         </div>
 
