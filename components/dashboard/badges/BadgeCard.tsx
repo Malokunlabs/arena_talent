@@ -42,6 +42,7 @@ export default function BadgeCard({
   applied,
   applicationStatus,
 }: BadgeCardProps) {
+  const isCustomIcon = badge.iconKey && badge.iconKey.startsWith("http");
   const Icon = ICON_MAP[badge.iconKey] ?? Sparkles;
 
   const getStatusPill = () => {
@@ -87,8 +88,17 @@ export default function BadgeCard({
     <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4 shadow-sm hover:shadow-md hover:border-[#7300E5]/20 transition-all duration-200 group">
       {/* Icon */}
       <div className="flex flex-col items-center gap-2">
-        <div className="w-16 h-16 rounded-full border-2 border-[#7300E5]/30 flex items-center justify-center bg-[#F4ECFF] group-hover:bg-[#7300E5] transition-colors duration-200">
-          <Icon className="w-7 h-7 text-[#7300E5] group-hover:text-white transition-colors duration-200" />
+        <div className="relative w-16 h-16 rounded-full border-2 border-[#7300E5]/30 flex items-center justify-center bg-[#F4ECFF] group-hover:bg-[#7300E5] transition-colors duration-200 overflow-hidden">
+          {isCustomIcon ? (
+            <img src={badge.iconKey} alt={badge.name} className="w-full h-full object-cover" />
+          ) : (
+            <Icon className="w-7 h-7 text-[#7300E5] group-hover:text-white transition-colors duration-200" />
+          )}
+          {!badge.isActive && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+              <span className="bg-gray-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shadow">Paused</span>
+            </div>
+          )}
         </div>
         <div className="text-center">
           <h3 className="font-bold text-gray-900 text-base">{badge.name}</h3>
@@ -128,12 +138,15 @@ export default function BadgeCard({
             ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
             : applicationStatus === "PENDING" || applicationStatus === "UNDER_REVIEW"
             ? "bg-gray-50 text-gray-500 border border-gray-200 cursor-default"
+            : !badge.isActive
+            ? "bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed"
             : "bg-[#F4ECFF] text-[#7300E5] hover:bg-[#7300E5] hover:text-white"
         }`}
         disabled={
           applicationStatus === "APPROVED" ||
           applicationStatus === "PENDING" ||
-          applicationStatus === "UNDER_REVIEW"
+          applicationStatus === "UNDER_REVIEW" ||
+          (!applied && !badge.isActive)
         }
       >
         {applicationStatus === "APPROVED"
@@ -142,6 +155,8 @@ export default function BadgeCard({
           ? "Application In Review"
           : applicationStatus === "REJECTED" || applicationStatus === "APPEALED"
           ? "View Application"
+          : !badge.isActive
+          ? "Currently Paused"
           : "Verify Talent Badge"}
       </button>
     </div>

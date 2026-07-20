@@ -23,7 +23,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type MainTab = "pending" | "approved" | "rejected" | "completed";
+type MainTab = "pending" | "approved" | "rejected" | "completed" | "definitions";
 
 type ActiveModal =
   | { kind: "detail"; app: AdminBadgeApplication }
@@ -32,7 +32,7 @@ type ActiveModal =
   | { kind: "action"; type: "approve" | "reject" | "uphold" | "approve-appeal"; app: AdminBadgeApplication };
 
 // ─── Tab status mapping ───────────────────────────────────────────────────────
-const TAB_STATUSES: Record<MainTab, BadgeApplicationStatus[]> = {
+const TAB_STATUSES: Partial<Record<MainTab, BadgeApplicationStatus[]>> = {
   pending: ["PENDING", "UNDER_REVIEW"],
   approved: ["APPROVED"],
   rejected: ["REJECTED", "APPEALED"],
@@ -135,6 +135,7 @@ export default function AdminBadgesPage() {
   const [activeTab, setActiveTab] = useState<MainTab>("pending");
   const [stats, setStats] = useState<AdminBadgeStats | null>(null);
   const [applications, setApplications] = useState<AdminBadgeApplication[]>([]);
+  const [definitions, setDefinitions] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -146,22 +147,32 @@ export default function AdminBadgesPage() {
     approved: stats?.totalApproved ?? 0,
     rejected: 0,
     completed: 0,
+    definitions: 0,
   };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsData, listData] = await Promise.all([
-        adminBadgeService.getStats(),
-        adminBadgeService.listApplications({
-          status: TAB_STATUSES[activeTab][0],
-          search: search || undefined,
-          limit: 50,
-        }),
-      ]);
-      setStats(statsData);
-      setApplications(listData.data);
-      setTotal(listData.total);
+      if (activeTab === "definitions") {
+        const [statsData, defsData] = await Promise.all([
+          adminBadgeService.getStats(),
+          adminBadgeService.getBadgeDefinitions(),
+        ]);
+        setStats(statsData);
+        setDefinitions(defsData);
+      } else {
+        const [statsData, listData] = await Promise.all([
+          adminBadgeService.getStats(),
+          adminBadgeService.listApplications({
+            status: TAB_STATUSES[activeTab]?.[0],
+            search: search || undefined,
+            limit: 50,
+          }),
+        ]);
+        setStats(statsData);
+        setApplications(listData.data);
+        setTotal(listData.total);
+      }
     } catch {
       /* silently handle */
     } finally {
@@ -201,6 +212,7 @@ export default function AdminBadgesPage() {
     { key: "approved", label: "Approved" },
     { key: "rejected", label: "Rejected" },
     { key: "completed", label: "Completed" },
+    { key: "definitions", label: "Definitions" },
   ];
 
   return (
@@ -208,9 +220,14 @@ export default function AdminBadgesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Badges</h1>
-        <button className="flex items-center gap-2 bg-[#7300E5] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#5c00b8] transition-colors">
-          <Download className="w-4 h-4" /> Export
-        </button>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+            <Download className="w-4 h-4" /> Export
+          </button>
+          <a href="/admin/badges/create" className="flex items-center gap-2 bg-[#7300E5] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#5c00b8] transition-colors">
+            <span className="text-lg leading-none">+</span> Add a Badge
+          </a>
+        </div>
       </div>
 
       {/* Main tabs */}
@@ -249,11 +266,13 @@ export default function AdminBadgesPage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {activeStats.map((s) => (
-          <StatCard key={s.label} {...s} />
-        ))}
-      </div>
+      {activeTab !== "definitions" && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeStats.map((s) => (
+            <StatCard key={s.label} {...s} />
+          ))}
+        </div>
+      )}
 
       {/* Search + Filter row */}
       <div className="flex items-center gap-3">
@@ -277,29 +296,79 @@ export default function AdminBadgesPage() {
 
       {/* Table */}
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        {/* Table header */}
-        <div className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
-          style={{
-            gridTemplateColumns: activeTab === "approved"
-              ? "2fr 2fr 1fr 1fr 1fr 1fr 1fr"
-              : "2fr 2fr 1fr 1fr 1fr 1fr",
-          }}
-        >
-          <span>Talent</span>
-          <span>{activeTab === "approved" ? "Badge" : "Badge Requested"}</span>
-          <span>{activeTab === "approved" ? "Tier" : "Current Tier"}</span>
-          {activeTab === "approved" && <span>Status</span>}
-          <span>{activeTab === "approved" ? "Approved" : "Assessment Score"}</span>
-          <span>Submitted</span>
-          <span className="text-right">Actions</span>
-        </div>
+        {activeTab === "definitions" ? (
+          <>
+            <div className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+              style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
+            >
+              <span>Badge Name</span>
+              <span>Scope of Work</span>
+              <span>Assessment Method</span>
+              <span className="text-right">Actions</span>
+            </div>
+            
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : definitions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Inbox className="w-10 h-10 text-gray-200 mb-3" />
+                <p className="text-gray-400 text-sm font-medium">No badge definitions found</p>
+              </div>
+            ) : (
+              definitions.map((def) => {
+                const Icon = ICON_MAP[def.iconKey] ?? Sparkles;
+                return (
+                  <div key={def.id} className="grid gap-4 px-5 py-3.5 border-b border-gray-50 items-center hover:bg-gray-50/60 transition-colors last:border-0"
+                    style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-[#F4ECFF] flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4 text-[#7300E5]" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-bold text-gray-900">{def.name}</p>
+                        <p className="text-[12px] text-gray-400 font-medium">/{def.slug}</p>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-gray-600 line-clamp-2">{def.scopeOfWork}</p>
+                    <p className="text-[13px] text-gray-600 line-clamp-2">{def.assessmentMethod}</p>
+                    <div className="flex items-center justify-end">
+                      <a href={`/admin/badges/${def.id}/edit`} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#7300E5] hover:border-[#7300E5] transition-all">
+                        <PenLine className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
+        ) : (
+          <>
+            {/* Table header */}
+            <div className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+              style={{
+                gridTemplateColumns: activeTab === "approved"
+                  ? "2fr 2fr 1fr 1fr 1fr 1fr 1fr"
+                  : "2fr 2fr 1fr 1fr 1fr 1fr",
+              }}
+            >
+              <span>Talent</span>
+              <span>{activeTab === "approved" ? "Badge" : "Badge Requested"}</span>
+              <span>{activeTab === "approved" ? "Tier" : "Current Tier"}</span>
+              {activeTab === "approved" && <span>Status</span>}
+              <span>{activeTab === "approved" ? "Approved" : "Assessment Score"}</span>
+              <span>Submitted</span>
+              <span className="text-right">Actions</span>
+            </div>
 
-        {/* Rows */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : applications.length === 0 ? (
+            {/* Rows */}
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : applications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Inbox className="w-10 h-10 text-gray-200 mb-3" />
             <p className="text-gray-400 text-sm font-medium">No applications found</p>
@@ -452,6 +521,8 @@ export default function AdminBadgesPage() {
               </div>
             );
           })
+        )}
+        </>
         )}
       </div>
 

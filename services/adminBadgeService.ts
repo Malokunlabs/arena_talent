@@ -2,6 +2,7 @@ import { apiClient } from "./apiClient";
 import {
   type BadgeApplication,
   type BadgeApplicationStatus,
+  type SkillBadge,
 } from "./badgeService";
 
 export interface AdminBadgeStats {
@@ -80,6 +81,17 @@ export interface ResolveAppealDto {
   tier?: "BEGINNER" | "INTERMEDIATE" | "PROFESSIONAL";
 }
 
+export interface CreateBadgeDto {
+  name: string;
+  iconKey?: string;
+  scopeOfWork: string;
+  assessmentMethod: string;
+  isActive?: boolean;
+  formSchema?: any[];
+}
+
+export type UpdateBadgeDto = Partial<CreateBadgeDto>;
+
 const adminBadgeService = {
   getStats(): Promise<AdminBadgeStats> {
     return apiClient.get<AdminBadgeStats>("/admin/skill-badges/stats");
@@ -152,6 +164,49 @@ const adminBadgeService = {
       dto
     );
   },
+
+  // ---------------------------------------------------------------------------
+  // Definitions
+  // ---------------------------------------------------------------------------
+
+  getBadgeDefinitions(): Promise<SkillBadge[]> {
+    return apiClient.get<SkillBadge[]>("/admin/skill-badges/definitions");
+  },
+
+  createBadgeDefinition(dto: CreateBadgeDto): Promise<SkillBadge> {
+    return apiClient.post<SkillBadge>("/admin/skill-badges/definitions", dto);
+  },
+
+  updateBadgeDefinition(id: string, dto: UpdateBadgeDto): Promise<SkillBadge> {
+    return apiClient.patch<SkillBadge>(`/admin/skill-badges/definitions/${id}`, dto);
+  },
+
+  async uploadBadgeIcon(file: File): Promise<{ url: string; key: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("prefix", "badges"); // Keep organized in 'badges' folder
+
+    // Get the JWT token from storage for the upload request
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/media/upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 };
 
 export default adminBadgeService;

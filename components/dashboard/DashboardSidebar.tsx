@@ -124,15 +124,28 @@ export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarPr
       <div className="p-4 mt-auto">
         <Link href="/dashboard/profile" onClick={onClose}>
           <div className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-gray-50 transition-colors">
-            <div className="w-[42px] h-[42px] rounded-full bg-[#F4ECFF] text-[#7300E5] flex items-center justify-center font-bold text-sm shrink-0">
-              {getInitials()}
+            <div className="relative w-[42px] h-[42px] rounded-full shrink-0 overflow-hidden bg-[#F4ECFF] flex items-center justify-center">
+              {user?.avatarUrl ? (
+                <Image
+                  src={user.avatarUrl}
+                  alt="Avatar"
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <span className="text-[#7300E5] font-bold text-sm">
+                  {getInitials()}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">
                 {user ? `${user.firstName} ${user.lastName}` : "Arena Talent"}
               </p>
               <p className="text-[13px] text-gray-500 truncate">
-                Level {user?.progressIndex || 6} • {user?.piScore || 89} PI
+                {user?.progressIndex != null && user?.piScore != null
+                  ? `Level ${user.progressIndex} • ${user.piScore} PI`
+                  : user?.email ?? ""}
               </p>
             </div>
             <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />

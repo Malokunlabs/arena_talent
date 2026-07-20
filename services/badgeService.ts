@@ -12,8 +12,8 @@ export type BadgeApplicationStatus =
 export interface FormField {
   id: string;
   label: string;
-  type: "file_upload" | "textarea" | "text" | "select";
-  required: boolean;
+  type: "short_text" | "long_text" | "file_upload" | "select";
+  required?: boolean;
   description?: string;
   placeholder?: string;
   options?: string[];
@@ -22,6 +22,7 @@ export interface FormField {
     maxSizeMb?: number;
     accept?: string[];
     minWords?: number;
+    maxWords?: number;
   };
 }
 

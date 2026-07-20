@@ -112,7 +112,7 @@ export default function FormRenderer({
                   {field.validation?.accept
                     ?.map((a) => a.replace("image/", "").replace("video/", "").toUpperCase())
                     .join(", ") ?? "All files"}{" "}
-                  · Max {field.validation?.maxSizeMb ?? 50}MB each
+                  · Max {field.validation?.maxSizeMb ?? 5}MB each
                 </p>
                 <input
                   ref={(el) => {
@@ -185,8 +185,8 @@ export default function FormRenderer({
             </div>
           )}
 
-          {/* Textarea */}
-          {field.type === "textarea" && (
+          {/* Textarea (long_text) */}
+          {field.type === "long_text" && (
             <div>
               {field.description && (
                 <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 mb-2">
@@ -202,24 +202,30 @@ export default function FormRenderer({
                 value={(values[field.id] as string) ?? ""}
                 onChange={(e) => onChange(field.id, e.target.value)}
               />
-              {field.validation?.minWords && (
+              {field.validation?.maxWords && (
                 <p className="text-[11px] text-gray-400 mt-1">
-                  Min. {field.validation.minWords} words · Be specific about your
-                  creative decisions
+                  Max. {field.validation.maxWords} words
                 </p>
               )}
             </div>
           )}
 
-          {/* Text */}
-          {field.type === "text" && (
-            <input
-              type="text"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7300E5]/30 focus:border-[#7300E5] transition-all"
-              placeholder={field.placeholder}
-              value={(values[field.id] as string) ?? ""}
-              onChange={(e) => onChange(field.id, e.target.value)}
-            />
+          {/* Text (short_text) */}
+          {field.type === "short_text" && (
+            <div>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7300E5]/30 focus:border-[#7300E5] transition-all"
+                placeholder={field.placeholder}
+                value={(values[field.id] as string) ?? ""}
+                onChange={(e) => onChange(field.id, e.target.value)}
+              />
+              {field.validation?.maxWords && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Max. {field.validation.maxWords} words
+                </p>
+              )}
+            </div>
           )}
 
           {/* Select */}
