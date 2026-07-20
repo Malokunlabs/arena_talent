@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Lock, ArrowUp } from "lucide-react";
+import { Lock, ArrowUp, Crown, Check } from "lucide-react";
 import { type BadgeTierInfo, type BadgeTier } from "@/services/badgeService";
 
 interface TierPrivilegesPanelProps {
@@ -9,135 +9,121 @@ interface TierPrivilegesPanelProps {
   currentTier: BadgeTier | null;
 }
 
-const TIER_ORDER: BadgeTier[] = ["BEGINNER", "INTERMEDIATE", "PROFESSIONAL"];
-
-const TIER_LABELS: Record<BadgeTier, string> = {
-  BEGINNER: "Beginner",
-  INTERMEDIATE: "Intermediate",
-  PROFESSIONAL: "Professional",
-};
-
-const TIER_COLORS: Record<BadgeTier, { bg: string; text: string; border: string; icon: string }> = {
-  BEGINNER: {
-    bg: "bg-[#F4ECFF]",
-    text: "text-[#7300E5]",
-    border: "border-[#7300E5]/20",
-    icon: "text-[#7300E5]",
+const DEFAULT_TIERS = [
+  {
+    tier: "BEGINNER" as BadgeTier,
+    title: "Beginner Unlocks",
+    subtitle: "Your current tier privileges",
+    items: [
+      "Standard public gig listings",
+      "Base gig rates",
+      "Profile badge visibility",
+      "Proof feed visibility",
+    ],
   },
-  INTERMEDIATE: {
-    bg: "bg-purple-600",
-    text: "text-white",
-    border: "border-purple-600",
-    icon: "text-white",
+  {
+    tier: "INTERMEDIATE" as BadgeTier,
+    title: "Intermediate Unlocks",
+    subtitle: "Unlock at 20+ gigs with 4.3+ rating",
+    items: [
+      "Higher-paying gigs + early access",
+      "+15-25% pay rate uplift",
+      'Priority "Hire Me" matching',
+      "Featured status on Talent page",
+    ],
   },
-  PROFESSIONAL: {
-    bg: "bg-gray-100",
-    text: "text-gray-400",
-    border: "border-gray-200",
-    icon: "text-gray-400",
+  {
+    tier: "PROFESSIONAL" as BadgeTier,
+    title: "Professional Unlocks",
+    subtitle: "Unlock at 50+ gigs with 4.6+ rating",
+    items: [
+      "Sensitive / enterprise gigs",
+      "Brand partnerships",
+      "+30-50% pay uplift",
+      "Collaborate request priority",
+      "Beta features & financial tools",
+    ],
   },
-};
+];
 
 export default function TierPrivilegesPanel({ tiers, currentTier }: TierPrivilegesPanelProps) {
-  const sortedTiers = [...tiers].sort(
-    (a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier)
-  );
-
-  const currentTierIndex = currentTier ? TIER_ORDER.indexOf(currentTier) : 0;
-
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-      <div className="mb-4">
+      <div className="mb-6">
         <h3 className="font-bold text-gray-900 text-base">Tier Privileges</h3>
-        <p className="text-[13px] text-gray-500 mt-0.5">
+        <p className="text-[12px] text-gray-400 mt-0.5">
           Platform upgrades unlocked at each tier
         </p>
       </div>
 
-      <div className="space-y-3">
-        {sortedTiers.map((tier, idx) => {
-          const isUnlocked = TIER_ORDER.indexOf(tier.tier) <= currentTierIndex;
-          const isCurrent = tier.tier === currentTier;
-          const colors = TIER_COLORS[tier.tier];
+      <div className="space-y-4">
+        {DEFAULT_TIERS.map((tierDef) => {
+          const isBeginner = tierDef.tier === "BEGINNER";
+          const isIntermediate = tierDef.tier === "INTERMEDIATE";
+          const isProfessional = tierDef.tier === "PROFESSIONAL";
+
+          const isCurrent = currentTier === tierDef.tier || (isBeginner && !currentTier);
+          const isLocked = isProfessional;
 
           return (
             <div
-              key={tier.tier}
-              className={`rounded-xl border p-4 transition-all ${
-                isCurrent
-                  ? `${colors.bg} ${colors.border} ring-1 ring-[#7300E5]/30`
-                  : isUnlocked
-                  ? "bg-purple-600 border-purple-600"
-                  : "bg-gray-50 border-gray-100"
+              key={tierDef.tier}
+              className={`rounded-2xl border p-5 transition-all ${
+                isBeginner
+                  ? "bg-white border-purple-100"
+                  : isIntermediate
+                  ? "bg-white border-purple-200"
+                  : "bg-gray-50/60 border-gray-100"
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {isUnlocked ? (
-                    <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                        isCurrent ? "bg-[#7300E5]" : "bg-white/20"
-                      }`}
-                    >
-                      <ArrowUp
-                        className={`w-4 h-4 ${
-                          isCurrent ? "text-white" : "text-white"
-                        }`}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-7 h-7 rounded-lg bg-gray-200 flex items-center justify-center">
-                      <Lock className="w-4 h-4 text-gray-400" />
-                    </div>
-                  )}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      isBeginner
+                        ? "bg-[#F4ECFF] text-[#7300E5]"
+                        : isIntermediate
+                        ? "bg-[#7300E5] text-white"
+                        : "bg-gray-200 text-gray-400"
+                    }`}
+                  >
+                    {isBeginner ? (
+                      <Lock className="w-4 h-4 text-[#7300E5]" />
+                    ) : isIntermediate ? (
+                      <ArrowUp className="w-4 h-4 text-white" />
+                    ) : (
+                      <Crown className="w-4 h-4 text-gray-400" />
+                    )}
+                  </div>
                   <div>
-                    <p
-                      className={`text-[13px] font-bold ${
-                        isUnlocked && !isCurrent
-                          ? "text-white"
-                          : isCurrent
-                          ? "text-[#7300E5]"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {TIER_LABELS[tier.tier]} Unlocks
-                    </p>
-                    <p
-                      className={`text-[11px] ${
-                        isUnlocked && !isCurrent
-                          ? "text-purple-100"
-                          : isCurrent
-                          ? "text-gray-500"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {isCurrent
-                        ? "Your current tier privileges"
-                        : isUnlocked
-                        ? `Unlock at ${idx > 0 ? "20+" : "6+"} gigs with ${idx > 0 ? "4.3+" : "4.0+"} rating`
-                        : `Unlock at ${idx === 2 ? "50+" : "20+"} gigs with ${idx === 2 ? "4.6+" : "4.3+"} rating`}
+                    <h4 className="text-[13px] font-bold text-gray-900 leading-snug">
+                      {tierDef.title}
+                    </h4>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {tierDef.subtitle}
                     </p>
                   </div>
                 </div>
-                {!isUnlocked && (
-                  <Lock className="w-4 h-4 text-gray-300" />
-                )}
+
+                {isLocked && <Lock className="w-4 h-4 text-gray-300" />}
               </div>
 
-              <ul className="space-y-1 pl-9">
-                {tier.privileges.items?.map((item, i) => (
+              <ul className="space-y-2 mt-3">
+                {tierDef.items.map((item, i) => (
                   <li
                     key={i}
-                    className={`flex items-center gap-1.5 text-[12px] ${
-                      isUnlocked && !isCurrent
-                        ? "text-purple-100"
-                        : isUnlocked
-                        ? "text-gray-700"
-                        : "text-gray-400"
-                    }`}
+                    className="flex items-center gap-2 text-[12px] font-medium"
                   >
-                    <span>{isUnlocked ? "✓" : "–"}</span>
-                    {item}
+                    {!isLocked ? (
+                      <Check className="w-3.5 h-3.5 text-[#00B86B] shrink-0" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-gray-300 shrink-0" />
+                    )}
+                    <span
+                      className={!isLocked ? "text-gray-700" : "text-gray-400"}
+                    >
+                      {item}
+                    </span>
                   </li>
                 ))}
               </ul>
