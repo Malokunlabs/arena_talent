@@ -17,6 +17,7 @@ import badgeService, {
   type SkillBadge,
   type BadgeTier,
 } from "@/services/badgeService";
+import { mediaService } from "@/services/mediaService";
 import BadgeCard from "@/components/dashboard/badges/BadgeCard";
 import BadgeDetailView from "@/components/dashboard/badges/BadgeDetailView";
 import ChecklistPanel from "@/components/dashboard/badges/ChecklistPanel";
@@ -29,32 +30,32 @@ type View = "list" | "detail" | "apply";
 
 // ─── Risk Alert Banner ────────────────────────────────────────────────────────
 
-function RiskBanner() {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-  return (
-    <div className="flex items-center justify-between bg-[#FFFBEB] border border-yellow-200 rounded-2xl px-4 py-3 gap-4">
-      <div className="flex items-center gap-3 min-w-0">
-        <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-yellow-800">
-            On-Time Delivery at Risk
-          </p>
-          <p className="text-[12px] text-yellow-600 truncate">
-            Your on-time delivery rate dropped to 84% (threshold: 85%). Complete
-            your next 3 gigs on time to maintain Beginner tier.
-          </p>
-        </div>
-      </div>
-      <button
-        onClick={() => setDismissed(true)}
-        className="text-[12px] font-semibold text-yellow-700 border border-yellow-300 rounded-xl px-3 py-1.5 hover:bg-yellow-100 transition-colors shrink-0"
-      >
-        View Details
-      </button>
-    </div>
-  );
-}
+// function RiskBanner() {
+//   const [dismissed, setDismissed] = useState(false);
+//   if (dismissed) return null;
+//   return (
+//     <div className="flex items-center justify-between bg-[#FFFBEB] border border-yellow-200 rounded-2xl px-4 py-3 gap-4">
+//       <div className="flex items-center gap-3 min-w-0">
+//         <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
+//         <div className="min-w-0">
+//           <p className="text-sm font-bold text-yellow-800">
+//             On-Time Delivery at Risk
+//           </p>
+//           <p className="text-[12px] text-yellow-600 truncate">
+//             Your on-time delivery rate dropped to 84% (threshold: 85%). Complete
+//             your next 3 gigs on time to maintain Beginner tier.
+//           </p>
+//         </div>
+//       </div>
+//       <button
+//         onClick={() => setDismissed(true)}
+//         className="text-[12px] font-semibold text-yellow-700 border border-yellow-300 rounded-xl px-3 py-1.5 hover:bg-yellow-100 transition-colors shrink-0"
+//       >
+//         View Details
+//       </button>
+//     </div>
+//   );
+// }
 
 // ─── Empty State ───────────────────────────────────────────────────────────────
 
@@ -64,9 +65,7 @@ function EmptyState({ onBrowse }: { onBrowse: () => void }) {
       <div className="w-20 h-20 rounded-full bg-[#F4ECFF] flex items-center justify-center mb-5">
         <Award className="w-9 h-9 text-[#7300E5]" />
       </div>
-      <h2 className="text-xl font-bold text-gray-900 mb-2">
-        No Badges Yet
-      </h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-2">No Badges Yet</h2>
       <p className="text-[14px] text-gray-500 max-w-sm mb-6">
         Earn verified skill badges to showcase your expertise and unlock higher
         earning potential on Arena.
@@ -100,7 +99,17 @@ function SkillAssessmentView({
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await onSubmit(formValues);
+      const processedValues = { ...formValues };
+      
+      // Map file uploads to URLs
+      for (const field of badge.formSchema || []) {
+        if (field.type === "file_upload" && Array.isArray(processedValues[field.id])) {
+          const files = processedValues[field.id] as { url?: string }[];
+          processedValues[field.id] = files.map((f) => f.url).filter(Boolean);
+        }
+      }
+
+      await onSubmit(processedValues);
     } finally {
       setSubmitting(false);
     }
@@ -119,8 +128,8 @@ function SkillAssessmentView({
                     i === 0
                       ? "bg-[#7300E5] text-white"
                       : i === 1
-                      ? "bg-[#7300E5] text-white"
-                      : "bg-gray-100 text-gray-400"
+                        ? "bg-[#7300E5] text-white"
+                        : "bg-gray-100 text-gray-400"
                   }`}
                 >
                   {i === 0 ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
@@ -146,7 +155,7 @@ function SkillAssessmentView({
       </div>
 
       {/* Risk Banner */}
-      <RiskBanner />
+      {/* <RiskBanner /> */}
 
       {/* Form */}
       <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
@@ -154,7 +163,10 @@ function SkillAssessmentView({
           fields={badge.formSchema}
           values={formValues}
           onChange={(id, val) =>
-            setFormValues((prev) => ({ ...prev, [id]: val }))
+            setFormValues((prev) => ({ 
+              ...prev, 
+              [id]: typeof val === 'function' ? val(prev[id]) : val 
+            }))
           }
           badgeName={badge.name}
         />
@@ -217,12 +229,12 @@ export default function BadgesPage() {
   const allBadges = dashboard?.badges ?? [];
 
   const pendingApps = myApplications.filter((a) =>
-    ["PENDING", "UNDER_REVIEW", "APPEALED"].includes(a.status)
+    ["PENDING", "UNDER_REVIEW", "APPEALED"].includes(a.status),
   );
   const verifiedApps = myApplications.filter((a) => a.status === "APPROVED");
 
   const applicationByBadgeId = Object.fromEntries(
-    myApplications.map((a) => [a.badgeId, a])
+    myApplications.map((a) => [a.badgeId, a]),
   );
 
   const handleSelectBadge = (badge: SkillBadge) => {
@@ -262,24 +274,26 @@ export default function BadgesPage() {
     setShowAllBadges(false);
   };
 
+  const hasAnyBadge = myApplications.length > 0;
+
   // ── Badge grid to display ──
   const getBadgesForTab = () => {
     if (badgeTab === "pending")
       return allBadges.filter((b) =>
-        pendingApps.some((a) => a.badgeId === b.id)
+        pendingApps.some((a) => a.badgeId === b.id),
       );
     if (badgeTab === "verified")
       return allBadges.filter((b) =>
-        verifiedApps.some((a) => a.badgeId === b.id)
+        verifiedApps.some((a) => a.badgeId === b.id),
       );
     return allBadges; // "all"
   };
 
-  const displayedBadges = showAllBadges
-    ? allBadges
-    : badgeTab === "all" && !showAllBadges
-    ? allBadges
-    : getBadgesForTab();
+  const displayedBadges = hasAnyBadge
+    ? getBadgesForTab()
+    : showAllBadges
+      ? allBadges
+      : [];
 
   if (loading) {
     return (
@@ -288,8 +302,6 @@ export default function BadgesPage() {
       </div>
     );
   }
-
-  const hasAnyBadge = myApplications.length > 0;
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-5 pb-16">
@@ -326,7 +338,7 @@ export default function BadgesPage() {
       </div>
 
       {/* Risk Banner (always visible) */}
-      <RiskBanner />
+      {/* <RiskBanner /> */}
 
       {/* ─── Badge Detail Tab ─── */}
       {mainTab === "badge-detail" && (
@@ -347,8 +359,8 @@ export default function BadgesPage() {
                   {tab === "all"
                     ? "All Badges"
                     : tab === "pending"
-                    ? `Pending Badges${pendingApps.length > 0 ? ` (${pendingApps.length})` : ""}`
-                    : `Verified Badges${verifiedApps.length > 0 ? ` (${verifiedApps.length})` : ""}`}
+                      ? `Pending Badges${pendingApps.length > 0 ? ` (${pendingApps.length})` : ""}`
+                      : `Verified Badges${verifiedApps.length > 0 ? ` (${verifiedApps.length})` : ""}`}
                 </button>
               ))}
             </div>

@@ -93,8 +93,26 @@ export interface CreateBadgeDto {
 export type UpdateBadgeDto = Partial<CreateBadgeDto>;
 
 const adminBadgeService = {
-  getStats(): Promise<AdminBadgeStats> {
-    return apiClient.get<AdminBadgeStats>("/admin/skill-badges/stats");
+  async getStats(): Promise<AdminBadgeStats> {
+    const raw = await apiClient.get<any>("/admin/skill-badges/stats");
+    // Handle both old nested shape { pending: {...}, approved: {...} }
+    // and new flat shape { pendingCount, totalApproved, ... }
+    if (raw && typeof raw.pendingCount === "number") {
+      return raw as AdminBadgeStats;
+    }
+    // Normalize old nested shape
+    const p = raw?.pending ?? {};
+    const a = raw?.approved ?? {};
+    return {
+      pendingCount: p.total ?? 0,
+      approvedToday: p.approvedToday ?? 0,
+      rejectedToday: p.rejectedToday ?? 0,
+      avgReviewTimeHours: p.avgReviewTimeHours ?? 0,
+      totalApproved: a.activeBadges ?? 0,
+      tierUpgradesThisWeek: a.tierUpgrades ?? 0,
+      atRiskCount: a.atRisk ?? 0,
+      approvedThisWeek: a.thisWeek ?? 0,
+    };
   },
 
   listApplications(

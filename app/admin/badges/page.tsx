@@ -85,10 +85,16 @@ function StatusBadge({ status }: { status: BadgeApplicationStatus }) {
 }
 
 // ─── Initials avatar ─────────────────────────────────────────────────────────
-function InitialsAvatar({ firstName, lastName }: { firstName: string; lastName: string }) {
+function InitialsAvatar({ firstName, lastName, avatarUrl }: { firstName: string; lastName: string; avatarUrl?: string | null }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   const colors = ["bg-purple-100 text-purple-700", "bg-blue-100 text-blue-700", "bg-green-100 text-green-700", "bg-orange-100 text-orange-700", "bg-pink-100 text-pink-700"];
   const color = colors[(firstName.charCodeAt(0) ?? 0) % colors.length];
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={avatarUrl} alt={initials} className="w-9 h-9 rounded-full object-cover shrink-0" />
+    );
+  }
   return (
     <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${color}`}>
       {initials}
@@ -99,10 +105,12 @@ function InitialsAvatar({ firstName, lastName }: { firstName: string; lastName: 
 // ─── Relative time ───────────────────────────────────────────────────────────
 function relTime(d: string) {
   const diff = Date.now() - new Date(d).getTime();
-  const h = Math.floor(diff / 3600000);
-  if (h < 1) return "just now";
-  if (h < 24) return `${h} hours ago`;
-  return `${Math.floor(h / 24)} days ago`;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minutes ago`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h} hour${h > 1 ? "s" : ""} ago`;
+  return `${Math.floor(h / 24)} day${Math.floor(h / 24) > 1 ? "s" : ""} ago`;
 }
 
 // ─── Stat card ───────────────────────────────────────────────────────────────
@@ -140,6 +148,7 @@ export default function AdminBadgesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<ActiveModal | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Counts per tab (from stats)
   const tabCounts = {
@@ -189,20 +198,34 @@ export default function AdminBadgesPage() {
     fetchData();
   };
 
-  // ── Pending tab stats ──
+  // Fetch full detail (with submissionData) before opening modal
+  const openDetail = async (app: AdminBadgeApplication) => {
+    setDetailLoading(true);
+    try {
+      const full = await adminBadgeService.getDetail(app.id);
+      setModal({ kind: "detail", app: full });
+    } catch {
+      // Fallback to list data if detail fetch fails
+      setModal({ kind: "detail", app });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // ── Stats — one set for all tabs showing overall numbers ──
   const pendingStats = [
     { icon: Inbox, value: stats?.pendingCount ?? 0, label: "Pending Requests", iconCls: "bg-purple-50 text-[#7300E5]" },
-    { icon: BadgeCheck, value: stats?.approvedToday ?? 0, label: "Approved Today", iconCls: "bg-green-50 text-green-600" },
+    { icon: BadgeCheck, value: stats?.totalApproved ?? 0, label: "Total Approved", iconCls: "bg-green-50 text-green-600" },
+    { icon: XCircle, value: stats?.rejectedToday ?? 0, label: "Total Rejected", iconCls: "bg-red-50 text-red-500" },
     { icon: Clock, value: stats?.avgReviewTimeHours != null ? `${stats.avgReviewTimeHours}h` : "—", label: "Avg Review Time", iconCls: "bg-amber-50 text-amber-600" },
-    { icon: XCircle, value: stats?.rejectedToday ?? 0, label: "Rejected Today", iconCls: "bg-red-50 text-red-500" },
   ];
 
   // ── Approved tab stats ──
   const approvedStats = [
     { icon: BadgeCheck, value: stats?.totalApproved ?? 0, label: "Active Badges", iconCls: "bg-green-50 text-green-600" },
-    { icon: BarChart3, value: stats?.tierUpgradesThisWeek ?? 0, label: "Tier Upgrades", iconCls: "bg-purple-50 text-[#7300E5]" },
+    { icon: Inbox, value: stats?.pendingCount ?? 0, label: "Pending", iconCls: "bg-purple-50 text-[#7300E5]" },
+    { icon: BarChart3, value: stats?.tierUpgradesThisWeek ?? 0, label: "Tier Upgrades This Week", iconCls: "bg-purple-50 text-[#7300E5]" },
     { icon: AlertTriangle, value: stats?.atRiskCount ?? 0, label: "At Risk", iconCls: "bg-amber-50 text-amber-600" },
-    { icon: RotateCcw, value: stats?.approvedThisWeek ?? 0, label: "This Week", iconCls: "bg-blue-50 text-blue-600" },
   ];
 
   const activeStats = activeTab === "approved" ? approvedStats : pendingStats;
@@ -397,7 +420,7 @@ export default function AdminBadgesPage() {
                   className="flex items-center gap-2.5 text-left"
                   onClick={() => setModal({ kind: "profile", app })}
                 >
-                  <InitialsAvatar firstName={app.user.firstName} lastName={app.user.lastName} />
+                  <InitialsAvatar firstName={app.user.firstName} lastName={app.user.lastName} avatarUrl={app.user.avatarUrl} />
                   <div>
                     <p className="text-[13px] font-semibold text-gray-900 hover:text-[#7300E5] transition-colors">
                       {app.user.firstName} {app.user.lastName}
@@ -458,11 +481,12 @@ export default function AdminBadgesPage() {
 
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-1.5">
-                  {/* View profile */}
+                  {/* View request detail */}
                   <button
-                    onClick={() => setModal({ kind: "profile", app })}
-                    className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#7300E5] hover:border-[#7300E5] transition-all"
-                    title="View profile"
+                    onClick={() => openDetail(app)}
+                    disabled={detailLoading}
+                    className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#7300E5] hover:border-[#7300E5] transition-all disabled:opacity-50"
+                    title="View details"
                   >
                     <Eye className="w-3.5 h-3.5" />
                   </button>
@@ -543,6 +567,8 @@ export default function AdminBadgesPage() {
           onApprove={() => setModal({ kind: "action", type: "approve", app: modal.app })}
           onReject={() => setModal({ kind: "action", type: "reject", app: modal.app })}
           onRevoke={() => setModal({ kind: "revoke", app: modal.app })}
+          onUphold={() => setModal({ kind: "action", type: "uphold", app: modal.app })}
+          onApproveAppeal={() => setModal({ kind: "action", type: "approve-appeal", app: modal.app })}
         />
       )}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, AlertTriangle, Loader2 } from "lucide-react";
+import { X, AlertTriangle, Loader2, RotateCcw } from "lucide-react";
 import adminBadgeService, { type RevokeBadgeDto } from "@/services/adminBadgeService";
 
 const REVOCATION_REASONS: { value: RevokeBadgeDto["revocationReason"]; label: string }[] = [
@@ -57,12 +57,12 @@ export default function RevokeConfirmModal({
 
         <div className="px-6 py-5 space-y-5">
           {/* Warning */}
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-3.5">
-            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 bg-[#FFEBEB] border border-[#FFD6D6] rounded-xl p-4">
+            <AlertTriangle className="w-5 h-5 text-[#E53E3E] shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-red-700">This action will remove the badge</p>
-              <p className="text-[12px] text-red-600 mt-0.5">
-                {talentName}&apos;s <strong>{badgeName}</strong> badge will be revoked immediately and they will be notified.
+              <p className="text-[14px] font-bold text-gray-900">This action will remove the badge</p>
+              <p className="text-[13px] text-[#E53E3E] mt-0.5">
+                The talent will loose badge and must reapply
               </p>
             </div>
           </div>
@@ -74,10 +74,10 @@ export default function RevokeConfirmModal({
               {REVOCATION_REASONS.map((r) => (
                 <label
                   key={r.value}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
                     reason === r.value
-                      ? "border-[#7300E5] bg-[#F4ECFF]"
-                      : "border-gray-100 hover:border-gray-300"
+                      ? "border-[#7300E5] bg-white"
+                      : "border-gray-100 hover:border-gray-200 bg-white"
                   }`}
                 >
                   <div
@@ -103,12 +103,12 @@ export default function RevokeConfirmModal({
           </div>
 
           {/* Note textarea */}
-          <div className="space-y-1.5">
-            <p className="text-[13px] font-bold text-gray-700">Revocation Notes</p>
+          <div className="space-y-2">
+            <p className="text-[13px] font-bold text-gray-700">Revocation Reasons</p>
             <textarea
-              className="w-full border border-gray-200 rounded-xl p-3 text-[13px] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7300E5]/30 focus:border-[#7300E5] resize-none transition-all"
-              rows={3}
-              placeholder="Explain why this badge is being revoked..."
+              className="w-full border-2 border-gray-100 rounded-xl p-3.5 text-[13px] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-200 resize-none transition-all"
+              rows={4}
+              placeholder="Explain why this badge is being revoked ........................"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -119,16 +119,16 @@ export default function RevokeConfirmModal({
         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="px-5 py-2.5 rounded-xl text-[14px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
           >
             Close
           </button>
           <button
             onClick={handleConfirm}
             disabled={!reason || loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold bg-[#FF3B30] text-white hover:bg-[#E5332A] transition-colors disabled:opacity-50"
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
             Confirm Revocation
           </button>
         </div>

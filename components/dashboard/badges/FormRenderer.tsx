@@ -3,11 +3,12 @@
 import React, { useRef, useState } from "react";
 import { Upload, X, CheckCircle2, Loader2, FileText } from "lucide-react";
 import { type FormField } from "@/services/badgeService";
+import { mediaService } from "@/services/mediaService";
 
 interface FormRendererProps {
   fields: FormField[];
   values: Record<string, unknown>;
-  onChange: (fieldId: string, value: unknown) => void;
+  onChange: (fieldId: string, value: unknown | ((prev: unknown) => unknown)) => void;
   badgeName: string;
 }
 
@@ -15,6 +16,7 @@ interface UploadedFile {
   file: File;
   progress: number;
   done: boolean;
+  url?: string;
 }
 
 export default function FormRenderer({
@@ -27,39 +29,43 @@ export default function FormRenderer({
   const [dragOver, setDragOver] = useState<Record<string, boolean>>({});
 
   const handleFileAdd = (fieldId: string, newFiles: FileList | File[]) => {
-    const existing = (values[fieldId] as UploadedFile[]) ?? [];
     const added: UploadedFile[] = Array.from(newFiles).map((f) => ({
       file: f,
       progress: 0,
       done: false,
     }));
-    const all = [...existing, ...added];
-    onChange(fieldId, all);
+    
+    onChange(fieldId, (prevValue: unknown) => {
+      const existing = (prevValue as UploadedFile[]) ?? [];
+      return [...existing, ...added];
+    });
 
-    // Simulate upload progress
-    added.forEach((item, i) => {
-      let p = 0;
-      const interval = setInterval(() => {
-        p += Math.random() * 30 + 10;
-        if (p >= 100) {
-          p = 100;
-          clearInterval(interval);
-          const current = (values[fieldId] as UploadedFile[]) ?? [];
+    // Actual upload
+    added.forEach(async (item) => {
+      try {
+        const url = await mediaService.upload(item.file, "badge-applications");
+        
+        onChange(fieldId, (prevValue: unknown) => {
+          const current = (prevValue as UploadedFile[]) ?? [];
           const idx = current.findIndex((c) => c.file === item.file);
           if (idx !== -1) {
             const next = [...current];
-            next[idx] = { ...next[idx], progress: 100, done: true };
-            onChange(fieldId, next);
+            next[idx] = { ...next[idx], progress: 100, done: true, url };
+            return next;
           }
-        }
-      }, 200);
+          return current;
+        });
+      } catch (error) {
+        console.error("Upload failed for", item.file.name, error);
+      }
     });
   };
 
   const handleFileRemove = (fieldId: string, index: number) => {
-    const existing = (values[fieldId] as UploadedFile[]) ?? [];
-    const next = existing.filter((_, i) => i !== index);
-    onChange(fieldId, next);
+    onChange(fieldId, (prevValue: unknown) => {
+      const existing = (prevValue as UploadedFile[]) ?? [];
+      return existing.filter((_, i) => i !== index);
+    });
   };
 
   return (

@@ -1,7 +1,7 @@
 import { apiClient } from "./apiClient";
 import { R2_PUBLIC_URL } from "@/lib/config";
 
-export type MediaPrefix = "proofs" | "avatars";
+export type MediaPrefix = "proofs" | "avatars" | "badge-applications";
 
 interface PresignResponse {
   url: string;
