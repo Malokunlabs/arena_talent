@@ -8,6 +8,7 @@ import OnboardingModal from "@/components/modals/OnboardingModal";
 import { useUserStore } from "@/store/useUserStore";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { Menu } from "lucide-react";
+import NotificationPopover from "@/components/NotificationPopover";
 
 export default function DashboardLayout({
   children,
@@ -70,6 +71,7 @@ export default function DashboardLayout({
           ))}
         </div>
         <div className="flex items-center gap-4">
+          <NotificationPopover isAdmin={false} />
           <ProfileDropdown />
         </div>
       </header>

@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
+import NotificationPopover from "@/components/NotificationPopover";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
@@ -137,14 +138,7 @@ export default function AdminLayout({
                 className="w-64 pl-9 rounded-full bg-gray-50 border-transparent focus:bg-white focus:border-gray-200"
               />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-500 relative"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
-            </Button>
+            <NotificationPopover isAdmin={true} />
           </div>
         </header>
 

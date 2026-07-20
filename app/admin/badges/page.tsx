@@ -319,235 +319,240 @@ export default function AdminBadgesPage() {
 
       {/* Table */}
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        {activeTab === "definitions" ? (
-          <>
-            <div className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
-              style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
-            >
-              <span>Badge Name</span>
-              <span>Scope of Work</span>
-              <span>Assessment Method</span>
-              <span className="text-right">Actions</span>
-            </div>
-            
-            {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : definitions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <Inbox className="w-10 h-10 text-gray-200 mb-3" />
-                <p className="text-gray-400 text-sm font-medium">No badge definitions found</p>
-              </div>
-            ) : (
-              definitions.map((def) => {
-                const Icon = ICON_MAP[def.iconKey] ?? Sparkles;
-                return (
-                  <div key={def.id} className="grid gap-4 px-5 py-3.5 border-b border-gray-50 items-center hover:bg-gray-50/60 transition-colors last:border-0"
-                    style={{ gridTemplateColumns: "3fr 2fr 2fr 1fr" }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#F4ECFF] flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-[#7300E5]" />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-bold text-gray-900">{def.name}</p>
-                        <p className="text-[12px] text-gray-400 font-medium">/{def.slug}</p>
-                      </div>
-                    </div>
-                    <p className="text-[13px] text-gray-600 line-clamp-2">{def.scopeOfWork}</p>
-                    <p className="text-[13px] text-gray-600 line-clamp-2">{def.assessmentMethod}</p>
-                    <div className="flex items-center justify-end">
-                      <a href={`/admin/badges/${def.id}/edit`} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#7300E5] hover:border-[#7300E5] transition-all">
-                        <PenLine className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </>
-        ) : (
-          <>
-            {/* Table header */}
-            <div className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
-              style={{
-                gridTemplateColumns: activeTab === "approved"
-                  ? "2fr 2fr 1fr 1fr 1fr 1fr 1fr"
-                  : "2fr 2fr 1fr 1fr 1fr 1fr",
-              }}
-            >
-              <span>Talent</span>
-              <span>{activeTab === "approved" ? "Badge" : "Badge Requested"}</span>
-              <span>{activeTab === "approved" ? "Tier" : "Current Tier"}</span>
-              {activeTab === "approved" && <span>Status</span>}
-              <span>{activeTab === "approved" ? "Approved" : "Assessment Score"}</span>
-              <span>Submitted</span>
-              <span className="text-right">Actions</span>
-            </div>
-
-            {/* Rows */}
-            {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : applications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Inbox className="w-10 h-10 text-gray-200 mb-3" />
-            <p className="text-gray-400 text-sm font-medium">No applications found</p>
-            <p className="text-gray-300 text-[12px] mt-1">
-              {search ? "Try a different search term" : `No ${activeTab} badge applications yet`}
-            </p>
-          </div>
-        ) : (
-          applications.map((app) => {
-            const Icon = ICON_MAP[app.badge.iconKey] ?? Sparkles;
-            const isApproved = activeTab === "approved";
-            const isAtRisk = false; // would be computed from user metrics
-
-            return (
+        <div className="overflow-x-auto">
+          {activeTab === "definitions" ? (
+            <div className="min-w-[800px]">
               <div
-                key={app.id}
-                className="grid gap-4 px-5 py-3.5 border-b border-gray-50 items-center hover:bg-gray-50/60 transition-colors last:border-0"
+                className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                style={{ gridTemplateColumns: "minmax(220px, 3fr) minmax(200px, 2fr) minmax(200px, 2fr) 80px" }}
+              >
+                <span>Badge Name</span>
+                <span>Scope of Work</span>
+                <span>Assessment Method</span>
+                <span className="text-right">Actions</span>
+              </div>
+              
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : definitions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Inbox className="w-10 h-10 text-gray-200 mb-3" />
+                  <p className="text-gray-400 text-sm font-medium">No badge definitions found</p>
+                </div>
+              ) : (
+                definitions.map((def) => {
+                  const Icon = ICON_MAP[def.iconKey] ?? Sparkles;
+                  return (
+                    <div
+                      key={def.id}
+                      className="grid gap-4 px-5 py-3.5 border-b border-gray-50 items-center hover:bg-gray-50/60 transition-colors last:border-0"
+                      style={{ gridTemplateColumns: "minmax(220px, 3fr) minmax(200px, 2fr) minmax(200px, 2fr) 80px" }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-[#F4ECFF] flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 text-[#7300E5]" />
+                        </div>
+                        <div>
+                          <p className="text-[14px] font-bold text-gray-900">{def.name}</p>
+                          <p className="text-[12px] text-gray-400 font-medium">/{def.slug}</p>
+                        </div>
+                      </div>
+                      <p className="text-[13px] text-gray-600 line-clamp-2">{def.scopeOfWork}</p>
+                      <p className="text-[13px] text-gray-600 line-clamp-2">{def.assessmentMethod}</p>
+                      <div className="flex items-center justify-end">
+                        <a href={`/admin/badges/${def.id}/edit`} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#7300E5] hover:border-[#7300E5] transition-all">
+                          <PenLine className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          ) : (
+            <div className={activeTab === "approved" ? "min-w-[1000px]" : "min-w-[850px]"}>
+              {/* Table header */}
+              <div
+                className="grid gap-4 px-5 py-3 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider"
                 style={{
-                  gridTemplateColumns: isApproved
-                    ? "2fr 2fr 1fr 1fr 1fr 1fr 1fr"
-                    : "2fr 2fr 1fr 1fr 1fr 1fr",
+                  gridTemplateColumns: activeTab === "approved"
+                    ? "minmax(180px, 2fr) minmax(160px, 2fr) 110px 100px 120px 100px 110px 90px"
+                    : "minmax(180px, 2fr) minmax(180px, 2fr) 120px 140px 120px 100px",
                 }}
               >
-                {/* Talent */}
-                <button
-                  className="flex items-center gap-2.5 text-left"
-                  onClick={() => setModal({ kind: "profile", app })}
-                >
-                  <InitialsAvatar firstName={app.user.firstName} lastName={app.user.lastName} avatarUrl={app.user.avatarUrl} />
-                  <div>
-                    <p className="text-[13px] font-semibold text-gray-900 hover:text-[#7300E5] transition-colors">
-                      {app.user.firstName} {app.user.lastName}
-                    </p>
-                    <p className="text-[11px] text-gray-400">@{app.user.username}</p>
-                  </div>
-                </button>
-
-                {/* Badge */}
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#F4ECFF] flex items-center justify-center shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-[#7300E5]" />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-gray-800">{app.badge.name}</p>
-                    <p className="text-[11px] text-gray-400">
-                      {app.appliedForTier.charAt(0) + app.appliedForTier.slice(1).toLowerCase()} Tier
-                    </p>
-                  </div>
-                </div>
-
-                {/* Tier */}
-                <TierPill tier={app.currentTier} />
-
-                {/* Status (approved tab only) */}
-                {isApproved && (
-                  <div>
-                    {isAtRisk ? (
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full w-fit">
-                        <AlertTriangle className="w-3 h-3" /> At Risk
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full w-fit">
-                        <CheckCircle2 className="w-3 h-3" /> Active
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Score */}
-                {!isApproved ? (
-                  <ScoreChip score={app.assessmentScore} />
-                ) : (
-                  <p className="text-[12px] text-gray-500">
-                    {app.reviewedAt
-                      ? new Date(app.reviewedAt).toLocaleDateString("en-US", {
-                          month: "short", day: "numeric", year: "numeric",
-                        })
-                      : "—"}
-                  </p>
-                )}
-
-                {/* Score (approved) */}
-                {isApproved && <ScoreChip score={app.assessmentScore} />}
-
-                {/* Submitted */}
-                <p className="text-[12px] text-gray-400">{relTime(app.createdAt)}</p>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-1.5">
-                  {/* View request detail */}
-                  <button
-                    onClick={() => openDetail(app)}
-                    disabled={detailLoading}
-                    className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#7300E5] hover:border-[#7300E5] transition-all disabled:opacity-50"
-                    title="View details"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Pending: approve + reject inline */}
-                  {(activeTab === "pending") && (
-                    <>
-                      <button
-                        onClick={() => setModal({ kind: "action", type: "approve", app })}
-                        className="w-8 h-8 rounded-full border border-green-200 flex items-center justify-center text-green-600 hover:bg-green-50 transition-all"
-                        title="Approve"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setModal({ kind: "action", type: "reject", app })}
-                        className="w-8 h-8 rounded-full border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 transition-all"
-                        title="Reject"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                      </button>
-                    </>
-                  )}
-
-                  {/* Approved: revoke */}
-                  {activeTab === "approved" && (
-                    <button
-                      onClick={() => setModal({ kind: "revoke", app })}
-                      className="w-8 h-8 rounded-full border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 transition-all"
-                      title="Revoke badge"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  {/* Rejected / Appealed: resolve appeal */}
-                  {activeTab === "rejected" && app.status === "APPEALED" && (
-                    <>
-                      <button
-                        onClick={() => setModal({ kind: "action", type: "approve-appeal", app })}
-                        className="w-8 h-8 rounded-full border border-green-200 flex items-center justify-center text-green-600 hover:bg-green-50 transition-all"
-                        title="Approve appeal"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setModal({ kind: "action", type: "uphold", app })}
-                        className="w-8 h-8 rounded-full border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 transition-all"
-                        title="Uphold rejection"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                      </button>
-                    </>
-                  )}
-                </div>
+                <span>Talent</span>
+                <span>{activeTab === "approved" ? "Badge" : "Badge Requested"}</span>
+                <span>{activeTab === "approved" ? "Tier" : "Current Tier"}</span>
+                {activeTab === "approved" && <span>Status</span>}
+                {activeTab === "approved" && <span>Approved</span>}
+                <span>{activeTab === "approved" ? "Score" : "Assessment Score"}</span>
+                <span>Submitted</span>
+                <span className="text-right">Actions</span>
               </div>
-            );
-          })
-        )}
-        </>
-        )}
+
+              {/* Rows */}
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-[#7300E5] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Inbox className="w-10 h-10 text-gray-200 mb-3" />
+                  <p className="text-gray-400 text-sm font-medium">No applications found</p>
+                  <p className="text-gray-300 text-[12px] mt-1">
+                    {search ? "Try a different search term" : `No ${activeTab} badge applications yet`}
+                  </p>
+                </div>
+              ) : (
+                applications.map((app) => {
+                  const Icon = ICON_MAP[app.badge.iconKey] ?? Sparkles;
+                  const isApproved = activeTab === "approved";
+                  const isAtRisk = false; // would be computed from user metrics
+
+                  return (
+                    <div
+                      key={app.id}
+                      className="grid gap-4 px-5 py-3.5 border-b border-gray-50 items-center hover:bg-gray-50/60 transition-colors last:border-0"
+                      style={{
+                        gridTemplateColumns: isApproved
+                          ? "minmax(180px, 2fr) minmax(160px, 2fr) 110px 100px 120px 100px 110px 90px"
+                          : "minmax(180px, 2fr) minmax(180px, 2fr) 120px 140px 120px 100px",
+                      }}
+                    >
+                      {/* Talent */}
+                      <button
+                        className="flex items-center gap-2.5 text-left min-w-0"
+                        onClick={() => setModal({ kind: "profile", app })}
+                      >
+                        <InitialsAvatar firstName={app.user.firstName} lastName={app.user.lastName} avatarUrl={app.user.avatarUrl} />
+                        <div className="min-w-0 truncate">
+                          <p className="text-[13px] font-semibold text-gray-900 hover:text-[#7300E5] transition-colors truncate">
+                            {app.user.firstName} {app.user.lastName}
+                          </p>
+                          <p className="text-[11px] text-gray-400 truncate">@{app.user.username}</p>
+                        </div>
+                      </button>
+
+                      {/* Badge */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#F4ECFF] flex items-center justify-center shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-[#7300E5]" />
+                        </div>
+                        <div className="min-w-0 truncate">
+                          <p className="text-[13px] font-medium text-gray-800 truncate">{app.badge.name}</p>
+                          <p className="text-[11px] text-gray-400 truncate">
+                            {app.appliedForTier.charAt(0) + app.appliedForTier.slice(1).toLowerCase()} Tier
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Tier */}
+                      <TierPill tier={app.currentTier} />
+
+                      {/* Status (approved tab only) */}
+                      {isApproved && (
+                        <div>
+                          {isAtRisk ? (
+                            <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full w-fit">
+                              <AlertTriangle className="w-3 h-3" /> At Risk
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full w-fit">
+                              <CheckCircle2 className="w-3 h-3" /> Active
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Approved Date (approved tab only) */}
+                      {isApproved && (
+                        <p className="text-[12px] text-gray-500">
+                          {app.reviewedAt
+                            ? new Date(app.reviewedAt).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric",
+                              })
+                            : "—"}
+                        </p>
+                      )}
+
+                      {/* Score */}
+                      <ScoreChip score={app.assessmentScore} />
+
+                      {/* Submitted */}
+                      <p className="text-[12px] text-gray-400">{relTime(app.createdAt)}</p>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {/* View request detail */}
+                        <button
+                          onClick={() => openDetail(app)}
+                          disabled={detailLoading}
+                          className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#7300E5] hover:border-[#7300E5] transition-all disabled:opacity-50"
+                          title="View details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Pending: approve + reject inline */}
+                        {activeTab === "pending" && (
+                          <>
+                            <button
+                              onClick={() => setModal({ kind: "action", type: "approve", app })}
+                              className="w-8 h-8 rounded-full border border-green-200 flex items-center justify-center text-green-600 hover:bg-green-50 transition-all"
+                              title="Approve"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setModal({ kind: "action", type: "reject", app })}
+                              className="w-8 h-8 rounded-full border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 transition-all"
+                              title="Reject"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+
+                        {/* Approved: revoke */}
+                        {activeTab === "approved" && (
+                          <button
+                            onClick={() => setModal({ kind: "revoke", app })}
+                            className="w-8 h-8 rounded-full border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 transition-all"
+                            title="Revoke badge"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {/* Rejected / Appealed: resolve appeal */}
+                        {activeTab === "rejected" && app.status === "APPEALED" && (
+                          <>
+                            <button
+                              onClick={() => setModal({ kind: "action", type: "approve-appeal", app })}
+                              className="w-8 h-8 rounded-full border border-green-200 flex items-center justify-center text-green-600 hover:bg-green-50 transition-all"
+                              title="Approve appeal"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setModal({ kind: "action", type: "uphold", app })}
+                              className="w-8 h-8 rounded-full border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-50 transition-all"
+                              title="Uphold rejection"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {total > 0 && (
