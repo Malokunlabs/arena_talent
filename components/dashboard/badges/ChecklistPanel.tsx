@@ -46,7 +46,8 @@ const DEFAULT_CHECKLIST: ChecklistItem[] = [
     actual: 12,
     passed: true,
     unit: "gigs",
-    displayRequired: "Complete 5+ gigs (Beginner), 20+ (Intermediate), 50+ (Professional)",
+    displayRequired:
+      "Complete 5+ gigs (Beginner), 20+ (Intermediate), 50+ (Professional)",
     displayActual: "12 / 20 · Intermediate target",
   },
   {
@@ -56,7 +57,8 @@ const DEFAULT_CHECKLIST: ChecklistItem[] = [
     actual: 84,
     passed: false,
     unit: "%",
-    displayRequired: "Maintain >85% (Beginner), >92% (Intermediate), >97% (Professional)",
+    displayRequired:
+      "Maintain >85% (Beginner), >92% (Intermediate), >97% (Professional)",
     displayActual: "84% - At Risk",
   },
   {
@@ -66,7 +68,8 @@ const DEFAULT_CHECKLIST: ChecklistItem[] = [
     actual: 4,
     passed: true,
     unit: "%",
-    displayRequired: "Keep below 15% (Beginner), 8% (Intermediate), 3% (Professional)",
+    displayRequired:
+      "Keep below 15% (Beginner), 8% (Intermediate), 3% (Professional)",
     displayActual: "4% · Excellent",
   },
 ];
@@ -77,7 +80,9 @@ export default function ChecklistPanel({ items }: ChecklistPanelProps) {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
       <div className="mb-6">
-        <h3 className="font-bold text-gray-900 text-base">Progress Checklist</h3>
+        <h3 className="font-bold text-gray-900 text-base">
+          Progress Checklist
+        </h3>
         <p className="text-[12px] text-gray-400 mt-0.5">
           Automated metrics tracking your badge eligibility
         </p>
@@ -85,7 +90,8 @@ export default function ChecklistPanel({ items }: ChecklistPanelProps) {
 
       <div className="space-y-6">
         {displayItems.map((item) => {
-          const isAtRisk = !item.passed && item.displayActual?.includes("At Risk");
+          const isAtRisk =
+            !item.passed && item.displayActual?.includes("At Risk");
 
           return (
             <div key={item.key} className="space-y-2">
@@ -96,8 +102,8 @@ export default function ChecklistPanel({ items }: ChecklistPanelProps) {
                       item.passed
                         ? "bg-[#00B86B] text-white"
                         : isAtRisk
-                        ? "bg-[#FFB800] text-white font-bold"
-                        : "bg-gray-100 text-gray-400"
+                          ? "bg-[#FFB800] text-white font-bold"
+                          : "bg-gray-100 text-gray-400"
                     }`}
                   >
                     {item.passed ? (
@@ -113,7 +119,8 @@ export default function ChecklistPanel({ items }: ChecklistPanelProps) {
                       {item.label}
                     </h4>
                     <p className="text-[11px] text-gray-400 mt-0.5">
-                      {item.displayRequired ?? `Maintain required ${item.label}`}
+                      {item.displayRequired ??
+                        `Maintain required ${item.label}`}
                     </p>
                   </div>
                 </div>
@@ -123,8 +130,8 @@ export default function ChecklistPanel({ items }: ChecklistPanelProps) {
                     item.passed
                       ? "text-[#7300E5]"
                       : isAtRisk
-                      ? "text-[#FF8A00]"
-                      : "text-gray-500"
+                        ? "text-[#FF8A00]"
+                        : "text-gray-500"
                   }`}
                 >
                   {item.displayActual}
@@ -139,15 +146,11 @@ export default function ChecklistPanel({ items }: ChecklistPanelProps) {
                       item.passed
                         ? "bg-[#00B86B]"
                         : isAtRisk
-                        ? "bg-[#FF4D4D]"
-                        : "bg-gray-300"
+                          ? "bg-[#FF4D4D]"
+                          : "bg-gray-300"
                     }`}
                     style={{
-                      width: item.passed
-                        ? "70%"
-                        : isAtRisk
-                        ? "60%"
-                        : "40%",
+                      width: item.passed ? "70%" : isAtRisk ? "60%" : "40%",
                     }}
                   />
                 </div>
