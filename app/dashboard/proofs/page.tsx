@@ -6,6 +6,7 @@ import { Link2, Copy, Search, Share, MessageCircle, Plus, ImageIcon } from "luci
 import { useUserStore } from "@/store/useUserStore";
 import { talentService, TalentProfile } from "@/services/talentService";
 import { proofService, Proof } from "@/services/proofService";
+import UserAvatar from "@/components/UserAvatar";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -106,15 +107,12 @@ export default function MyProofsPage() {
       {/* Header Card */}
       <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
         <div className="flex items-center gap-5">
-           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#7300E5] flex-shrink-0 overflow-hidden flex items-center justify-center">
-             {talent?.avatarUrl ? (
-                <Image src={talent.avatarUrl} alt="Avatar" fill className="object-cover" />
-             ) : (
-                <span className="text-white font-bold text-3xl tracking-widest uppercase">
-                  {(talent?.firstName?.[0] || 'U') + (talent?.lastName?.[0] || '')}
-                </span>
-             )}
-           </div>
+         <UserAvatar
+           name={talent ? `${talent.firstName} ${talent.lastName}` : "User"}
+           src={talent?.avatarUrl}
+           size={80}
+           className="shrink-0"
+         />
            
            <div>
               <h1 className="text-2xl sm:text-[28px] font-black text-gray-900 capitalize mb-2">

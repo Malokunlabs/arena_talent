@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import UserAvatar from "@/components/UserAvatar";
 import { useAdminStore } from "@/store/useAdminStore";
 import { AdminTalent } from "@/services/adminService";
 import { Button } from "@/components/ui/button";
@@ -236,18 +237,11 @@ export default function TalentDirectoryPage() {
                   {/* Talent */}
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="relative h-9 w-9 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center text-[#7300E5] font-bold text-sm shrink-0">
-                        {talent.avatarUrl ? (
-                          <Image
-                            src={talent.avatarUrl}
-                            alt={`${talent.firstName} ${talent.lastName}`}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          getInitials(talent)
-                        )}
-                      </div>
+                      <UserAvatar
+                        name={`${talent.firstName} ${talent.lastName}`}
+                        src={talent.avatarUrl}
+                        size={36}
+                      />
                       <div>
                         <p className="font-medium text-sm text-gray-900">
                           {talent.firstName} {talent.lastName}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import UserAvatar from "@/components/UserAvatar";
 
 interface ProofCardProps {
   rank: number;
@@ -34,9 +35,7 @@ export default function ProofCard({
         </div>
       </div>
       <div className="flex items-start gap-3 px-1 pb-2">
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-100">
-          <Image src={avatar} alt={name} fill className="object-cover" />
-        </div>
+        <UserAvatar name={name} src={avatar || null} size={40} className="border border-gray-100" />
         <div className="flex flex-col gap-0.5">
           <span className="font-bold text-gray-900">{name}</span>
           <span className="text-xs text-muted-foreground line-clamp-2">

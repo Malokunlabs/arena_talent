@@ -8,6 +8,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { talentService, TalentProfile } from "@/services/talentService";
 import { proofService, Proof } from "@/services/proofService";
 import PIProgressBar from "@/components/pi/PIProgressBar";
+import UserAvatar from "@/components/UserAvatar";
 import { usePiStore } from "@/store/usePiStore";
 import { Button } from "@/components/ui/button";
 
@@ -42,15 +43,12 @@ export default function ProfilePage() {
       
       {/* Header Profile Info (No Cover) */}
       <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row items-start gap-8 relative shadow-sm">
-        <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full border-[6px] border-white bg-[#7300E5] flex-shrink-0 shadow-lg overflow-hidden flex items-center justify-center">
-          {talent?.avatarUrl ? (
-             <Image src={talent.avatarUrl} alt="Avatar" fill className="object-cover" />
-          ) : (
-             <span className="text-white font-bold text-4xl tracking-widest uppercase">
-               {(talent?.firstName?.[0] || 'U') + (talent?.lastName?.[0] || '')}
-             </span>
-          )}
-        </div>
+        <UserAvatar
+          name={talent ? `${talent.firstName} ${talent.lastName}` : "User"}
+          src={talent?.avatarUrl}
+          size={112}
+          className="border-[6px] border-white shadow-lg shrink-0"
+        />
 
         <div className="flex-1 w-full">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { Star, Quote, BadgeCheck } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 import { RatingBreakdown, ReviewItem } from "@/services/reviewService";
 
 interface RatingsPanelProps {
@@ -140,23 +140,15 @@ export default function RatingsPanel({
               className="flex gap-3 p-3.5 rounded-xl bg-gray-50/70 border border-gray-100/80"
             >
               {/* Avatar */}
-              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-[#F4ECFF] flex items-center justify-center">
-                {review.reviewer?.avatarUrl ? (
-                  <Image
-                    src={review.reviewer.avatarUrl}
-                    alt={review.reviewer.firstName}
-                    width={32}
-                    height={32}
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <span className="text-[11px] font-bold text-[#7300E5]">
-                    {review.reviewer
-                      ? `${review.reviewer.firstName[0]}${review.reviewer.lastName[0]}`
-                      : "?"}
-                  </span>
-                )}
-              </div>
+              <UserAvatar
+                name={
+                  review.reviewer
+                    ? `${review.reviewer.firstName} ${review.reviewer.lastName}`
+                    : "?"
+                }
+                src={review.reviewer?.avatarUrl}
+                size={32}
+              />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">

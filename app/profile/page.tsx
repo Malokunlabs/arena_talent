@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useCallback } from "react";
-import Image from "next/image";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { MapPin, Calendar, Flame, Star } from "lucide-react";
+import { MapPin, Calendar, Star } from "lucide-react";
 import PIProgressBar from "@/components/pi/PIProgressBar";
 import { PiStatus } from "@/services/piService";
 import { Button } from "@/components/ui/button";
@@ -13,17 +12,14 @@ import CollaborateModal from "@/components/modals/CollaborateModal";
 import ProofDetailModal from "@/components/modals/ProofDetailModal";
 import SkillBadgePill from "@/components/SkillBadgePill";
 import RatingsPanel from "@/components/RatingsPanel";
+import UserAvatar from "@/components/UserAvatar";
 import { useTalentStore } from "@/store/useTalentStore";
 import { useProofStore } from "@/store/useProofStore";
 import { Proof } from "@/services/proofService";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useToast } from "@/hooks/use-toast";
-import badgeService, { BadgeApplication } from "@/services/badgeService";
-import {
-  reviewService,
-  ReviewItem,
-  RatingBreakdown,
-} from "@/services/reviewService";
+import { BadgeApplication } from "@/services/badgeService";
+import { ReviewItem, RatingBreakdown } from "@/services/reviewService";
 
 function ProfileContent() {
   const searchParams = useSearchParams();
@@ -40,37 +36,11 @@ function ProfileContent() {
   );
   const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
 
-  // Badges & Reviews state
-  const [verifiedBadges, setVerifiedBadges] = useState<BadgeApplication[]>([]);
-  const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [breakdown, setBreakdown] = useState<RatingBreakdown | null>(null);
-  const [totalReviews, setTotalReviews] = useState(0);
-
   useEffect(() => {
     if (username) {
       fetchTalentByUsername(username);
     }
   }, [username, fetchTalentByUsername]);
-
-  // Load reviews once we have the talent profile
-  const loadReviews = useCallback(async (userId: string) => {
-    try {
-      const result = await reviewService.getForUser(userId, { limit: 5 });
-      setReviews(result.data ?? []);
-      setBreakdown(result.breakdown ?? null);
-      setTotalReviews(result.meta?.total ?? 0);
-    } catch {
-      // silently fail — reviews are optional
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!selectedTalentProfile) return;
-    const { talent } = selectedTalentProfile;
-
-    // Load reviews by talent id
-    loadReviews(talent.id);
-  }, [selectedTalentProfile, loadReviews]);
 
   // Check auth helper
   const checkAuth = (action: () => void) => {
@@ -110,10 +80,21 @@ function ProfileContent() {
 
   const { talent, proofs } = selectedTalentProfile;
   const fullName = `${talent.firstName} ${talent.lastName}`;
-  const avatarUrl =
-    talent.avatarUrl || talent.avatar || "/placeholder-avatar.png";
+  // avatarUrl may be null/undefined — UserAvatar handles the fallback
+  const avatarSrc = talent.avatarUrl || talent.avatar || null;
 
-  const overallRating = breakdown?.avgOverall ?? talent.rating ?? 0;
+  // Approved skill badges from backend profile response
+  const approvedBadges: BadgeApplication[] =
+    (selectedTalentProfile.approvedSkillBadges as BadgeApplication[]) ?? [];
+
+  // Reviews / rating from backend profile response
+  const ratingBreakdown =
+    (selectedTalentProfile.ratingBreakdown as unknown as RatingBreakdown) ??
+    null;
+  const recentReviews =
+    (selectedTalentProfile.recentReviews as unknown as ReviewItem[]) ?? [];
+  const totalReviews = ratingBreakdown?.reviewCount ?? 0;
+  const overallRating = ratingBreakdown?.avgOverall ?? talent.rating ?? 0;
 
   return (
     <main className="min-h-screen pt-24 pb-12 bg-gray-50/50">
@@ -123,14 +104,12 @@ function ProfileContent() {
           <aside className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-7 lg:sticky lg:top-28">
             {/* Header */}
             <div className="space-y-4">
-              <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                <Image
-                  src={avatarUrl}
-                  alt={fullName}
-                  fill
-                  className="object-cover"
-                />
-              </div>
+              <UserAvatar
+                name={fullName}
+                src={avatarSrc}
+                size={80}
+                className="border-2 border-white shadow-sm"
+              />
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
                 <p className="text-gray-500 font-medium">@{talent.username}</p>
@@ -196,9 +175,9 @@ function ProfileContent() {
               <h3 className="text-sm font-semibold text-gray-900">
                 Skill Badges
               </h3>
-              {verifiedBadges.length > 0 ? (
+              {approvedBadges.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {verifiedBadges.map((app) => (
+                  {approvedBadges.map((app) => (
                     <SkillBadgePill
                       key={app.id}
                       name={app.badge.name}
@@ -210,13 +189,17 @@ function ProfileContent() {
                   ))}
                 </div>
               ) : (
-                <p className="text-[12px] text-gray-400">No verified badges yet.</p>
+                <p className="text-[12px] text-gray-400">
+                  No verified badges yet.
+                </p>
               )}
             </div>
 
             {/* Top Skills */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">Top Skills</h3>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Top Skills
+              </h3>
               <div className="flex flex-wrap gap-2">
                 {talent.skills?.map((skill) => (
                   <span
@@ -235,9 +218,7 @@ function ProfileContent() {
                 piScore: talent.piScore ?? 0,
                 progressIndex: talent.progressIndex ?? 0,
                 level:
-                  (talent.progressIndex ?? 0) > 0
-                    ? talent.progressIndex!
-                    : 1,
+                  (talent.progressIndex ?? 0) > 0 ? talent.progressIndex! : 1,
                 piToNextLevel: talent.piToNextLevel ?? 0,
                 nextLevelPi: talent.nextLevelPi ?? null,
               };
@@ -266,8 +247,8 @@ function ProfileContent() {
           <div className="space-y-8">
             {/* Ratings & Reviews */}
             <RatingsPanel
-              breakdown={breakdown}
-              reviews={reviews}
+              breakdown={ratingBreakdown}
+              reviews={recentReviews}
               totalReviews={totalReviews}
             />
 
@@ -279,7 +260,7 @@ function ProfileContent() {
                   proofs.map((item) => (
                     <FeedCard
                       key={item.id}
-                      avatar={avatarUrl}
+                      avatar={avatarSrc ?? ""}
                       name={fullName}
                       location={item.talent?.location || talent.location}
                       timeAgo={new Date(item.createdAt).toLocaleDateString()}
@@ -326,7 +307,7 @@ function ProfileContent() {
                 image: selectedProof.mediaUrl,
                 rank: 1,
                 name: fullName,
-                avatar: avatarUrl,
+                avatar: avatarSrc ?? "",
                 username: talent.username,
                 proofboardLink: `/talent/${talent.username}`,
                 id: selectedProof.id,

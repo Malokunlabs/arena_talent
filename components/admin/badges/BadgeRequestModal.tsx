@@ -7,6 +7,7 @@ import {
   X, Star, ChevronDown, ChevronUp, AlertTriangle, Circle, CheckCircle2, type LucideIcon,
 } from "lucide-react";
 import { type AdminBadgeApplication } from "@/services/adminBadgeService";
+import UserAvatar from "@/components/UserAvatar";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   camera: Camera, video: Video, pen: PenLine, palette: Palette,
@@ -108,13 +109,11 @@ export default function BadgeRequestModal({
 
           {/* Talent */}
           <div className="flex items-center gap-4 py-5 border-b border-gray-200">
-            <div className="w-14 h-14 rounded-full bg-[#F4ECFF] flex items-center justify-center font-bold text-[#7300E5] text-lg shrink-0 overflow-hidden">
-              {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt="" width={56} height={56} className="object-cover" />
-              ) : (
-                getInitials()
-              )}
-            </div>
+            <UserAvatar
+              name={`${user.firstName} ${user.lastName}`}
+              src={user.avatarUrl}
+              size={56}
+            />
             <div>
               <p className="font-bold text-gray-900 text-[16px]">
                 {user.firstName} {user.lastName}

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { Settings, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
+import UserAvatar from "@/components/UserAvatar";
 
 type NavItem = {
   title: string;
@@ -124,20 +125,11 @@ export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarPr
       <div className="p-4 mt-auto">
         <Link href="/dashboard/profile" onClick={onClose}>
           <div className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-gray-50 transition-colors">
-            <div className="relative w-[42px] h-[42px] rounded-full shrink-0 overflow-hidden bg-[#F4ECFF] flex items-center justify-center">
-              {user?.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt="Avatar"
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <span className="text-[#7300E5] font-bold text-sm">
-                  {getInitials()}
-                </span>
-              )}
-            </div>
+            <UserAvatar
+              name={user ? `${user.firstName} ${user.lastName}` : "Arena Talent"}
+              src={user?.avatarUrl}
+              size={42}
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">
                 {user ? `${user.firstName} ${user.lastName}` : "Arena Talent"}

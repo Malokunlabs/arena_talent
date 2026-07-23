@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient";
+import { BadgeApplication } from "./badgeService";
 
 export interface Talent {
   id: string;
@@ -36,7 +37,19 @@ export interface TalentProfile {
   talent: Talent;
   stats: TalentStats;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  proofs: any[]; // We can use the Proof type from proofService if needed
+  proofs: any[];
+  ratingBreakdown: {
+    avgQuality: number;
+    avgProfessionalism: number;
+    avgOnTime: number;
+    avgCollaboration: number;
+    avgCreativity: number;
+    avgOverall: number;
+    reviewCount: number;
+  } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  recentReviews: any[];
+  approvedSkillBadges: BadgeApplication[];
 }
 
 export interface GetTalentsParams {

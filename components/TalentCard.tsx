@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Star, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Talent } from "@/services/talentService";
+import UserAvatar from "@/components/UserAvatar";
 
 interface TalentCardProps {
   talent: Talent;
@@ -17,22 +17,17 @@ export default function TalentCard({ talent, onRequest }: TalentCardProps) {
   const fullName = `${talent.firstName} ${talent.lastName}`;
   const availabilityStatus = talent.isAvailable ? "Available" : "Busy";
 
-  // Use a default avatar if none provided
-  const avatarUrl = talent.avatarUrl || talent.avatar || "/placeholder-avatar.png";
-
   return (
     <div className="bg-white rounded-3xl p-5 border border-gray-100 flex flex-col gap-5 hover:shadow-md transition-all duration-200">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div className="flex gap-3">
-          <div className="relative h-12 w-12 rounded-full overflow-hidden border border-gray-100">
-            <Image
-              src={avatarUrl}
-              alt={fullName}
-              fill
-              className="object-cover"
-            />
-          </div>
+          <UserAvatar
+            name={fullName}
+            src={talent.avatarUrl || talent.avatar}
+            size={48}
+            className="border border-gray-100"
+          />
           <div>
             <h3 className="font-bold text-gray-900 text-base">{fullName}</h3>
             <p className="text-xs text-gray-500 font-medium">

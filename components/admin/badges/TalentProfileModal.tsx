@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { type AdminBadgeApplication } from "@/services/adminBadgeService";
+import UserAvatar from "@/components/UserAvatar";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   camera: Camera, video: Video, pen: PenLine, palette: Palette,
@@ -70,13 +71,12 @@ export default function TalentProfileModal({
             <X className="w-4 h-4 text-white" />
           </button>
           <div className="absolute -bottom-7 left-1/2 -translate-x-1/2">
-            <div className="w-14 h-14 rounded-full border-4 border-white bg-[#F4ECFF] flex items-center justify-center shadow-md overflow-hidden">
-              {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt="" fill className="object-cover" />
-              ) : (
-                <span className="text-[#7300E5] font-bold text-base">{getInitials()}</span>
-              )}
-            </div>
+            <UserAvatar
+              name={`${user.firstName} ${user.lastName}`}
+              src={user.avatarUrl}
+              size={56}
+              className="border-4 border-white shadow-md"
+            />
             <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
           </div>
         </div>

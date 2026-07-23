@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { MapPin, Hand, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import UserAvatar from "@/components/UserAvatar";
 
 interface FeedCardProps {
   avatar: string;
@@ -54,9 +55,7 @@ export default function FeedCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-100">
-            <Image src={avatar} alt={name} fill className="object-cover" />
-          </div>
+          <UserAvatar name={name} src={avatar || null} size={40} className="border border-gray-100" />
           <div className="flex flex-col">
             <span className="font-bold text-gray-900 text-sm">{name}</span>
             <div className="flex items-center gap-1 text-xs text-gray-500">

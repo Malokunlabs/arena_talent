@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import UserAvatar from "@/components/UserAvatar";
 import {
   Camera, Video, PenLine, Palette, Layout, Film, Share2, Mic2, Sparkles, BarChart3,
   Search, Filter, ArrowUpDown, Eye, CheckCircle2, XCircle, RotateCcw,
@@ -86,20 +87,8 @@ function StatusBadge({ status }: { status: BadgeApplicationStatus }) {
 
 // ─── Initials avatar ─────────────────────────────────────────────────────────
 function InitialsAvatar({ firstName, lastName, avatarUrl }: { firstName: string; lastName: string; avatarUrl?: string | null }) {
-  const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
-  const colors = ["bg-purple-100 text-purple-700", "bg-blue-100 text-blue-700", "bg-green-100 text-green-700", "bg-orange-100 text-orange-700", "bg-pink-100 text-pink-700"];
-  const color = colors[(firstName.charCodeAt(0) ?? 0) % colors.length];
-  if (avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={avatarUrl} alt={initials} className="w-9 h-9 rounded-full object-cover shrink-0" />
-    );
-  }
-  return (
-    <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${color}`}>
-      {initials}
-    </div>
-  );
+  const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim() || "User";
+  return <UserAvatar name={fullName} src={avatarUrl} size={36} />;
 }
 
 // ─── Relative time ───────────────────────────────────────────────────────────
