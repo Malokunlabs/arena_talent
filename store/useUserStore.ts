@@ -43,10 +43,24 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      set({
-        isLoading: false,
-        error: error.message || "Failed to fetch user profile",
-      });
+      // If the token is invalid/expired, log out silently — don't surface an error toast
+      const msg = (error?.message || "").toLowerCase();
+      const isAuthError =
+        msg.includes("unauthorized") ||
+        msg.includes("session expired") ||
+        msg.includes("401") ||
+        msg.includes("invalid token") ||
+        msg.includes("forbidden");
+
+      if (isAuthError) {
+        // Clear auth silently — the apiClient already called logout() for 401s
+        set({ isLoading: false, error: null });
+      } else {
+        set({
+          isLoading: false,
+          error: null, // Never surface this error — it's a background fetch
+        });
+      }
     }
   },
 

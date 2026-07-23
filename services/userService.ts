@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import { apiClient, RequestOptions } from "./apiClient";
 
 export interface UserProfile {
   id: string;
@@ -48,7 +48,8 @@ export interface UpdateUserData {
 
 export const userService = {
   async getUserProfile(): Promise<UserProfile> {
-    return apiClient.get("/auth/profile");
+    const opts: RequestOptions = { silent: true };
+    return apiClient.get("/auth/profile", opts);
   },
 
   async updateUserProfile(data: UpdateUserData): Promise<UserProfile> {

@@ -9,8 +9,10 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-interface RequestOptions extends RequestInit {
+export interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
+  /** When true, neither success nor error toasts are shown. Use for silent background fetches. */
+  silent?: boolean;
 }
 
 class ApiClient {
@@ -79,25 +81,30 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const errorMessage = result.message || "API request failed";
-      // Extract validation errors from data if available
-      const errorData = result.data as Record<string, unknown> | null;
-      const validationErrors: string[] = Array.isArray(errorData?.errors)
-        ? (errorData.errors as string[])
-        : [];
+      // 401 is already fully handled above — do NOT show another toast for it
+      if (response.status !== 401) {
+        const errorMessage = result.message || "API request failed";
+        const errorData = result.data as Record<string, unknown> | null;
+        const validationErrors: string[] = Array.isArray(errorData?.errors)
+          ? (errorData.errors as string[])
+          : [];
 
-      toast({
-        title: errorMessage,
-        description:
-          validationErrors.length > 0
-            ? validationErrors.join("\n")
-            : (errorData?.error as string | undefined) || errorMessage,
-        variant: "destructive",
-      });
+        if (!options.silent) {
+          toast({
+            title: errorMessage,
+            description:
+              validationErrors.length > 0
+                ? validationErrors.join("\n")
+                : (errorData?.error as string | undefined) || errorMessage,
+            variant: "destructive",
+          });
+        }
+      }
+      const errorMessage = result.message || "API request failed";
       throw new Error(errorMessage);
     }
 
-    if (result.message && options.method !== "GET") {
+    if (result.message && options.method !== "GET" && !options.silent) {
       toast({
         title: "Success",
         description: result.message,
