@@ -28,6 +28,10 @@ import {
   NotificationItem,
 } from "@/services/notificationService";
 import PIProgressBar from "@/components/pi/PIProgressBar";
+import badgeService, { BadgeApplication } from "@/services/badgeService";
+import SkillBadgePill from "@/components/SkillBadgePill";
+import RatingsPanel from "@/components/RatingsPanel";
+import { reviewService, ReviewItem, RatingBreakdown } from "@/services/reviewService";
 
 const topActionCards = [
   {
@@ -97,6 +101,12 @@ export default function DashboardHome() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
 
+  // Badge & review state for sidebar
+  const [myBadges, setMyBadges] = useState<BadgeApplication[]>([]);
+  const [reviewBreakdown, setReviewBreakdown] = useState<RatingBreakdown | null>(null);
+  const [latestReviews, setLatestReviews] = useState<ReviewItem[]>([]);
+  const [totalReviews, setTotalReviews] = useState(0);
+
   const loadNotifications = useCallback(async () => {
     try {
       const data = await notificationService.getUserNotifications();
@@ -113,11 +123,11 @@ export default function DashboardHome() {
     fetchPiStatus();
     loadNotifications();
 
-    const interval = setInterval(loadNotifications, 30000); // refresh activity feed every 30s
+    const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchUser, fetchPiStatus, loadNotifications]);
 
-  // Fetch talent stats once we have a username
+  // Fetch talent stats + badges + reviews once we have user data
   useEffect(() => {
     if (!user?.username) return;
 
@@ -126,9 +136,30 @@ export default function DashboardHome() {
       .then((profile) => {
         setStats(profile.stats);
       })
-      .catch(() => {
-        // errors shown via toast
-      });
+      .catch(() => {});
+
+    // Load approved badges
+    badgeService
+      .getDashboard()
+      .then((dash) => {
+        const approved = dash.myApplications.filter(
+          (a) => a.status === "APPROVED",
+        );
+        setMyBadges(approved);
+      })
+      .catch(() => {});
+
+    // Load reviews (needs user id — loaded after profile)
+    if (user.id) {
+      reviewService
+        .getForUser(user.id, { limit: 3 })
+        .then((res) => {
+          setReviewBreakdown(res.breakdown ?? null);
+          setLatestReviews(res.data ?? []);
+          setTotalReviews(res.meta?.total ?? 0);
+        })
+        .catch(() => {});
+    }
   }, [user]);
 
   const handleMarkAllRead = async () => {
@@ -384,24 +415,49 @@ export default function DashboardHome() {
             <PIProgressBar />
           </div>
 
-          {/* Your Badges */}
+          {/* Your Skill Badges */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Your Badges</h3>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-100 text-orange-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                🔥 7-Day Active
-              </div>
-              <div className="flex items-center gap-1.5 bg-yellow-50 border border-yellow-100 text-yellow-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                👑 Legend
-              </div>
-              <div className="flex items-center gap-1.5 bg-[#F4ECFF] border border-purple-100 text-[#7300E5] px-3 py-1.5 rounded-full text-xs font-semibold">
-                ⚡ Top Hustler
-              </div>
-              <div className="flex items-center gap-1.5 bg-pink-50 border border-pink-100 text-pink-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                🔍 Street Analyst
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-900">Your Skill Badges</h3>
+              <Link
+                href="/dashboard/badges"
+                className="text-[12px] font-semibold text-[#7300E5] hover:underline"
+              >
+                View all
+              </Link>
             </div>
+            {myBadges.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {myBadges.slice(0, 4).map((app) => (
+                  <SkillBadgePill
+                    key={app.id}
+                    name={app.badge.name}
+                    iconKey={app.badge.iconKey}
+                    tier={app.currentTier}
+                    status={app.status}
+                    description={app.badge.description}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-[12px] text-gray-400 mb-2">No verified badges yet.</p>
+                <Link
+                  href="/dashboard/badges"
+                  className="text-[12px] font-bold text-[#7300E5] bg-[#F4ECFF] px-3 py-1.5 rounded-xl hover:bg-purple-100 transition-colors"
+                >
+                  Apply for a badge →
+                </Link>
+              </div>
+            )}
           </div>
+
+          {/* Ratings Summary */}
+          <RatingsPanel
+            breakdown={reviewBreakdown}
+            reviews={latestReviews}
+            totalReviews={totalReviews}
+          />
 
           {/* Top Skills */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
