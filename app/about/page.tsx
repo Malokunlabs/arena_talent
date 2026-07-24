@@ -99,9 +99,9 @@ export default function AboutPage() {
           {/* Our Story Section */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-12 items-start py-8 sm:py-12 border-t border-b border-gray-100">
             <div className="md:col-span-4">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#7300E5]">
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-[#7300E5]">
                 Our story
-              </h2>
+              </h1>
             </div>
             <div className="md:col-span-8">
               <p className="text-gray-600 text-base sm:text-lg leading-relaxed font-normal">
