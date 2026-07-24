@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Edit3,
   Trash2,
+  Hand,
 } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
 import { talentService, TalentProfile } from "@/services/talentService";
@@ -378,7 +379,7 @@ export default function MyProofsPage() {
                         salutingIds.has(proof.id) ? "opacity-50 cursor-wait" : ""
                       }`}
                     >
-                      <span className="text-[16px]">🙌</span>
+                      <Hand className="w-4 h-4 text-[#E11D48]" />
                       <span className="text-[13px] font-bold text-[#E11D48]">
                         {proof.salutesCount || 0} Salutes
                       </span>

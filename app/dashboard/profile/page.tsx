@@ -20,6 +20,7 @@ import {
   Globe,
   Award,
   Sparkles,
+  Hand,
 } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
 import { talentService, TalentProfile } from "@/services/talentService";
@@ -350,7 +351,8 @@ export default function ProfilePage() {
                           {proof.status || "Completed"}
                         </span>
                         <span className="flex items-center gap-1.5 text-gray-600">
-                          🙌 {proof.salutesCount || 0} Salutes
+                          <Hand className="w-4 h-4 text-[#E11D48]" />{" "}
+                          {proof.salutesCount || 0} Salutes
                         </span>
                       </div>
                     </div>
@@ -625,11 +627,11 @@ export default function ProfilePage() {
                   {stats?.totalProofs ?? featuredProofs.length}
                 </span>
               </div>
-              <div className="flex items-center justify-between pb-5 border-b border-gray-100">
-                <div className="flex items-center gap-3 text-[15px] font-bold text-gray-700">
-                  <span className="text-[#7300E5] text-lg">🙌</span> Salutes
-                  Received
-                </div>
+                <div className="flex items-center justify-between pb-5 border-b border-gray-100">
+                  <div className="flex items-center gap-3 text-[15px] font-bold text-gray-700">
+                    <Hand className="w-4.5 h-4.5 text-[#7300E5]" /> Salutes
+                    Received
+                  </div>
                 <span className="font-black text-gray-900 text-lg">
                   {stats?.totalSalutes ?? 0}
                 </span>

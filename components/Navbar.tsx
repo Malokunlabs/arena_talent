@@ -22,7 +22,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Arena", href: "/" },
-    { name: "About us", href: "#" },
+    { name: "About us", href: "/about" },
     { name: "Talent", href: "/talent" },
   ];
 
