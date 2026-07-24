@@ -8,7 +8,10 @@ import { mediaService } from "@/services/mediaService";
 interface FormRendererProps {
   fields: FormField[];
   values: Record<string, unknown>;
-  onChange: (fieldId: string, value: unknown | ((prev: unknown) => unknown)) => void;
+  onChange: (
+    fieldId: string,
+    value: unknown | ((prev: unknown) => unknown),
+  ) => void;
   badgeName: string;
 }
 
@@ -34,7 +37,7 @@ export default function FormRenderer({
       progress: 0,
       done: false,
     }));
-    
+
     onChange(fieldId, (prevValue: unknown) => {
       const existing = (prevValue as UploadedFile[]) ?? [];
       return [...existing, ...added];
@@ -44,7 +47,7 @@ export default function FormRenderer({
     added.forEach(async (item) => {
       try {
         const url = await mediaService.upload(item.file, "badge-applications");
-        
+
         onChange(fieldId, (prevValue: unknown) => {
           const current = (prevValue as UploadedFile[]) ?? [];
           const idx = current.findIndex((c) => c.file === item.file);
@@ -71,7 +74,9 @@ export default function FormRenderer({
   return (
     <div className="space-y-6">
       <div className="mb-2">
-        <h3 className="font-bold text-gray-900 text-lg">{badgeName} Assessment</h3>
+        <h3 className="font-bold text-gray-900 text-lg">
+          {badgeName} Assessment
+        </h3>
         <p className="text-[13px] text-gray-500">
           Upload your portfolio and complete the sample brief
         </p>
@@ -81,9 +86,7 @@ export default function FormRenderer({
         <div key={field.id} className="space-y-2">
           <label className="block text-[14px] font-semibold text-gray-800">
             {field.label}
-            {field.required && (
-              <span className="text-red-500 ml-1">*</span>
-            )}
+            {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
 
           {/* File Upload */}
@@ -116,7 +119,12 @@ export default function FormRenderer({
                 <p className="text-[12px] text-gray-400 mt-1">
                   or click to browse ·{" "}
                   {field.validation?.accept
-                    ?.map((a) => a.replace("image/", "").replace("video/", "").toUpperCase())
+                    ?.map((a) =>
+                      a
+                        .replace("image/", "")
+                        .replace("video/", "")
+                        .toUpperCase(),
+                    )
                     .join(", ") ?? "All files"}{" "}
                   · Max {field.validation?.maxSizeMb ?? 5}MB each
                 </p>
@@ -172,7 +180,7 @@ export default function FormRenderer({
                           </button>
                         </div>
                       </div>
-                    )
+                    ),
                   )}
                   {field.validation?.minFiles && (
                     <p className="text-[12px] text-gray-400">
@@ -181,7 +189,7 @@ export default function FormRenderer({
                       {Math.max(
                         0,
                         field.validation.minFiles -
-                          ((values[field.id] as UploadedFile[]) ?? []).length
+                          ((values[field.id] as UploadedFile[]) ?? []).length,
                       ) > 0 &&
                         `${Math.max(0, field.validation.minFiles - ((values[field.id] as UploadedFile[]) ?? []).length)} more required.`}
                     </p>

@@ -19,6 +19,8 @@ export interface UserProfile {
   notifyWeeklyDigest?: boolean;
   notifyMarketingPromotions?: boolean;
   isPublic?: boolean;
+  rating?: number;
+  totalGigs?: number;
   progressIndex?: number;
   piScore?: number;
   createdAt?: string;
