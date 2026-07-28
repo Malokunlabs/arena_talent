@@ -33,6 +33,8 @@ interface SignUpState {
     role?: string;
   } | null;
   initAuth: () => void;
+  setToken: (token: string) => void;
+  setUser: (user: { id: string; email: string; username?: string; avatarUrl?: string | null; role?: string }) => void;
 }
 
 export const useAuthStore = create<SignUpState>((set, get) => ({
@@ -50,6 +52,15 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
   initAuth: () => {
     const token = tokenStorage.getToken();
     set({ token, isAuthenticated: !!token });
+  },
+
+  setToken: (token) => {
+    tokenStorage.setToken(token);
+    set({ token, isAuthenticated: true });
+  },
+
+  setUser: (user) => {
+    set({ user: { ...user, avatarUrl: user.avatarUrl ?? undefined } });
   },
 
   setFullName: (name) =>

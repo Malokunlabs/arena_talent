@@ -11,6 +11,24 @@ import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
 
+function buildGu2kAuthUrl(intent: 'login' | 'signup' = 'login') {
+  const base        = process.env.NEXT_PUBLIC_GU2K_BASE_URL ?? 'http://localhost:8000';
+  const clientId    = process.env.NEXT_PUBLIC_GU2K_CLIENT_ID ?? '';
+  const redirectUri = process.env.NEXT_PUBLIC_GU2K_REDIRECT_URI ?? '';
+  const state       = crypto.randomUUID(); // CSRF protection
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  redirectUri,
+    response_type: 'code',
+    scope:         'profile email phone kyc extended',
+    state,
+    intent,
+  });
+  // Store state so we can verify it on callback
+  sessionStorage.setItem('gu2k_oauth_state', state);
+  return `${base}/oauth/authorize?${params.toString()}`;
+}
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -52,6 +70,23 @@ export default function LoginPage() {
             </h1>
             <p className="text-gray-500">Login to keep earning.</p>
           </div>
+        </div>
+
+        {/* GU2K SSO Button */}
+        <button
+          id="gu2k-sso-btn"
+          type="button"
+          onClick={() => { window.location.href = buildGu2kAuthUrl('login'); }}
+          className="w-full flex items-center justify-center h-12 rounded-xl border-2 border-gray-200 bg-white hover:border-[#7300E5] hover:bg-purple-50 transition-all font-semibold text-gray-700 text-sm shadow-sm"
+        >
+          Continue with your GU2K account
+        </button>
+
+        {/* Divider */}
+        <div className="relative flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">or continue with email</span>
+          <div className="flex-1 h-px bg-gray-200" />
         </div>
 
         {/* Form */}
