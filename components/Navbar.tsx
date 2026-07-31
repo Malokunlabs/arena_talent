@@ -64,6 +64,11 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
 
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname?.startsWith(href);
+  };
+
   if (pathname?.startsWith("/admin")) return null;
 
   return (
@@ -91,15 +96,23 @@ const Navbar = () => {
 
           {/* Desktop Links */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-base font-medium text-gray-600 hover:text-primary transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={cn(
+                    "text-base transition-colors",
+                    active
+                      ? "text-[#7300E5] font-bold"
+                      : "text-gray-600 font-medium hover:text-[#7300E5]",
+                  )}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Right Buttons (Desktop) */}
@@ -156,16 +169,24 @@ const Navbar = () => {
             onClick={(e) => e.stopPropagation()}
             className="flex flex-col gap-4 p-6 w-full bg-white shadow-xl rounded-b-3xl animate-in slide-in-from-top duration-300"
           >
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-lg font-semibold text-gray-800 hover:text-primary py-2 border-b border-gray-100"
-                onClick={() => setShowNav(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={cn(
+                    "text-lg py-2 border-b border-gray-100 transition-colors",
+                    active
+                      ? "text-[#7300E5] font-bold"
+                      : "text-gray-800 font-semibold hover:text-[#7300E5]",
+                  )}
+                  onClick={() => setShowNav(false)}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
             <div className="flex flex-col gap-3 mt-4">
               {!mounted ? (
                 <div className="space-y-3">
