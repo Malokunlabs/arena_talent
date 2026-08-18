@@ -85,9 +85,9 @@ export default function AboutPage() {
             </div>
 
             {/* Hero Image Container */}
-            <div className="w-full aspect-[16/9] sm:aspect-[2.2/1] max-h-[500px] relative rounded-[24px] overflow-hidden shadow-sm border border-gray-100 bg-gray-50 mt-6 sm:mt-10">
+            <div className="w-full aspect-[16/9] sm:aspect-[2.2/1] max-h-[500px] relative rounded-[24px] overflow-hidden mt-6 sm:mt-10">
               <Image
-                src="/images/about-us/about-us-image-large.jpg"
+                src="/images/about-us/about-arena.png"
                 alt="Arena - A home for people who show up"
                 fill
                 className="object-cover"
