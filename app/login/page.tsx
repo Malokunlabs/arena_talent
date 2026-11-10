@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { TrophyGraphic, GreenSquiggle } from "@/components/arena/HeroBannerSvg";
+import { HeroArenaSwitcher } from "@/components/TopEcosystemBar";
 import { toast } from "sonner";
 
 function buildGu2kAuthUrl(intent: "login" | "signup" = "login") {
@@ -29,7 +30,6 @@ function buildGu2kAuthUrl(intent: "login" | "signup" = "login") {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -63,39 +63,7 @@ export default function LoginPage() {
       <div className="relative overflow-hidden bg-[#7E00EE] flex flex-col items-center justify-between pt-12 pb-0 px-6 min-h-[420px] lg:min-h-[calc(100vh-44px)] select-none">
         {/* Top "Arena v" Switcher Pill + Headline */}
         <div className="relative z-20 flex flex-col items-center text-center max-w-[460px]">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((v) => !v)}
-              className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full border-2 border-white text-white text-[18px] font-semibold hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <span>Arena</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 rounded-2xl bg-[#27272A] text-white shadow-xl py-2 px-1.5 text-left z-30 border border-white/10">
-                <Link
-                  href="/"
-                  onClick={() => setDropdownOpen(false)}
-                  className="block px-3.5 py-2 rounded-xl text-[12px] font-medium hover:bg-white/10 transition-colors"
-                >
-                  Arena - Share Proof
-                </Link>
-                <a
-                  href={
-                    process.env.NEXT_PUBLIC_GU2K_BASE_URL ??
-                    "https://geturgent2k.com"
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-3.5 py-2 rounded-xl text-[12px] font-medium hover:bg-white/10 transition-colors text-white/85"
-                >
-                  GU2K - Get Gigs
-                </a>
-              </div>
-            )}
-          </div>
+          <HeroArenaSwitcher />
 
           <h1 className="mt-5 text-[44px] sm:text-[56px] font-semibold text-white leading-[1.06] tracking-[-0.03em]">
             Share your

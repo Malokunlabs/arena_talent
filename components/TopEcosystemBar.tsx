@@ -13,6 +13,70 @@ export const ECOSYSTEM_LINKS = {
   daily: "https://gu2kdaily.com/daily",
 } as const;
 
+export function EcosystemDropdownMenu({
+  onSelect,
+  widthClass = "w-52",
+}: {
+  onSelect: () => void;
+  widthClass?: string;
+}) {
+  return (
+    <div
+      className={`absolute left-1/2 -translate-x-1/2 mt-2 ${widthClass} rounded-2xl bg-[#27272A] text-white shadow-xl py-2 px-1.5 text-left z-50 border border-white/10 animate-in fade-in zoom-in-95 duration-150`}
+    >
+      <Link
+        href={ECOSYSTEM_LINKS.arena}
+        onClick={onSelect}
+        className="block px-3.5 py-2 rounded-xl text-[12px] font-semibold text-white bg-white/10 transition-colors"
+      >
+        Arena - Share Proof
+      </Link>
+      <a
+        href={ECOSYSTEM_LINKS.gu2k}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onSelect}
+        className="block px-3.5 py-2 rounded-xl text-[12px] font-medium hover:bg-white/10 transition-colors text-white/85"
+      >
+        GU2K - Earn Gigs
+      </a>
+    </div>
+  );
+}
+
+export function HeroArenaSwitcher() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full border-2 border-white text-white text-[18px] font-semibold hover:bg-white/10 transition-colors cursor-pointer"
+      >
+        <span>Arena</span>
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && <EcosystemDropdownMenu onSelect={() => setOpen(false)} />}
+    </div>
+  );
+}
+
 export default function TopEcosystemBar() {
   const { isAuthenticated, initAuth } = useAuthStore();
   const { fetchUser } = useUserStore();
@@ -103,42 +167,10 @@ export default function TopEcosystemBar() {
         </button>
 
         {mobileMenuOpen && (
-          <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[230px] rounded-2xl bg-[#222226] text-white p-2 shadow-2xl border border-white/10 z-50 animate-in fade-in zoom-in-95 duration-150">
-            <Link
-              href={ECOSYSTEM_LINKS.arena}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-white bg-white/10"
-            >
-              Arena - Share Proof
-            </Link>
-            <a
-              href={ECOSYSTEM_LINKS.gu2k}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              GU2K - Earn Gigs
-            </a>
-            <a
-              href={ECOSYSTEM_LINKS.brands}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              Brands - Post Gigs
-            </a>
-            <a
-              href={ECOSYSTEM_LINKS.daily}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              Daily - Play &amp; Earn
-            </a>
-          </div>
+          <EcosystemDropdownMenu
+            widthClass="w-[230px]"
+            onSelect={() => setMobileMenuOpen(false)}
+          />
         )}
       </div>
     </header>
