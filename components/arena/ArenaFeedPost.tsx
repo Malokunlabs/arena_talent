@@ -7,6 +7,7 @@ import { Play, MoreHorizontal, Edit3, Trash2, Clock } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { LevelPill, getLevelColor } from "@/components/arena/LevelBadge";
 import { Proof, ProofMediaItem } from "@/services/proofService";
+import MediaLightboxModal from "@/components/modals/MediaLightboxModal";
 
 type RankVariant = "Pro" | "Hustler" | "Specialist" | "Lead";
 
@@ -113,41 +114,63 @@ function getNormalizedMediaItems(proof: Proof): ProofMediaItem[] {
 function MediaCell({
   item,
   className = "",
-  showDurationPill = false,
+  onClick,
+  extraCountOverlay = 0,
 }: {
   item: ProofMediaItem;
   className?: string;
-  showDurationPill?: boolean;
+  onClick?: () => void;
+  extraCountOverlay?: number;
 }) {
   return (
-    <div
-      className={`relative overflow-hidden bg-gray-100 select-none ${className}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative overflow-hidden bg-gray-100 select-none text-left ${
+        item.type === "video" ? "cursor-pointer" : "cursor-zoom-in"
+      } ${className}`}
+      aria-label={item.type === "video" ? "Open video in large view" : "Open image to zoom"}
     >
       {item.type === "video" ? (
-        <video
-          src={item.url}
-          poster={item.thumbnailUrl}
-          controls
-          playsInline
-          preload="metadata"
-          className="w-full h-full object-cover"
-        />
+        <>
+          <video
+            src={item.url}
+            poster={item.thumbnailUrl}
+            muted
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-black/55 backdrop-blur-xs border border-white/25 flex items-center justify-center shadow-lg transition-transform duration-200 group-hover:scale-110">
+              <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+            </div>
+          </div>
+        </>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={item.url}
           alt="Proof media"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
       )}
 
-      {(item.type === "video" || showDurationPill) && (
+      {item.type === "video" && (
         <div className="pointer-events-none absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-xs text-white text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
           <Play className="w-2.5 h-2.5 fill-white" />
           <span>{formatDurationBadge(item.duration)}</span>
         </div>
       )}
-    </div>
+
+      {extraCountOverlay > 0 && (
+        <div className="pointer-events-none absolute inset-0 bg-black/55 flex items-center justify-center">
+          <span className="text-white text-[20px] font-bold tracking-tight">
+            +{extraCountOverlay}
+          </span>
+        </div>
+      )}
+    </button>
   );
 }
 
@@ -180,6 +203,7 @@ export default function ArenaFeedPost({
   const postRef = useRef<HTMLElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
   useEffect(() => {
@@ -328,14 +352,26 @@ export default function ArenaFeedPost({
       {/* Media Collage (if any media exists) */}
       {mediaItems.length === 1 && (
         <div className="mt-3.5 rounded-2xl overflow-hidden border border-[#ECECF0] max-h-[380px]">
-          <MediaCell item={mediaItems[0]} className="w-full h-[320px]" />
+          <MediaCell
+            item={mediaItems[0]}
+            className="w-full h-[320px]"
+            onClick={() => setLightboxIndex(0)}
+          />
         </div>
       )}
 
       {mediaItems.length === 2 && (
         <div className="mt-3.5 grid grid-cols-2 gap-1.5 rounded-2xl overflow-hidden border border-[#ECECF0] h-[280px]">
-          <MediaCell item={mediaItems[0]} className="w-full h-full" />
-          <MediaCell item={mediaItems[1]} className="w-full h-full" />
+          <MediaCell
+            item={mediaItems[0]}
+            className="w-full h-full"
+            onClick={() => setLightboxIndex(0)}
+          />
+          <MediaCell
+            item={mediaItems[1]}
+            className="w-full h-full"
+            onClick={() => setLightboxIndex(1)}
+          />
         </div>
       )}
 
@@ -344,18 +380,21 @@ export default function ArenaFeedPost({
           <MediaCell
             item={mediaItems[0]}
             className="col-span-7 h-full"
-            showDurationPill
+            onClick={() => setLightboxIndex(0)}
           />
           <div className="col-span-5 grid grid-rows-2 gap-1.5 h-full">
             <MediaCell
               item={mediaItems[1]}
               className="w-full h-full"
-              showDurationPill
+              onClick={() => setLightboxIndex(1)}
             />
             <MediaCell
               item={mediaItems[2]}
               className="w-full h-full"
-              showDurationPill
+              onClick={() => setLightboxIndex(2)}
+              extraCountOverlay={
+                mediaItems.length > 3 ? mediaItems.length - 3 : 0
+              }
             />
           </div>
         </div>
@@ -503,6 +542,16 @@ export default function ArenaFeedPost({
           )}
         </div>
       </div>
+
+      {/* Media Lightbox Viewer (Zoom images, large video player, scroll through post items) */}
+      <MediaLightboxModal
+        isOpen={lightboxIndex !== null}
+        items={mediaItems}
+        initialIndex={lightboxIndex ?? 0}
+        title={talentName}
+        subtitle={gigRoleTitle}
+        onClose={() => setLightboxIndex(null)}
+      />
     </article>
   );
 }
