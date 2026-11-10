@@ -1,27 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Loader2 } from "lucide-react";
-import { proofService, Proof } from "@/services/proofService";
+import React, { useEffect, useState } from "react";
+import { X, Loader2 } from "lucide-react";
+import { Proof } from "@/services/proofService";
+import { useProofStore } from "@/store/useProofStore";
 import { toast } from "sonner";
 
 interface EditProofModalProps {
   isOpen: boolean;
   onClose: () => void;
   proof: Proof | null;
-  onUpdated: (updatedProof: Proof) => void;
+  onUpdated?: (updated: Proof) => void;
 }
 
 export default function EditProofModal({
@@ -30,172 +19,97 @@ export default function EditProofModal({
   proof,
   onUpdated,
 }: EditProofModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    category: "",
-    caption: "",
-    tags: "",
-  });
+  const { updateProof } = useProofStore();
+  const [caption, setCaption] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (proof) {
-      setFormData({
-        title: proof.title || "",
-        category: proof.category || "UGC Content",
-        caption: proof.caption || "",
-        tags: proof.tags ? proof.tags.join(", ") : "",
-      });
+    if (isOpen && proof) {
+      setCaption(proof.caption || "");
     }
-  }, [proof]);
+  }, [isOpen, proof]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
+  if (!isOpen || !proof) return null;
 
-  const handleCategoryChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, category: value }));
-  };
-
-  const handleSubmit = async () => {
-    if (!proof) return;
-    if (!formData.title || !formData.category || !formData.caption) {
-      toast.error("Please fill in all required fields");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!caption.trim() && (!proof.mediaUrls || proof.mediaUrls.length === 0)) {
+      toast.error("Please enter a caption for your proof.");
       return;
     }
 
+    setSaving(true);
     try {
-      setIsSubmitting(true);
-      const tagsArray = formData.tags
-        .split(",")
-        .map((tag) => tag.trim().replace(/^#/, ""))
-        .filter((tag) => tag.length > 0);
-
-      const updated = await proofService.updateProof(proof.id, {
-        title: formData.title,
-        category: formData.category,
-        caption: formData.caption,
-        tags: tagsArray,
+      const ok = await updateProof(proof.id, {
+        caption: caption.trim(),
       });
-
-      toast.success("Proof updated successfully!");
-      onUpdated(updated);
-      onClose();
-    } catch {
-      toast.error("Failed to update proof");
+      if (ok) {
+        toast.success("Proof updated successfully");
+        onUpdated?.({ ...proof, caption: caption.trim() });
+        onClose();
+      } else {
+        toast.error("Could not update proof.");
+      }
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-6 bg-white rounded-3xl sm:max-w-lg">
-        <DialogTitle className="text-xl font-bold tracking-tight mb-2">
-          Edit Proof
-        </DialogTitle>
-
-        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title" className="font-bold text-sm">
-              Title *
-            </Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Proof Title"
-              className="rounded-xl border-gray-200"
-              disabled={isSubmitting}
-            />
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[460px] bg-white rounded-[28px] shadow-2xl p-6 sm:p-7 space-y-4 animate-in zoom-in-95 duration-200"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-[19px] font-bold text-black tracking-[-0.02em]">
+              Edit Proof
+            </h2>
+            <p className="text-[12px] text-[#747682] mt-0.5">
+              Proofs can only be edited within 10 minutes of posting.
+            </p>
           </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category" className="font-bold text-sm">
-              Category *
-            </Label>
-            <Select
-              onValueChange={handleCategoryChange}
-              value={formData.category}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className="rounded-xl border-gray-200">
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="UGC Content">UGC Content</SelectItem>
-                <SelectItem value="Design">Design</SelectItem>
-                <SelectItem value="Development">Development</SelectItem>
-                <SelectItem value="Logistics">Logistics</SelectItem>
-                <SelectItem value="Field Ops">Field Ops</SelectItem>
-                <SelectItem value="Media">Media</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Caption */}
-          <div className="space-y-2">
-            <Label htmlFor="caption" className="font-bold text-sm">
-              Caption * ({formData.caption.length}/220)
-            </Label>
-            <Textarea
-              id="caption"
-              value={formData.caption}
-              onChange={handleChange}
-              placeholder="Tell your story"
-              className="rounded-xl border-gray-200 min-h-[100px]"
-              maxLength={220}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Tags */}
-          <div className="space-y-2">
-            <Label htmlFor="tags" className="font-bold text-sm">
-              Tags (comma-separated)
-            </Label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={handleChange}
-              placeholder="e.g., photography, lagos, markets"
-              className="rounded-xl border-gray-200"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex-1 bg-[#7300E5] hover:bg-[#5f00bd] text-white font-bold rounded-xl py-6"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </span>
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1 border-[#7300E5] text-gray-600 hover:text-gray-900 border-opacity-30 rounded-xl py-6"
-            >
-              Cancel
-            </Button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#747682] hover:text-black hover:bg-gray-100 transition-colors cursor-pointer"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <textarea
+          rows={5}
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Update your proof details..."
+          className="w-full p-3.5 rounded-2xl border border-[#E4E4EA] text-[13.5px] text-black placeholder:text-[#747682] outline-none focus:border-[#7E00EE] resize-none"
+        />
+
+        <div className="flex items-center justify-end gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 h-10 rounded-xl border border-[#E4E4EA] text-[13px] font-semibold text-black hover:bg-gray-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-5 h-10 rounded-xl bg-[#7E00EE] hover:bg-[#6900c7] disabled:bg-[#C78BFF] text-white text-[13px] font-semibold flex items-center gap-2 cursor-pointer"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

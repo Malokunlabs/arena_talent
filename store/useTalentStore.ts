@@ -54,18 +54,9 @@ export const useTalentStore = create<TalentState>((set) => ({
     }
   },
 
-  sendTalentRequest: async (data: any) => {
-    set({ isSendingRequest: true, error: null });
-    try {
-      await talentService.createTalentRequest(data);
-      set({ isSendingRequest: false });
-    } catch (error: any) {
-      set({
-        isSendingRequest: false,
-        error: error.message || "Failed to send talent request",
-      });
-      throw error;
-    }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sendTalentRequest: async (_data: any) => {
+    set({ isSendingRequest: false, error: null });
   },
 
   fetchTalentByUsername: async (username: string) => {

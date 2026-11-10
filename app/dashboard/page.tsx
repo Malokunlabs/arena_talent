@@ -1,483 +1,566 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import {
-  Bell,
-  Plus,
-  Zap,
-  ArrowUp,
-  ArrowDown,
-  Award,
-  CheckCircle2,
-  XCircle,
-  UserCheck,
-  Star,
-  Info,
-  CheckCheck,
-  Loader2,
-  LogIn,
-  Edit3,
-} from "lucide-react";
-import { useUserStore } from "@/store/useUserStore";
-import { talentService, TalentStats } from "@/services/talentService";
-import { usePiStore } from "@/store/usePiStore";
+  talentService,
+  TalentOverviewPayload,
+  OverviewPeriod,
+  OverviewStatCard,
+  ProofActivityPoint,
+} from "@/services/talentService";
+import { useLevelStore } from "@/store/useLevelStore";
+import LevelBreakdownModal from "@/components/modals/LevelBreakdownModal";
 import {
-  notificationService,
-  NotificationItem,
-} from "@/services/notificationService";
-import PIProgressBar from "@/components/pi/PIProgressBar";
-import badgeService, { BadgeApplication } from "@/services/badgeService";
-import SkillBadgePill from "@/components/SkillBadgePill";
-import RatingsPanel from "@/components/RatingsPanel";
-import { reviewService, ReviewItem, RatingBreakdown } from "@/services/reviewService";
+  LevelEmblem,
+  getLevelColor,
+  getLevelTrackTint,
+  getReadableTextColor,
+} from "@/components/arena/LevelBadge";
 
-const topActionCards = [
-  {
-    title: "Share Proof",
-    desc: "+10 PI",
-    icon: "share-proof-icons.svg",
-    href: "/dashboard/proofs",
-  },
-  {
-    title: "Daily Pulse",
-    desc: "+2 PI each",
-    icon: "daily-pulse-icon.svg",
-    href: "/dashboard/pulse",
-  },
-  {
-    title: "Edit Profile",
-    desc: "Update info",
-    icon: "edit-user-icon.svg",
-    href: "/dashboard/profile",
-  },
-  {
-    title: "Explore Arena",
-    desc: "Discover",
-    icon: "explore-arena-icon.svg",
-    href: "/talent",
-  },
-];
+function PeriodSelect({
+  value,
+  onChange,
+  allTimeLabel = "All time",
+}: {
+  value: OverviewPeriod;
+  onChange: (next: OverviewPeriod) => void;
+  allTimeLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-function relTime(d: string) {
-  const diff = Date.now() - new Date(d).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
-function getActivityIcon(type: string) {
-  switch (type) {
-    case "BADGE_APPLICATION_SUBMITTED":
-    case "BADGE_APPLICATION_APPEALED":
-      return <Award className="w-4 h-4 text-purple-600" />;
-    case "BADGE_APPLICATION_APPROVED":
-    case "BADGE_APPEAL_RESOLVED":
-      return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
-    case "BADGE_APPLICATION_REJECTED":
-    case "BADGE_REVOKED":
-      return <XCircle className="w-4 h-4 text-red-500" />;
-    case "TALENT_REQUEST_CREATED":
-    case "COLLABORATION_REQUEST_CREATED":
-      return <UserCheck className="w-4 h-4 text-blue-600" />;
-    case "PROOF_SALUTED":
-      return <Zap className="w-4 h-4 text-amber-500" />;
-    case "REVIEW_RECEIVED":
-      return <Star className="w-4 h-4 text-yellow-500" />;
-    default:
-      return <Info className="w-4 h-4 text-[#7300E5]" />;
-  }
-}
-
-export default function DashboardHome() {
-  const { user, fetchUser } = useUserStore();
-  const { fetchPiStatus } = usePiStore();
-
-  const [stats, setStats] = useState<TalentStats | null>(null);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loadingNotifications, setLoadingNotifications] = useState(true);
-
-  // Badge & review state for sidebar
-  const [myBadges, setMyBadges] = useState<BadgeApplication[]>([]);
-  const [reviewBreakdown, setReviewBreakdown] = useState<RatingBreakdown | null>(null);
-  const [latestReviews, setLatestReviews] = useState<ReviewItem[]>([]);
-  const [totalReviews, setTotalReviews] = useState(0);
-
-  const loadNotifications = useCallback(async () => {
-    try {
-      const data = await notificationService.getUserNotifications();
-      setNotifications(data);
-    } catch {
-      /* silently catch */
-    } finally {
-      setLoadingNotifications(false);
-    }
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  useEffect(() => {
-    fetchUser();
-    fetchPiStatus();
-    loadNotifications();
-
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchUser, fetchPiStatus, loadNotifications]);
-
-  // Fetch talent stats + badges + reviews once we have user data
-  useEffect(() => {
-    if (!user?.username) return;
-
-    talentService
-      .getTalentByUsername(user.username)
-      .then((profile) => {
-        setStats(profile.stats);
-      })
-      .catch(() => {});
-
-    // Load approved badges
-    badgeService
-      .getDashboard()
-      .then((dash) => {
-        const approved = dash.myApplications.filter(
-          (a) => a.status === "APPROVED",
-        );
-        setMyBadges(approved);
-      })
-      .catch(() => {});
-
-    // Load reviews (needs user id — loaded after profile)
-    if (user.id) {
-      reviewService
-        .getForUser(user.id, { limit: 3 })
-        .then((res) => {
-          setReviewBreakdown(res.breakdown ?? null);
-          setLatestReviews(res.data ?? []);
-          setTotalReviews(res.meta?.total ?? 0);
-        })
-        .catch(() => {});
-    }
-  }, [user]);
-
-  const handleMarkAllRead = async () => {
-    try {
-      await notificationService.markAllUserRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    } catch {
-      /* silently catch */
-    }
-  };
-
-  const handleItemClick = async (item: NotificationItem) => {
-    if (!item.isRead) {
-      try {
-        await notificationService.markAsRead(item.id);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
-        );
-      } catch {
-        /* silently catch */
-      }
-    }
-  };
+  const currentLabel = value === "this_month" ? "This Month" : allTimeLabel;
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        {/* Left Content (8 columns) */}
-        <div className="xl:col-span-8 space-y-6">
-          {/* Top Action Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {topActionCards.map((card, idx) => (
-              <Link
-                key={idx}
-                href={card.href}
-                className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:shadow-md hover:border-[#7300E5]/30 transition-all cursor-pointer group"
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 text-[11.5px] font-medium text-[#747682] hover:text-black transition-colors cursor-pointer whitespace-nowrap"
+      >
+        <span>{currentLabel}</span>
+        <ChevronDown className="w-3.5 h-3.5" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-1.5 w-32 rounded-2xl bg-white border border-[#ECECF0] shadow-[0_12px_30px_rgba(0,0,0,0.08)] py-1 z-30 divide-y divide-[#F1F1F5] animate-in fade-in duration-100">
+          <button
+            type="button"
+            onClick={() => {
+              onChange("this_month");
+              setOpen(false);
+            }}
+            className={`w-full text-left px-3.5 py-2.5 text-[12px] transition-colors cursor-pointer ${
+              value === "this_month"
+                ? "font-semibold text-black"
+                : "text-[#747682] hover:text-black"
+            }`}
+          >
+            This Month
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("all_time");
+              setOpen(false);
+            }}
+            className={`w-full text-left px-3.5 py-2.5 text-[12px] transition-colors cursor-pointer ${
+              value === "all_time"
+                ? "font-semibold text-black"
+                : "text-[#747682] hover:text-black"
+            }`}
+          >
+            All-time
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MiniSparkline({ values }: { values: number[] }) {
+  const pts =
+    values && values.length >= 2 ? values : [1, 3, 2, 5, 4, 6];
+  const min = Math.min(...pts);
+  const max = Math.max(...pts);
+  const span = Math.max(1, max - min);
+
+  const width = 76;
+  const height = 28;
+  const padY = 4;
+
+  const coords = pts.map((v, idx) => {
+    const x = (idx / Math.max(1, pts.length - 1)) * width;
+    const y =
+      height - padY - ((v - min) / span) * (height - padY * 2);
+    return { x, y };
+  });
+
+  // Smooth curve via quadratic midpoints
+  let d = `M ${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const curr = coords[i];
+    const next = coords[i + 1];
+    const midX = (curr.x + next.x) / 2;
+    const midY = (curr.y + next.y) / 2;
+    d += ` Q ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}, ${midX.toFixed(1)} ${midY.toFixed(1)}`;
+  }
+  const last = coords[coords.length - 1];
+  d += ` L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      fill="none"
+      className="shrink-0"
+    >
+      <path
+        d={d}
+        stroke="#7E00EE"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function OverviewStatCardView({
+  title,
+  card,
+  period,
+  onPeriodChange,
+  allTimeLabel,
+}: {
+  title: string;
+  card: OverviewStatCard;
+  period: OverviewPeriod;
+  onPeriodChange: (p: OverviewPeriod) => void;
+  allTimeLabel?: string;
+}) {
+  const isPositive =
+    card.growthPercent > 0 ||
+    /higher|growth/i.test(card.comparisonText || "");
+
+  return (
+    <div className="rounded-[20px] border border-[#ECECF0] bg-white p-5 flex flex-col justify-between min-h-[126px]">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[28px] font-bold text-black leading-none tracking-[-0.03em]">
+          {card.count}
+        </span>
+        <PeriodSelect
+          value={period}
+          onChange={onPeriodChange}
+          allTimeLabel={allTimeLabel}
+        />
+      </div>
+
+      <div className="mt-5 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[14px] font-semibold text-black truncate">
+            {title}
+          </p>
+          <p
+            className={`text-[11.5px] mt-0.5 truncate ${
+              isPositive ? "text-[#16A34A] font-medium" : "text-[#747682]"
+            }`}
+          >
+            {card.comparisonText}
+          </p>
+        </div>
+        <MiniSparkline values={card.sparkline} />
+      </div>
+    </div>
+  );
+}
+
+function ProofActivityChart({ points }: { points: ProofActivityPoint[] }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const safePoints =
+    points && points.length > 0
+      ? points
+      : [
+          { label: "Jan", count: 0 },
+          { label: "Feb", count: 0 },
+          { label: "Mar", count: 0 },
+          { label: "Apr", count: 0 },
+          { label: "May", count: 0 },
+          { label: "Jun", count: 0 },
+        ];
+
+  const rawMax = Math.max(...safePoints.map((p) => p.count), 5);
+  const step = rawMax <= 10 ? 2 : rawMax <= 25 ? 5 : rawMax <= 50 ? 10 : 20;
+  const yMax = Math.max(step * 5, Math.ceil(rawMax / step) * step);
+  const yTicks = [0, 1, 2, 3, 4, 5].map((i) => Math.round((yMax / 5) * i));
+
+  const svgWidth = 540;
+  const svgHeight = 230;
+  const padLeft = 32;
+  const padRight = 14;
+  const padTop = 14;
+  const padBottom = 26;
+  const plotW = svgWidth - padLeft - padRight;
+  const plotH = svgHeight - padTop - padBottom;
+
+  const coords = safePoints.map((pt, i) => {
+    const x =
+      safePoints.length === 1
+        ? padLeft + plotW / 2
+        : padLeft + (i / (safePoints.length - 1)) * plotW;
+    const y = padTop + plotH - (pt.count / yMax) * plotH;
+    return { x, y, ...pt };
+  });
+
+  const linePath = coords
+    .map((c, idx) => `${idx === 0 ? "M" : "L"} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`)
+    .join(" ");
+
+  const areaPath = `${linePath} L ${coords[coords.length - 1].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} L ${coords[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`;
+
+  return (
+    <div className="relative w-full">
+      <svg
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        className="w-full h-[220px] overflow-visible"
+      >
+        <defs>
+          <linearGradient id="proofActivityFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7E00EE" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#7E00EE" stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal dashed gridlines + Y labels */}
+        {yTicks.map((tick) => {
+          const y = padTop + plotH - (tick / yMax) * plotH;
+          return (
+            <g key={tick}>
+              <line
+                x1={padLeft}
+                y1={y}
+                x2={svgWidth - padRight}
+                y2={y}
+                stroke="#ECECF2"
+                strokeDasharray="3 3"
+              />
+              <text
+                x={padLeft - 8}
+                y={y + 3.5}
+                textAnchor="end"
+                className="fill-[#747682] text-[10px]"
               >
-                <div className="w-12 h-12 mb-3 relative group-hover:scale-110 transition-transform">
-                  <Image
-                    src={`/dashboard-icons/homepage/${card.icon}`}
-                    alt={card.title}
-                    fill
-                    className="object-contain"
+                {tick}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Vertical dashed gridlines + X labels */}
+        {coords.map((c, idx) => (
+          <g key={`${c.label}-${idx}`}>
+            <line
+              x1={c.x}
+              y1={padTop}
+              x2={c.x}
+              y2={padTop + plotH}
+              stroke="#ECECF2"
+              strokeDasharray="3 3"
+            />
+            <text
+              x={c.x}
+              y={svgHeight - 4}
+              textAnchor="middle"
+              className="fill-[#747682] text-[10px]"
+            >
+              {c.label}
+            </text>
+          </g>
+        ))}
+
+        {/* Area Fill */}
+        <path d={areaPath} fill="url(#proofActivityFill)" />
+
+        {/* Line */}
+        <path
+          d={linePath}
+          fill="none"
+          stroke="#7E00EE"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Points & Hover Targets */}
+        {coords.map((c, idx) => {
+          const isHovered = hoveredIdx === idx;
+          return (
+            <g key={`pt-${idx}`}>
+              <circle
+                cx={c.x}
+                cy={c.y}
+                r={isHovered ? 4.5 : 3}
+                fill={isHovered ? "#7E00EE" : "#FFFFFF"}
+                stroke="#7E00EE"
+                strokeWidth="2"
+              />
+              <circle
+                cx={c.x}
+                cy={c.y}
+                r={14}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIdx(idx)}
+                onMouseLeave={() => setHoveredIdx(null)}
+              />
+              {isHovered && (
+                <g transform={`translate(${c.x}, ${Math.max(18, c.y - 14)})`}>
+                  <rect
+                    x="-36"
+                    y="-20"
+                    width="72"
+                    height="20"
+                    rx="6"
+                    fill="#18181B"
                   />
-                </div>
-                <h3 className="font-semibold text-gray-900 text-[13px] group-hover:text-[#7300E5] transition-colors">
-                  {card.title}
-                </h3>
-                <p className="text-gray-500 text-[11px] mt-1">{card.desc}</p>
-              </Link>
-            ))}
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Gigs Completed */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col justify-between">
-              <div className="w-10 h-10 mb-4 relative">
-                <Image
-                  src="/dashboard-icons/homepage/gigs-completed-icon.svg"
-                  alt="Gigs"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {stats?.totalGigs ?? 0}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 font-medium">
-                  Gigs Completed
-                </div>
-                <div className="flex items-center gap-1 mt-2 text-[#7300E5] text-[11px] font-bold">
-                  <ArrowUp className="w-3 h-3" />
-                  <span>12% this month</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Proofs Shared */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col justify-between">
-              <div className="w-10 h-10 mb-4 relative">
-                <Image
-                  src="/dashboard-icons/homepage/proofs-shared-icon.svg"
-                  alt="Proofs"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {stats?.totalProofs ?? 0}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 font-medium">
-                  Proofs Shared
-                </div>
-                <div className="flex items-center gap-1 mt-2 text-[#7300E5] text-[11px] font-bold">
-                  <ArrowUp className="w-3 h-3" />
-                  <span>8 new this week</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Average Rating */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute inset-0 bg-blue-50/30" />
-              <div className="w-10 h-10 mb-4 relative z-10">
-                <Image
-                  src="/dashboard-icons/homepage/average-rating-icon.svg"
-                  alt="Rating"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div className="z-10">
-                <div className="text-2xl font-bold text-gray-900">
-                  {stats?.rating ?? 0}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 font-medium">
-                  Average Rating
-                </div>
-                <div className="flex items-center gap-1 mt-2 text-[#7300E5] text-[11px] font-bold">
-                  <ArrowUp className="w-3 h-3" />
-                  <span>0.2 this month</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Avg Response Time */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col justify-between">
-              <div className="w-10 h-10 mb-4 relative">
-                <Image
-                  src="/dashboard-icons/homepage/avg-response-time-icon.svg"
-                  alt="Response Time"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-900">0h</div>
-                <div className="text-xs text-gray-500 mt-1 font-medium">
-                  Avg Response Time
-                </div>
-                <div className="flex items-center gap-1 mt-2 text-gray-400 text-[11px] font-bold">
-                  <ArrowDown className="w-3 h-3" />
-                  <span>2h faster</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-gray-900">
-                  Recent Activity
-                </h2>
-                {notifications.filter((n) => !n.isRead).length > 0 && (
-                  <span className="bg-[#F4ECFF] text-[#7300E5] text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                    {notifications.filter((n) => !n.isRead).length} new
-                  </span>
-                )}
-              </div>
-              {notifications.some((n) => !n.isRead) ? (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="bg-[#F4ECFF] text-[#7300E5] px-3.5 py-1.5 rounded-full text-xs font-bold hover:bg-[#e9dbff] transition-colors flex items-center gap-1"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  Mark all read
-                </button>
-              ) : (
-                <span className="text-[12px] font-medium text-gray-400">
-                  Live Feed
-                </span>
+                  <text
+                    x="0"
+                    y="-7"
+                    textAnchor="middle"
+                    className="fill-white text-[10px] font-semibold"
+                  >
+                    {c.label}: {c.count}
+                  </text>
+                </g>
               )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+export default function OverviewPage() {
+  const { fetchMyLevelProgress } = useLevelStore();
+
+  const [salutesPeriod, setSalutesPeriod] =
+    useState<OverviewPeriod>("this_month");
+  const [proofsPeriod, setProofsPeriod] =
+    useState<OverviewPeriod>("this_month");
+  const [gigsPeriod, setGigsPeriod] = useState<OverviewPeriod>("all_time");
+  const [activityPeriod, setActivityPeriod] =
+    useState<OverviewPeriod>("this_month");
+
+  const [overview, setOverview] = useState<TalentOverviewPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [levelModalOpen, setLevelModalOpen] = useState(false);
+
+  const loadOverview = useCallback(async () => {
+    try {
+      const data = await talentService.getMyOverview({
+        salutesPeriod,
+        proofsPeriod,
+        gigsPeriod,
+        activityPeriod,
+      });
+      setOverview(data);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [salutesPeriod, proofsPeriod, gigsPeriod, activityPeriod]);
+
+  useEffect(() => {
+    loadOverview();
+    fetchMyLevelProgress();
+  }, [loadOverview, fetchMyLevelProgress]);
+
+  if (loading && !overview) {
+    return (
+      <div className="py-24 flex items-center justify-center">
+        <Loader2 className="w-7 h-7 animate-spin text-[#7E00EE]" />
+      </div>
+    );
+  }
+
+  const salutesCard: OverviewStatCard = overview?.salutesReceived ?? {
+    count: 0,
+    previousCount: 0,
+    growthPercent: 0,
+    comparisonText: "Same as last month",
+    period: salutesPeriod,
+    sparkline: [0, 0, 0, 0, 0, 0],
+  };
+
+  const proofsCard: OverviewStatCard = overview?.proofsShared ?? {
+    count: 0,
+    previousCount: 0,
+    growthPercent: 0,
+    comparisonText: "Same as last month",
+    period: proofsPeriod,
+    sparkline: [0, 0, 0, 0, 0, 0],
+  };
+
+  const gigsCard: OverviewStatCard = overview?.gigsCompleted ?? {
+    count: 0,
+    previousCount: 0,
+    growthPercent: 0,
+    comparisonText: "All-time completed gigs",
+    period: gigsPeriod,
+    sparkline: [0, 0, 0, 0, 0, 0],
+  };
+
+  const progress = overview?.progressIndexBreakdown ?? null;
+  const activeColor = getLevelColor(progress?.currentLevel);
+  const readableColor = getReadableTextColor(activeColor);
+
+  return (
+    <div className="space-y-6 pb-10">
+      {/* Page Title */}
+      <h1 className="text-[22px] font-bold text-black tracking-[-0.02em]">
+        Overview
+      </h1>
+
+      {/* Top 3 Metric Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <OverviewStatCardView
+          title="Salutes Received"
+          card={salutesCard}
+          period={salutesPeriod}
+          onPeriodChange={setSalutesPeriod}
+        />
+        <OverviewStatCardView
+          title="Proofs Shared"
+          card={proofsCard}
+          period={proofsPeriod}
+          onPeriodChange={setProofsPeriod}
+        />
+        <OverviewStatCardView
+          title="Gigs Completed"
+          card={gigsCard}
+          period={gigsPeriod}
+          onPeriodChange={setGigsPeriod}
+          allTimeLabel="All time"
+        />
+      </div>
+
+      {/* Bottom 2 Cards: Proof Activity + Progress Index Breakdown */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        {/* Left: Proof Activity Line Chart */}
+        <div className="xl:col-span-7 rounded-[22px] border border-[#ECECF0] bg-white p-5 sm:p-6 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <h2 className="text-[16px] font-bold text-black tracking-[-0.01em]">
+                Proof Activity
+              </h2>
+              <p className="text-[12px] text-[#747682] mt-0.5">
+                Proofs posted over time
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mb-5">
-              Your latest actions, updates, and notifications
-            </p>
-
-            {/* Loading / Activity List / Empty State */}
-            {loadingNotifications ? (
-              <div className="flex items-center justify-center py-12 text-gray-400">
-                <Loader2 className="w-6 h-6 animate-spin text-[#7300E5]" />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
-                <p className="text-sm font-medium">No recent activity yet.</p>
-                <p className="text-xs mt-1 text-gray-400">
-                  Actions and updates will appear here soon.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {notifications.slice(0, 6).map((item) => {
-                  const content = (
-                    <div
-                      onClick={() => handleItemClick(item)}
-                      className={`flex items-start gap-3.5 p-3.5 rounded-xl border border-gray-100/80 hover:border-[#7300E5]/30 hover:bg-purple-50/20 transition-all cursor-pointer ${
-                        !item.isRead ? "bg-purple-50/40 font-medium" : "bg-white"
-                      }`}
-                    >
-                      <div className="w-9 h-9 rounded-full bg-[#F4ECFF] flex items-center justify-center shrink-0 mt-0.5">
-                        {getActivityIcon(item.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4
-                            className={`text-[13px] truncate ${
-                              !item.isRead
-                                ? "font-bold text-gray-900"
-                                : "font-semibold text-gray-800"
-                            }`}
-                          >
-                            {item.title}
-                          </h4>
-                          <span className="text-[10px] text-gray-400 shrink-0 font-medium">
-                            {relTime(item.createdAt)}
-                          </span>
-                        </div>
-                        <p className="text-[12px] text-gray-500 mt-0.5 line-clamp-1">
-                          {item.message}
-                        </p>
-                      </div>
-                      {!item.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-[#7300E5] shrink-0 mt-2" />
-                      )}
-                    </div>
-                  );
-
-                  if (item.link) {
-                    return (
-                      <Link key={item.id} href={item.link}>
-                        {content}
-                      </Link>
-                    );
-                  }
-
-                  return <div key={item.id}>{content}</div>;
-                })}
-              </div>
-            )}
+            <PeriodSelect
+              value={activityPeriod}
+              onChange={setActivityPeriod}
+            />
           </div>
+
+          <ProofActivityChart
+            points={overview?.proofActivity?.points ?? []}
+          />
         </div>
 
-        {/* Right Sidebar (4 columns) */}
-        <div className="xl:col-span-4 space-y-6">
-          {/* Progress Index */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <PIProgressBar />
+        {/* Right: Progress Index Breakdown */}
+        <div className="xl:col-span-5 rounded-[22px] border border-[#ECECF0] bg-white p-5 sm:p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-black tracking-[-0.01em]">
+              {progress?.title || "Progress Index Breakdown"}
+            </h2>
+            <p className="text-[12px] text-[#747682] mt-1 leading-relaxed">
+              {progress?.subtitle ||
+                "Progress in the Arena by talking about and posting proof of your GU2K Gigs on Arena."}
+            </p>
           </div>
 
-          {/* Your Skill Badges */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-gray-900">Your Skill Badges</h3>
-              <Link
-                href="/dashboard/badges"
-                className="text-[12px] font-semibold text-[#7300E5] hover:underline"
+          {/* 4 Diamonds Showcase */}
+          <button
+            type="button"
+            onClick={() => progress && setLevelModalOpen(true)}
+            className="my-5 w-full rounded-2xl bg-[#FAFAFC] border border-[#F1F1F5] py-7 px-4 flex items-center justify-center gap-4 sm:gap-5 hover:border-[#E4E4EA] transition-colors cursor-pointer"
+            title="Click to inspect all Arena rank levels"
+          >
+            {(progress?.levels || []).map((lvl) => (
+              <div
+                key={lvl.id}
+                className={`transition-transform hover:scale-105 ${
+                  lvl.isUnlocked || lvl.isCurrent ? "opacity-100" : "opacity-45"
+                }`}
               >
-                View all
-              </Link>
+                <LevelEmblem level={lvl} size="md" />
+              </div>
+            ))}
+          </button>
+
+          {/* Current Level & Progress Footer */}
+          <div>
+            <p className="text-[13px] font-bold">
+              <span style={{ color: readableColor }}>
+                {progress?.currentLevel?.name || "Hustler"}
+              </span>{" "}
+              <span className="text-[11.5px] font-normal text-[#747682]">
+                Arena Level
+              </span>
+            </p>
+            <p className="text-[11.5px] text-[#747682] mt-0.5">
+              {progress?.nextLevel && progress.proofsToNextLevel > 0
+                ? `${progress.proofsToNextLevel} ${
+                    progress.proofsToNextLevel === 1 ? "Proof" : "Proofs"
+                  } to reach ${progress.nextLevel.name}`
+                : "Top Arena level reached"}
+            </p>
+
+            {/* Colored Progress Bar */}
+            <div
+              style={{
+                backgroundColor: getLevelTrackTint(activeColor),
+              }}
+              className="mt-2.5 h-2 w-full rounded-full overflow-hidden"
+            >
+              <div
+                style={{
+                  width: `${progress?.progressPercent ?? 0}%`,
+                  backgroundColor: activeColor,
+                }}
+                className="h-full rounded-full transition-all duration-300"
+              />
             </div>
-            {myBadges.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {myBadges.slice(0, 4).map((app) => (
-                  <SkillBadgePill
-                    key={app.id}
-                    name={app.badge.name}
-                    iconKey={app.badge.iconKey}
-                    tier={app.currentTier}
-                    status={app.status}
-                    description={app.badge.description}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-[12px] text-gray-400 mb-2">No verified badges yet.</p>
-                <Link
-                  href="/dashboard/badges"
-                  className="text-[12px] font-bold text-[#7300E5] bg-[#F4ECFF] px-3 py-1.5 rounded-xl hover:bg-purple-100 transition-colors"
-                >
-                  Apply for a badge →
-                </Link>
-              </div>
-            )}
-          </div>
 
-          {/* Ratings Summary */}
-          <RatingsPanel
-            breakdown={reviewBreakdown}
-            reviews={latestReviews}
-            totalReviews={totalReviews}
-          />
-
-          {/* Top Skills */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Top Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {(user?.skills?.length
-                ? user.skills
-                : ["DCAS", "Field Ops", "Mystery Shop", "UGC Video", "Vox Pop"]
-              ).map((skill, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white border border-[#7300E5]/30 text-[#7300E5] px-3 py-1.5 rounded-full text-[11px] font-semibold"
-                >
-                  {skill}
-                </div>
-              ))}
+            <div className="mt-2 flex items-center justify-between text-[10.5px] font-semibold text-[#747682] uppercase tracking-wider">
+              <span>{progress?.indexLabel || "HUSTLER INDEX"}</span>
+              <span>{progress?.progressPercent ?? 0}%</span>
             </div>
           </div>
         </div>
       </div>
+
+      <LevelBreakdownModal
+        isOpen={levelModalOpen}
+        onClose={() => setLevelModalOpen(false)}
+        progress={progress}
+      />
     </div>
   );
 }

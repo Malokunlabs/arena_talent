@@ -1,5 +1,17 @@
 import { apiClient } from "./apiClient";
-import { BadgeApplication } from "./badgeService";
+import { Proof } from "./proofService";
+import { ArenaLevelSummary, UserLevelProgress } from "./levelService";
+import { Gig } from "./gigService";
+import { ConnectionTalent } from "./connectionService";
+
+export interface RecommendationItem {
+  id: string;
+  author: ConnectionTalent;
+  authorRole: string | null;
+  basedOnGig: Gig | null;
+  content: string;
+  createdAt: string;
+}
 
 export interface Talent {
   id: string;
@@ -8,48 +20,78 @@ export interface Talent {
   username: string;
   location: string;
   skills: string[];
-  rating: number;
+  rating?: number;
   isAvailable: boolean;
   email?: string;
   phone?: string;
   bio?: string;
   totalGigs?: number;
+  totalProofs?: number;
+  level?: ArenaLevelSummary;
+  followerCount?: number;
+  verificationStatus?: string;
   avatarUrl?: string;
+  coverUrl?: string | null;
+  cvUrl?: string | null;
   avatar?: string;
   createdAt?: string;
   updatedAt?: string;
-  piScore?: number;
-  progressIndex?: number;
-  piToNextLevel?: number;
-  nextLevelPi?: number | null;
 }
 
 export interface TalentStats {
-  totalPendingJobRequests: number;
-  totalCompletedJobRequests: number;
   totalProofs: number;
   totalSalutes: number;
-  rating: number;
+  recommendationsCount?: number;
   totalGigs: number;
+  verifiedProofs?: number;
+  followerCount?: number;
+  rating?: number;
+  totalPendingJobRequests?: number;
+  totalCompletedJobRequests?: number;
 }
 
 export interface TalentProfile {
   talent: Talent;
   stats: TalentStats;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  proofs: any[];
-  ratingBreakdown: {
-    avgQuality: number;
-    avgProfessionalism: number;
-    avgOnTime: number;
-    avgCollaboration: number;
-    avgCreativity: number;
-    avgOverall: number;
-    reviewCount: number;
-  } | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  recentReviews: any[];
-  approvedSkillBadges: BadgeApplication[];
+  levelProgress?: UserLevelProgress;
+  recommendations?: RecommendationItem[];
+  proofs: Proof[];
+}
+
+export type OverviewPeriod = "this_month" | "all_time";
+
+export interface OverviewStatCard {
+  count: number;
+  previousCount: number;
+  growthPercent: number;
+  comparisonText: string;
+  period: OverviewPeriod;
+  sparkline: number[];
+}
+
+export interface ProofActivityPoint {
+  label: string;
+  count: number;
+}
+
+export interface TalentOverviewPayload {
+  salutesReceived: OverviewStatCard;
+  proofsShared: OverviewStatCard;
+  gigsCompleted: OverviewStatCard;
+  proofActivity: {
+    period: OverviewPeriod;
+    points: ProofActivityPoint[];
+  };
+  progressIndexBreakdown: UserLevelProgress;
+  pendingConnectionRequestsCount: number;
+}
+
+export interface GetOverviewParams {
+  period?: OverviewPeriod;
+  salutesPeriod?: OverviewPeriod;
+  proofsPeriod?: OverviewPeriod;
+  gigsPeriod?: OverviewPeriod;
+  activityPeriod?: OverviewPeriod;
 }
 
 export interface GetTalentsParams {
@@ -57,7 +99,6 @@ export interface GetTalentsParams {
   limit?: number;
   location?: string;
   skills?: string;
-  minimumRating?: number;
   availableOnly?: boolean;
 }
 
@@ -75,75 +116,47 @@ export const talentService = {
     if (params.limit) query.append("limit", params.limit.toString());
     if (params.location) query.append("location", params.location);
     if (params.skills) query.append("skills", params.skills);
-    if (params.minimumRating)
-      query.append("minimumRating", params.minimumRating.toString());
     if (params.availableOnly !== undefined)
       query.append("availableOnly", params.availableOnly.toString());
 
     return apiClient.get(`/talents?${query.toString()}`);
   },
 
-  async getTalentByUsername(username: string): Promise<TalentProfile> {
-    return apiClient.get(`/talents/${username}`);
+  async getTalentByUsername(
+    username: string,
+    search?: string,
+  ): Promise<TalentProfile> {
+    const qs = search?.trim()
+      ? `?search=${encodeURIComponent(search.trim())}`
+      : "";
+    return apiClient.get(`/talents/${username}${qs}`);
   },
 
-  async createTalentRequest(data: CreateTalentRequest): Promise<void> {
-    return apiClient.post("/talent-requests", data);
+  async getMyProfile(search?: string): Promise<TalentProfile> {
+    const qs = search?.trim()
+      ? `?search=${encodeURIComponent(search.trim())}`
+      : "";
+    return apiClient.get(`/talents/me${qs}`);
   },
 
-  async getReceivedTalentRequests(
-    params: { page?: number; limit?: number } = {},
-  ): Promise<{
-    data: TalentRequest[];
-    meta: { total: number; page: number; limit: number };
-  }> {
+  async getMyOverview(
+    params: GetOverviewParams = {},
+  ): Promise<TalentOverviewPayload> {
     const query = new URLSearchParams();
-    if (params.page) query.append("page", params.page.toString());
-    if (params.limit) query.append("limit", params.limit.toString());
+    if (params.period) query.set("period", params.period);
+    if (params.salutesPeriod) query.set("salutesPeriod", params.salutesPeriod);
+    if (params.proofsPeriod) query.set("proofsPeriod", params.proofsPeriod);
+    if (params.gigsPeriod) query.set("gigsPeriod", params.gigsPeriod);
+    if (params.activityPeriod)
+      query.set("activityPeriod", params.activityPeriod);
 
-    return apiClient.get(`/talent-requests?${query.toString()}`);
+    const qs = query.toString();
+    return apiClient.get<TalentOverviewPayload>(
+      `/overview${qs ? `?${qs}` : ""}`,
+    );
   },
 
-  async updateTalentRequestStatus(id: string, status: string): Promise<void> {
-    return apiClient.patch(`/talent-requests/${id}/status`, { status });
+  async toggleFollow(id: string): Promise<{ following: boolean; followerCount?: number }> {
+    return apiClient.post(`/talents/${id}/follow`, {});
   },
 };
-
-export interface TalentRequest {
-  id: string;
-  talentId: string;
-  companyName: string;
-  email: string;
-  requestType: string;
-  projectBrief: string;
-  budgetMin: number;
-  budgetMax: number;
-  phone?: string;
-  city?: string;
-  location?: string;
-  timeline?: string;
-  requesterName?: string;
-  requesterEmail?: string;
-  notes?: string;
-  status: string;
-  avatarUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateTalentRequest {
-  talentId: string;
-  companyName: string;
-  email: string;
-  requestType: string;
-  projectBrief: string;
-  budgetMin: number;
-  budgetMax: number;
-  phone?: string;
-  city?: string;
-  location?: string;
-  timeline?: string;
-  requesterName?: string;
-  requesterEmail?: string;
-  notes?: string;
-}

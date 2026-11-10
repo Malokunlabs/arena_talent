@@ -6,13 +6,15 @@ import {
   Bell,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Award,
   UserCheck,
   Star,
   Zap,
   Info,
   CheckCheck,
+  X,
+  Heart,
+  UserPlus,
 } from "lucide-react";
 import {
   notificationService,
@@ -45,10 +47,14 @@ function getNotificationIcon(type: string) {
       return <UserCheck className="w-4 h-4 text-blue-600" />;
     case "PROOF_SALUTED":
       return <Zap className="w-4 h-4 text-amber-500" />;
+    case "PROOF_LIKED":
+      return <Heart className="w-4 h-4 text-[#7E00EE]" />;
+    case "NEW_FOLLOWER":
+      return <UserPlus className="w-4 h-4 text-[#7E00EE]" />;
     case "REVIEW_RECEIVED":
       return <Star className="w-4 h-4 text-yellow-500" />;
     default:
-      return <Info className="w-4 h-4 text-gray-500" />;
+      return <div className="w-3.5 h-3.5 rounded-[3px] bg-[#D4D4DC]" />;
   }
 }
 
@@ -143,8 +149,95 @@ export default function NotificationPopover({ isAdmin = false }: { isAdmin?: boo
         )}
       </button>
 
-      {/* Popover Menu */}
-      {open && (
+      {/* Popover Menu (Admin) OR Centered Modal (Arena Users) */}
+      {open && !isAdmin && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 backdrop-blur-md p-4 animate-in fade-in duration-150"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-w-[440px] bg-white rounded-[28px] shadow-2xl p-6 sm:p-7 relative animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-[20px] font-bold text-black tracking-[-0.02em]">
+                  Notifications
+                </h2>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="text-[11px] font-semibold text-[#7E00EE] hover:underline cursor-pointer"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#747682] hover:text-black hover:bg-gray-100 transition-colors cursor-pointer"
+                aria-label="Close notifications"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[420px] overflow-y-auto divide-y divide-[#F0F0F4]">
+              {notifications.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-[14px] font-semibold text-black">
+                    No notifications yet
+                  </p>
+                  <p className="text-[12px] text-[#747682] mt-0.5">
+                    Updates about your proofs and activity will appear here.
+                  </p>
+                </div>
+              ) : (
+                notifications.map((item) => {
+                  const row = (
+                    <div
+                      onClick={() => handleItemClick(item)}
+                      className={`py-4 flex items-center gap-3.5 cursor-pointer hover:bg-gray-50/70 transition-colors rounded-xl px-1 ${
+                        !item.isRead ? "bg-[#FAF5FF]/50" : ""
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#F4F4F6] flex items-center justify-center shrink-0">
+                        {getNotificationIcon(item.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13.5px] font-medium text-black leading-snug">
+                          {item.message || item.title}
+                        </p>
+                        <p className="text-[12px] text-[#747682] mt-0.5">
+                          {relTime(item.createdAt)}
+                        </p>
+                      </div>
+                      {!item.isRead && (
+                        <span className="w-2 h-2 rounded-full bg-[#7E00EE] shrink-0" />
+                      )}
+                    </div>
+                  );
+
+                  if (item.link) {
+                    return (
+                      <Link key={item.id} href={item.link} className="block">
+                        {row}
+                      </Link>
+                    );
+                  }
+
+                  return <div key={item.id}>{row}</div>;
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {open && isAdmin && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">

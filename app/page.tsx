@@ -1,268 +1,189 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
-
-import { Button } from "@/components/ui/button";
-import DailyPulse from "@/components/DailyPulse";
-import ProofCard from "@/components/ProofCard";
-import FeedCard from "@/components/FeedCard";
-import FeedSkeleton from "@/components/FeedSkeleton";
-import { Briefcase } from "lucide-react";
-
-// Modals
-import ProofDetailModal from "@/components/modals/ProofDetailModal";
-import CreateProofModal from "@/components/modals/CreateProofModal";
-import DailyPulseModal from "@/components/modals/DailyPulseModal";
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import ArenaShell from "@/components/arena/ArenaShell";
+import InlineProofComposer from "@/components/arena/InlineProofComposer";
+import ArenaFeedPost from "@/components/arena/ArenaFeedPost";
+import { TrophyGraphic, GreenSquiggle } from "@/components/arena/HeroBannerSvg";
+import ShareProofModal from "@/components/modals/ShareProofModal";
 import { useProofStore } from "@/store/useProofStore";
-import { Proof } from "@/services/proofService";
 import { useAuthStore } from "@/store/useAuthStore";
-import { usePulseStore } from "@/store/usePulseStore";
-import { useToast } from "@/hooks/use-toast";
+import { Proof } from "@/services/proofService";
+import { toast } from "sonner";
 
-// Helper to calculate time ago
-function timeAgo(dateString?: string) {
-  if (!dateString) return "Just now";
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+const FEED_TABS = [
+  { label: "All", value: "all" },
+  { label: "Trending", value: "trending" },
+  { label: "Nearby", value: "nearby" },
+  { label: "My Network", value: "network" },
+];
 
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-export default function Home() {
-  const [activeModal, setActiveModal] = useState<
-    "detail" | "create" | "pulse" | null
-  >(null);
-  const [selectedProof, setSelectedProof] = useState<Proof | null>(null);
-
-  const { proofs, fetchProofs, isLoading, saluteProof } = useProofStore();
+export default function HomePage() {
   const { isAuthenticated } = useAuthStore();
-  const { activePulse, fetchActivePulse } = usePulseStore();
-  const { toast } = useToast();
+  const {
+    proofs,
+    activeFilter,
+    setActiveFilter,
+    fetchProofs,
+    isLoading,
+    toggleLike,
+    recordView,
+    toggleBookmark,
+  } = useProofStore();
+
+  const composerRef = useRef<HTMLDivElement | null>(null);
+  const [selectedProofForShare, setSelectedProofForShare] =
+    useState<Proof | null>(null);
 
   useEffect(() => {
-    fetchProofs();
-  }, [fetchProofs]);
+    fetchProofs({ filter: activeFilter });
+  }, [activeFilter, fetchProofs]);
 
-  useEffect(() => {
-    // Always try — service returns null silently if unauthenticated
-    fetchActivePulse();
-  }, [fetchActivePulse]);
-
-  useEffect(() => {
-    // Re-fetch when user logs in
-    if (isAuthenticated) {
-      fetchActivePulse();
-    }
-  }, [isAuthenticated, fetchActivePulse]);
-
-  // Check auth helper
-  const checkAuth = (action: () => void) => {
+  const requireAuth = (action: () => void) => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to perform this action.",
-        variant: "destructive",
-      });
+      toast.error("Please sign in to interact with proofs on Arena.");
       return;
     }
     action();
   };
 
-  // Map proofs for the "Proofs of the week" section — only featured ones
-  const featuredProofs = (proofs || [])
-    .filter((p) => p.isFeatured === true)
-    .slice(0, 3)
-    .map((p, index) => ({
-      ...p,
-      rank: index + 1,
-      image: p.mediaUrl,
-      avatar:
-        p.talent?.avatarUrl ||
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
-      name: `${p.talent?.firstName || "Anonymous"} ${p.talent?.lastName || ""}`,
-      description: p.title,
-    }));
-
-  const categories = ["All", "Trending", "Nearby", "My network"];
-
-  const handleProofClick = (proof: any) => {
-    setSelectedProof(proof);
-    setActiveModal("detail");
+  const handleTabChange = (filterValue: string) => {
+    if (filterValue === "network" && !isAuthenticated) {
+      toast.error("Sign in to view proofs from your network.");
+      return;
+    }
+    setActiveFilter(filterValue);
   };
 
-  const closeModals = () => {
-    setActiveModal(null);
-    setSelectedProof(null);
+  const handleFocusComposer = () => {
+    if (composerRef.current) {
+      composerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      const textarea = composerRef.current.querySelector("textarea");
+      textarea?.focus();
+    }
+  };
+
+  const handleShareClick = (proof: Proof) => {
+    setSelectedProofForShare(proof);
   };
 
   return (
-    <main className="min-h-screen pt-24 pb-12 bg-white">
-      <div className="container mx-auto px-4 md:px-6 space-y-12">
-        {/* Header Section */}
-        <section className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight">Arena</h1>
-              <p className="text-muted-foreground">
-                Explore what people are doing today
-              </p>
-            </div>
-            {/* Daily Pulse Trigger */}
-            {activePulse && (
-              <div
-                onClick={() => setActiveModal("pulse")}
-                className="cursor-pointer transition-transform active:scale-95"
-              >
-                <DailyPulse />
+    <ArenaShell onShareProofClick={handleFocusComposer}>
+      <div className="space-y-7">
+        {/* Top Hero Banner (Unauthenticated) OR Inline Composer (Authenticated) */}
+        {isAuthenticated ? (
+          <InlineProofComposer composerRef={composerRef} />
+        ) : (
+          <div className="relative overflow-hidden rounded-[22px] bg-[#7E00EE] px-7 py-8 sm:px-9 sm:py-9 text-white min-h-[210px] flex items-center justify-between">
+            <div className="relative z-10 max-w-[330px]">
+              <h1 className="text-[36px] sm:text-[42px] font-bold leading-[1.06] tracking-[-0.03em] text-white">
+                Share your work, level up.
+              </h1>
+              <GreenSquiggle className="w-[180px] h-4 mt-1.5" />
+
+              <div className="mt-6">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center px-5 h-10 rounded-xl bg-[#18181B] hover:bg-black text-white text-[13px] font-semibold transition-transform active:scale-95 shadow-md"
+                >
+                  Get Started
+                </Link>
               </div>
-            )}
+            </div>
+
+            {/* Right Trophy Illustration */}
+            <div className="pointer-events-none absolute -right-4 -bottom-6 w-[250px] sm:w-[295px] h-[230px] sm:h-[255px]">
+              <TrophyGraphic className="w-full h-full" />
+            </div>
+          </div>
+        )}
+
+        {/* Feed Section */}
+        <div>
+          <h2 className="text-[18px] font-bold text-black tracking-[-0.02em]">
+            Feed
+          </h2>
+
+          {/* Filter Tabs */}
+          <div className="mt-3 flex items-center gap-6 border-b border-[#EFEFF3]">
+            {FEED_TABS.map((tab) => {
+              const active = activeFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => handleTabChange(tab.value)}
+                  className={`pb-2.5 text-[13px] relative transition-colors cursor-pointer ${
+                    active
+                      ? "text-[#7E00EE] font-semibold"
+                      : "text-[#747682] hover:text-black font-medium"
+                  }`}
+                >
+                  {tab.label}
+                  {active && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#7E00EE] rounded-full" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {!isLoading && featuredProofs.length > 0 ? (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-primary">
-                  Proofs of the week
-                </h2>
-                <Button
-                  onClick={() => checkAuth(() => setActiveModal("create"))}
-                  className="rounded-full bg-primary hover:bg-primary/90 font-bold px-6"
-                >
-                  Share proof (+10 Pt)
-                </Button>
+          {/* Posts List */}
+          <div>
+            {isLoading ? (
+              <div className="divide-y divide-[#EFEFF3]">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="py-5 space-y-3 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-100" />
+                        <div className="space-y-1.5">
+                          <div className="w-32 h-3.5 bg-gray-100 rounded" />
+                          <div className="w-24 h-2.5 bg-gray-100 rounded" />
+                        </div>
+                      </div>
+                      <div className="w-36 h-5 bg-gray-100 rounded-full" />
+                    </div>
+                    <div className="w-full h-3.5 bg-gray-100 rounded" />
+                    <div className="w-5/6 h-3.5 bg-gray-100 rounded" />
+                  </div>
+                ))}
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredProofs.map((proof) => (
-                  <ProofCard
+            ) : proofs.length > 0 ? (
+              <div>
+                {proofs.map((proof, index) => (
+                  <ArenaFeedPost
                     key={proof.id}
-                    rank={proof.rank}
-                    image={proof.image}
-                    avatar={proof.avatar}
-                    name={proof.name}
-                    description={proof.description}
-                    onClick={() => handleProofClick(proof)}
+                    proof={proof}
+                    index={index}
+                    onLike={(id) => requireAuth(() => toggleLike(id))}
+                    onView={recordView}
+                    onBookmark={(id) => requireAuth(() => toggleBookmark(id))}
+                    onShare={handleShareClick}
                   />
                 ))}
               </div>
-            </div>
-          ) : !isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-6 text-center">
-              <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-2">
-                <Briefcase className="w-10 h-10 text-gray-300" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
-                  Join the arena
-                </h2>
-                <p className="text-muted-foreground text-lg">
-                  These creators set the pace. Now it’s your move.
+            ) : (
+              <div className="py-16 text-center">
+                <p className="text-[15px] font-semibold text-black">
+                  No proofs found in this feed yet
+                </p>
+                <p className="text-[13px] text-[#747682] mt-1">
+                  Share proof of your completed gigs to get featured on Arena.
                 </p>
               </div>
-              <Button
-                onClick={() => checkAuth(() => setActiveModal("create"))}
-                className="rounded-full bg-primary hover:bg-primary/90 font-bold px-8 py-6 text-base shadow-lg shadow-primary/20"
-              >
-                Share proof (+10 Pt)
-              </Button>
-            </div>
-          ) : null}
-        </section>
-
-        {/* Filter Section */}
-        <section className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto scrollbar-hide">
-            {categories.map((category, index) => (
-              <button
-                key={category}
-                className={`px-6 py-2 rounded-full text-base font-semibold whitespace-nowrap transition-colors ${
-                  index === 0
-                    ? "bg-[#F7EFFD] text-primary"
-                    : "bg-[#F7EFFD] text-gray-600 hover:text-primary"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            )}
           </div>
-          {activePulse && (
-            <Button
-              variant="ghost"
-              onClick={() => setActiveModal("pulse")}
-              className="text-primary font-bold hover:bg-primary/5"
-            >
-              Answer Daily pulse
-            </Button>
-          )}
-        </section>
-
-        {/* Feed Section with Skeleton Loading */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading
-            ? Array.from({ length: 6 }).map((_, index) => (
-                <FeedSkeleton key={index} />
-              ))
-            : (proofs || []).map((proof) => (
-                <FeedCard
-                  key={proof.id}
-                  avatar={
-                    proof.talent?.avatarUrl ||
-                    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
-                  } // Fallback avatarUrl
-                  name={`${proof.talent?.firstName || "Anonymous"} ${proof.talent?.lastName || ""}`}
-                  location={proof.talent?.location || "Global"}
-                  timeAgo={timeAgo(proof.createdAt)}
-                  badge="Win"
-                  image={proof.mediaUrl}
-                  tags={proof.tags || []}
-                  title={proof.title}
-                  description={proof.caption || ""}
-                  salutes={proof.salutesCount || 0}
-                  onSalute={() => checkAuth(() => saluteProof(proof.id))}
-                  onClick={() => handleProofClick(proof)}
-                  onShare={() => handleProofClick(proof)}
-                />
-              ))}
-        </section>
+        </div>
       </div>
 
-      {/* Modals */}
-      <ProofDetailModal
-        isOpen={activeModal === "detail"}
-        onClose={closeModals}
-        proof={
-          selectedProof
-            ? {
-                image: selectedProof.mediaUrl,
-                rank: 1,
-                name: `${selectedProof.talent?.firstName || "Anonymous"} ${
-                  selectedProof.talent?.lastName || ""
-                }`.trim(),
-                avatar:
-                  selectedProof.talent?.avatarUrl ||
-                  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop",
-                username: selectedProof.talent?.username || "anonymous",
-                proofboardLink: selectedProof.talent?.username
-                  ? `/talent/${selectedProof.talent.username}`
-                  : "/talent",
-                id: selectedProof.id,
-              }
-            : null
-        }
+      {/* Share Proof Modal */}
+      <ShareProofModal
+        isOpen={Boolean(selectedProofForShare)}
+        onClose={() => setSelectedProofForShare(null)}
+        proof={selectedProofForShare}
       />
-      <CreateProofModal
-        isOpen={activeModal === "create"}
-        onClose={closeModals}
-      />
-      <DailyPulseModal isOpen={activeModal === "pulse"} onClose={closeModals} />
-    </main>
+    </ArenaShell>
   );
 }
