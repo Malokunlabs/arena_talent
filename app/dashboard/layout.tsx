@@ -1,92 +1,71 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { usePathname, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import ArenaShell from "@/components/arena/ArenaShell";
 import OnboardingModal from "@/components/modals/OnboardingModal";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
-import ProfileDropdown from "@/components/ProfileDropdown";
-import { Menu } from "lucide-react";
-import NotificationPopover from "@/components/NotificationPopover";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, isInitialized, initAuth } = useAuthStore();
   const { user, fetchUser } = useUserStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const navLinks = [
-    { name: "Arena", href: "/" },
-    { name: "About us", href: "#" },
-    { name: "Talent", href: "/talent" },
-  ];
 
   useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (!isAuthenticated) {
+      router.replace("/");
+      return;
+    }
     fetchUser();
-  }, [fetchUser]);
+  }, [isInitialized, isAuthenticated, fetchUser, router]);
 
   useEffect(() => {
-    // If user is loaded and has no username, show onboarding
     if (user && !user.username && !showOnboarding) {
-      // Use a microtask/timeout to avoid "synchronous setState in effect" lint error
       const timer = setTimeout(() => setShowOnboarding(true), 100);
       return () => clearTimeout(timer);
     }
   }, [user, showOnboarding]);
 
-  return (
-    <div className="min-h-screen bg-gray-50/50">
-      {/* Top Navigation */}
-      <header className="fixed top-0 left-0 right-0 h-24 bg-white border-b border-gray-100 z-50 px-6 lg:px-10 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <Link href="/">
-            <Image
-              width={150}
-              height={180}
-              src="/icons/logo.svg"
-              alt="brand logo"
-              className="object-cover"
-            />
-          </Link>
-        </div>
-        <div className="hidden lg:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className="text-base font-medium text-gray-600 hover:text-primary transition-colors"
-            >
-              {link.name}
-            </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-4">
-          <NotificationPopover isAdmin={false} />
-          <ProfileDropdown />
-        </div>
-      </header>
-
-      <div className="flex pt-24 h-screen">
-        <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <main className="flex-1 p-6 lg:p-10 overflow-x-hidden overflow-y-auto">
-          {children}
-        </main>
+  if (!isInitialized || !isAuthenticated) {
+    return (
+      <div className="min-h-[calc(100vh-44px)] bg-white flex items-center justify-center">
+        <Loader2 className="w-7 h-7 animate-spin text-[#7E00EE]" />
       </div>
+    );
+  }
 
+  if (pathname?.startsWith("/dashboard/profile")) {
+    return (
+      <>
+        {children}
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+        />
+      </>
+    );
+  }
+
+  return (
+    <ArenaShell showRightSidebar={false}>
+      {children}
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
       />
-    </div>
+    </ArenaShell>
   );
 }

@@ -61,7 +61,7 @@ class ApiClient {
         window.location.pathname.includes("/verify-email")
       );
 
-      const publicRoutes = ["/", "/talent", "/signup", "/login", "/reset-password", "/forgot-password", "/verify-email"];
+      const publicRoutes = ["/", "/talent", "/profile", "/proofs", "/about", "/signup", "/login", "/reset-password", "/forgot-password", "/verify-email"];
       const isPublicRoute = publicRoutes.some(route => 
         route === "/" ? typeof window !== "undefined" && window.location.pathname === "/" : typeof window !== "undefined" && window.location.pathname.startsWith(route)
       );
@@ -69,9 +69,9 @@ class ApiClient {
       if (!isUnverified && !isAuthEndpoint && !isAuthFlow) {
         useAuthStore.getState().logout();
         
-        // Only redirect if NOT on a public route
+        // Redirect protected routes back to Feed ("/")
         if (!isPublicRoute && typeof window !== "undefined") {
-          window.location.href = "/login";
+          window.location.href = "/";
         }
         
         if (!isPublicRoute) {

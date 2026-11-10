@@ -7,6 +7,8 @@ export interface UserProfile {
   lastName: string;
   username?: string;
   avatarUrl?: string;
+  coverUrl?: string | null;
+  cvUrl?: string | null;
   phone?: string;
   bio?: string;
   location?: string;
@@ -33,7 +35,9 @@ export interface UpdateUserData {
   phone?: string;
   bio?: string;
   location?: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
+  cvUrl?: string | null;
   username?: string;
   skills?: string[];
   isAvailable?: boolean;

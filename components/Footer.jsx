@@ -46,11 +46,11 @@ export default function Footer() {
             <div className="flex flex-col items-center mb-5 md:items-start md:mb-0">
               <div className="relative lg:w-36">
                 <Image
-                  width={150}
-                  height={180}
-                  src="/icons/logo.svg"
-                  alt="brand logo"
-                  className="object-cover"
+                  width={110}
+                  height={28}
+                  src="/icons/arena-logo.svg"
+                  alt="Arena logo"
+                  className="object-contain"
                 />
               </div>
               <div className="flex gap-3 items-center mt-8 footer_social md:gap-5">

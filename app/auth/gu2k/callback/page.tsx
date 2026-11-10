@@ -67,7 +67,7 @@ export default function Gu2kCallbackPage() {
           username:  user.username,
         });
 
-        router.replace('/dashboard');
+        router.replace('/');
       })
       .catch((err: Error) => {
         setErrorMsg(err.message);

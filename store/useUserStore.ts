@@ -4,13 +4,14 @@ import {
   UserProfile,
   UpdateUserData,
 } from "@/services/userService";
+import { useAuthStore } from "./useAuthStore";
 
 interface UserState {
   user: UserProfile | null;
   isLoading: boolean;
   error: string | null;
   lastFetch: number | null;
-  fetchUser: () => Promise<void>;
+  fetchUser: (force?: boolean) => Promise<void>;
   updateUser: (data: UpdateUserData) => Promise<boolean>;
   clearUser: () => void;
 }
@@ -23,12 +24,12 @@ export const useUserStore = create<UserState>((set, get) => ({
   error: null,
   lastFetch: null,
 
-  fetchUser: async () => {
+  fetchUser: async (force = false) => {
     const { lastFetch, user } = get();
     const now = Date.now();
 
     // Return cached data if still valid
-    if (user && lastFetch && now - lastFetch < CACHE_DURATION) {
+    if (!force && user && lastFetch && now - lastFetch < CACHE_DURATION) {
       return;
     }
 
@@ -74,6 +75,15 @@ export const useUserStore = create<UserState>((set, get) => ({
         isLoading: false,
         lastFetch: Date.now(),
       });
+      const authState = useAuthStore.getState();
+      if (authState.user) {
+        const nextAuthUser = {
+          ...authState.user,
+          username: updatedUser.username ?? authState.user.username,
+          avatarUrl: updatedUser.avatarUrl ?? authState.user.avatarUrl,
+        };
+        useAuthStore.setState({ user: nextAuthUser });
+      }
       return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {

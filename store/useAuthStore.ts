@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { authService, tokenStorage } from "@/services/authService";
+import { useLevelStore } from "./useLevelStore";
 
 interface SignUpState {
   fullName: string;
@@ -25,6 +26,7 @@ interface SignUpState {
   error: string | null;
   token: string | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   user: {
     id: string;
     email: string;
@@ -47,16 +49,17 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
   error: null,
   token: null,
   isAuthenticated: false,
+  isInitialized: false,
   user: null,
 
   initAuth: () => {
     const token = tokenStorage.getToken();
-    set({ token, isAuthenticated: !!token });
+    set({ token, isAuthenticated: !!token, isInitialized: true });
   },
 
   setToken: (token) => {
     tokenStorage.setToken(token);
-    set({ token, isAuthenticated: true });
+    set({ token, isAuthenticated: true, isInitialized: true });
   },
 
   setUser: (user) => {
@@ -215,6 +218,7 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
 
   logout: () => {
     authService.logout();
+    useLevelStore.getState().clearLevelProgress();
     set({
       token: null,
       isAuthenticated: false,
