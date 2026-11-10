@@ -324,23 +324,32 @@ export default function ArenaShell({
       )}
 
       {/* User Mini Footer if logged in */}
-      {isAuthenticated && user && (
+      {isAuthenticated && (
         <div className="mt-auto pt-6 flex items-center gap-1">
           <Link
             href="/dashboard/profile"
+            onClick={() => setMobileMenuOpen(false)}
             className="flex-1 min-w-0 flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 transition-colors"
           >
             <UserAvatar
-              name={`${user.firstName || ""} ${user.lastName || ""}`}
-              src={user.avatarUrl}
+              name={
+                user
+                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                    "Arena Talent"
+                  : "Arena Talent"
+              }
+              src={user?.avatarUrl}
               size={32}
             />
             <div className="min-w-0 flex-1">
               <p className="text-[12.5px] font-semibold text-black truncate">
-                {user.firstName} {user.lastName}
+                {user
+                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                    "Arena Talent"
+                  : "Arena Talent"}
               </p>
               <p className="text-[11px] text-[#747682] truncate">
-                @{user.username || "talent"}
+                {user?.username ? `@${user.username}` : "Signed in"}
               </p>
             </div>
           </Link>

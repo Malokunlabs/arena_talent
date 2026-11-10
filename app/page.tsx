@@ -26,7 +26,9 @@ export default function HomePage() {
     activeFilter,
     setActiveFilter,
     fetchProofs,
+    fetchProofsOfTheWeek,
     isLoading,
+    error,
     toggleLike,
     recordView,
     toggleBookmark,
@@ -163,6 +165,27 @@ export default function HomePage() {
                     onShare={handleShareClick}
                   />
                 ))}
+              </div>
+            ) : error && proofs.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <p className="text-[15px] font-semibold text-black">
+                  Could not load Arena feed
+                </p>
+                <p className="text-[13px] text-[#747682] max-w-md mx-auto">
+                  {error === "Failed to fetch"
+                    ? "Unable to reach the Arena backend server (check that the API server is running)."
+                    : error}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchProofs({ filter: activeFilter });
+                    fetchProofsOfTheWeek(5);
+                  }}
+                  className="inline-flex items-center justify-center h-9 px-4 rounded-xl bg-[#7E00EE] hover:bg-[#6A00CC] text-white text-[13px] font-medium cursor-pointer transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             ) : (
               <div className="py-16 text-center">
