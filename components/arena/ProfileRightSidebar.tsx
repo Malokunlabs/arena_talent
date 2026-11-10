@@ -9,6 +9,7 @@ import NotificationPopover from "@/components/NotificationPopover";
 import { LevelPill } from "@/components/arena/LevelBadge";
 import {
   connectionService,
+  ConnectionTalent,
   ConnectionRequestItem,
   PeopleYouMayKnowItem,
 } from "@/services/connectionService";
@@ -27,34 +28,44 @@ export default function ProfileRightSidebar({
   const [searchValue, setSearchValue] = useState("");
 
   const [requests, setRequests] = useState<ConnectionRequestItem[]>([]);
+  const [connections, setConnections] = useState<ConnectionTalent[]>([]);
   const [suggestions, setSuggestions] = useState<PeopleYouMayKnowItem[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   const [actingRequestId, setActingRequestId] = useState<string | null>(null);
+  const [removingConnectionId, setRemovingConnectionId] = useState<
+    string | null
+  >(null);
   const [connectingUserId, setConnectingUserId] = useState<string | null>(null);
   const [pendingUserIds, setPendingUserIds] = useState<Record<string, boolean>>(
     {},
   );
 
   const [requestsModalOpen, setRequestsModalOpen] = useState(false);
+  const [requestsTab, setRequestsTab] = useState<"requests" | "connections">(
+    "requests",
+  );
   const [suggestionsModalOpen, setSuggestionsModalOpen] = useState(false);
 
   const loadData = async () => {
     setLoadingRequests(true);
     setLoadingSuggestions(true);
     try {
-      const [reqs, suggs] = await Promise.all([
+      const [reqs, suggs, conns] = await Promise.all([
         connectionService.getIncomingRequests(20),
         connectionService.getSuggestions(10),
+        connectionService.getConnections().catch(() => []),
       ]);
       const reqList = Array.isArray(reqs) ? reqs : [];
       setRequests(reqList);
       setSuggestions(Array.isArray(suggs) ? suggs : []);
+      setConnections(Array.isArray(conns) ? conns : []);
       onRequestsCountChange?.(reqList.length);
     } catch {
       setRequests([]);
       setSuggestions([]);
+      setConnections([]);
     } finally {
       setLoadingRequests(false);
       setLoadingSuggestions(false);
@@ -82,6 +93,10 @@ export default function ProfileRightSidebar({
         return next;
       });
       toast.success("Connection request accepted!");
+      connectionService
+        .getConnections()
+        .then((conns) => setConnections(Array.isArray(conns) ? conns : []))
+        .catch(() => {});
       onConnectionAccepted?.();
     } catch (error) {
       const message =
@@ -89,6 +104,23 @@ export default function ProfileRightSidebar({
       toast.error(message);
     } finally {
       setActingRequestId(null);
+    }
+  };
+
+  const handleRemoveConnection = async (userId: string) => {
+    setRemovingConnectionId(userId);
+    try {
+      await connectionService.removeConnection(userId);
+      setConnections((prev) => prev.filter((c) => c.id !== userId));
+      toast.success("Connection removed");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove connection",
+      );
+    } finally {
+      setRemovingConnectionId(null);
     }
   };
 
@@ -155,12 +187,17 @@ export default function ProfileRightSidebar({
           <h3 className="text-[13.5px] font-semibold text-black">
             Connection Requests
           </h3>
-          {requests.length > 0 && (
+          {(requests.length > 0 || connections.length > 0) && (
             <button
               type="button"
-              onClick={() => setRequestsModalOpen(true)}
+              onClick={() => {
+                setRequestsTab(
+                  requests.length > 0 ? "requests" : "connections",
+                );
+                setRequestsModalOpen(true);
+              }}
               className="text-[#747682] hover:text-black transition-colors cursor-pointer"
-              title="View all connection requests"
+              title="View requests and connections"
             >
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -355,7 +392,7 @@ export default function ProfileRightSidebar({
         )}
       </div>
 
-      {/* All Connection Requests Modal */}
+      {/* All Connection Requests & Network Modal */}
       {requestsModalOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
@@ -365,10 +402,31 @@ export default function ProfileRightSidebar({
             className="bg-white rounded-3xl w-full max-w-[460px] max-h-[82vh] flex flex-col overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#EFEFF3]">
-              <h2 className="text-[18px] font-semibold text-black">
-                Connection Requests
-              </h2>
+            <div className="flex items-center justify-between px-6 pt-6 pb-3 border-b border-[#EFEFF3]">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setRequestsTab("requests")}
+                  className={`text-[15px] font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                    requestsTab === "requests"
+                      ? "text-black border-[#7E00EE]"
+                      : "text-[#747682] border-transparent hover:text-black"
+                  }`}
+                >
+                  Requests ({requests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestsTab("connections")}
+                  className={`text-[15px] font-semibold pb-1 border-b-2 transition-colors cursor-pointer ${
+                    requestsTab === "connections"
+                      ? "text-black border-[#7E00EE]"
+                      : "text-[#747682] border-transparent hover:text-black"
+                  }`}
+                >
+                  Connections ({connections.length})
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setRequestsModalOpen(false)}
@@ -378,18 +436,77 @@ export default function ProfileRightSidebar({
               </button>
             </div>
             <div className="overflow-y-auto px-6 py-4 space-y-4">
-              {requests.length === 0 ? (
+              {requestsTab === "requests" ? (
+                requests.length === 0 ? (
+                  <p className="text-[13.5px] text-[#747682] text-center py-8">
+                    All caught up! No pending requests.
+                  </p>
+                ) : (
+                  requests.map((req) => {
+                    const person = req.requester;
+                    const fullName =
+                      `${person.firstName} ${person.lastName}`.trim();
+                    return (
+                      <div
+                        key={req.id}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <UserAvatar
+                            name={fullName}
+                            src={person.avatarUrl}
+                            size={40}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-[14px] font-semibold text-black truncate">
+                              {fullName}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <LevelPill level={person.level} size="xs" />
+                              {person.location && (
+                                <span className="text-[11.5px] text-[#747682] truncate">
+                                  {person.location}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            disabled={actingRequestId === req.id}
+                            onClick={() => handleAccept(req.id)}
+                            className="h-8 px-3 rounded-lg bg-[#7E00EE] hover:bg-[#6A00CC] text-white text-[12px] font-medium cursor-pointer disabled:opacity-50"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            disabled={actingRequestId === req.id}
+                            onClick={() => handleDecline(req.id)}
+                            className="h-8 px-2.5 rounded-lg border border-[#E5E7EB] text-[12px] font-medium text-[#747682] hover:text-black hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )
+              ) : connections.length === 0 ? (
                 <p className="text-[13.5px] text-[#747682] text-center py-8">
-                  All caught up! No pending requests.
+                  You don&apos;t have any connections yet.
                 </p>
               ) : (
-                requests.map((req) => {
-                  const person = req.requester;
+                connections.map((person) => {
                   const fullName =
                     `${person.firstName} ${person.lastName}`.trim();
+                  const href = person.username
+                    ? `/profile?username=${encodeURIComponent(person.username)}`
+                    : undefined;
                   return (
                     <div
-                      key={req.id}
+                      key={person.id}
                       className="flex items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -399,9 +516,19 @@ export default function ProfileRightSidebar({
                           size={40}
                         />
                         <div className="min-w-0">
-                          <p className="text-[14px] font-semibold text-black truncate">
-                            {fullName}
-                          </p>
+                          {href ? (
+                            <Link
+                              href={href}
+                              onClick={() => setRequestsModalOpen(false)}
+                              className="block text-[14px] font-semibold text-black truncate hover:text-[#7E00EE]"
+                            >
+                              {fullName}
+                            </Link>
+                          ) : (
+                            <p className="text-[14px] font-semibold text-black truncate">
+                              {fullName}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 mt-0.5">
                             <LevelPill level={person.level} size="xs" />
                             {person.location && (
@@ -412,24 +539,18 @@ export default function ProfileRightSidebar({
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          disabled={actingRequestId === req.id}
-                          onClick={() => handleAccept(req.id)}
-                          className="h-8 px-3 rounded-lg bg-[#7E00EE] hover:bg-[#6A00CC] text-white text-[12px] font-medium cursor-pointer disabled:opacity-50"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actingRequestId === req.id}
-                          onClick={() => handleDecline(req.id)}
-                          className="h-8 px-2.5 rounded-lg border border-[#E5E7EB] text-[12px] font-medium text-[#747682] hover:text-black hover:bg-gray-50 cursor-pointer disabled:opacity-50"
-                        >
-                          Decline
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        disabled={removingConnectionId === person.id}
+                        onClick={() => handleRemoveConnection(person.id)}
+                        className="h-8 px-2.5 rounded-lg border border-[#E5E7EB] text-[12px] font-medium text-[#747682] hover:text-red-600 hover:border-red-200 hover:bg-red-50 cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        {removingConnectionId === person.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          "Remove"
+                        )}
+                      </button>
                     </div>
                   );
                 })

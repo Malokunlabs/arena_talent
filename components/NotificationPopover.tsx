@@ -44,7 +44,11 @@ function getNotificationIcon(type: string) {
       return <XCircle className="w-4 h-4 text-red-500" />;
     case "TALENT_REQUEST_CREATED":
     case "COLLABORATION_REQUEST_CREATED":
+    case "CONNECTION_REQUEST":
+    case "CONNECTION_ACCEPTED":
       return <UserCheck className="w-4 h-4 text-blue-600" />;
+    case "RECOMMENDATION_RECEIVED":
+      return <Star className="w-4 h-4 text-[#7E00EE]" />;
     case "PROOF_SALUTED":
       return <Zap className="w-4 h-4 text-amber-500" />;
     case "PROOF_LIKED":

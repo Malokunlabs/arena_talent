@@ -82,6 +82,26 @@ function ProfileContent() {
       toast.error("Please sign in to connect with talents on Arena.");
       return;
     }
+
+    if (connectionState === "connected") {
+      setConnectionState("sending");
+      try {
+        await connectionService.removeConnection(
+          selectedTalentProfile.talent.id,
+        );
+        setConnectionState("idle");
+        toast.success("Connection removed");
+      } catch (error) {
+        setConnectionState("connected");
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not remove connection",
+        );
+      }
+      return;
+    }
+
     if (connectionState !== "idle") return;
 
     setConnectionState("sending");
@@ -230,15 +250,20 @@ function ProfileContent() {
                 type="button"
                 disabled={
                   connectionState === "sending" ||
-                  connectionState === "pending" ||
-                  connectionState === "connected"
+                  connectionState === "pending"
                 }
                 onClick={handleConnect}
+                title={
+                  connectionState === "connected"
+                    ? "Click to remove connection"
+                    : undefined
+                }
                 className={`h-9 px-4 rounded-xl text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 ${
-                  connectionState === "connected" ||
-                  connectionState === "pending"
-                    ? "border border-[#E5E7EB] bg-[#F5F5F7] text-[#52525B]"
-                    : "bg-[#7E00EE] hover:bg-[#6A00CC] text-white cursor-pointer"
+                  connectionState === "connected"
+                    ? "border border-[#E5E7EB] bg-[#F5F5F7] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-[#52525B] cursor-pointer"
+                    : connectionState === "pending"
+                      ? "border border-[#E5E7EB] bg-[#F5F5F7] text-[#52525B]"
+                      : "bg-[#7E00EE] hover:bg-[#6A00CC] text-white cursor-pointer"
                 }`}
               >
                 {connectionState === "sending" ? (
@@ -387,6 +412,13 @@ function ProfileContent() {
         isOpen={recommendationsOpen}
         onClose={() => setRecommendationsOpen(false)}
         recommendations={recommendations}
+        recipientId={talent.id}
+        recipientName={fullName}
+        canWrite={isAuthenticated && !isOwnProfile}
+        currentUserId={user?.id}
+        onChanged={() => {
+          if (username) fetchTalentByUsername(username);
+        }}
       />
 
       <CvModal

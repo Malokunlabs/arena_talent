@@ -379,6 +379,9 @@ export default function MyProfilePage() {
         isOpen={recommendationsOpen}
         onClose={() => setRecommendationsOpen(false)}
         recommendations={recommendations}
+        canDeleteAll={true}
+        currentUserId={user?.id}
+        onChanged={() => loadProfile(searchQuery.trim() || undefined)}
       />
 
       {/* CV Modal */}
@@ -388,7 +391,7 @@ export default function MyProfilePage() {
         talent={talent ?? user ?? null}
         canEdit={true}
         onUpdated={() => {
-          fetchUser();
+          fetchUser(true);
           loadProfile(searchQuery.trim() || undefined);
         }}
       />
@@ -399,7 +402,7 @@ export default function MyProfilePage() {
         onClose={() => setEditProfileOpen(false)}
         user={user}
         onSaved={() => {
-          fetchUser();
+          fetchUser(true);
           loadProfile(searchQuery.trim() || undefined);
         }}
       />

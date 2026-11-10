@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, ArrowRight, Menu, X } from "lucide-react";
+import { Search, ArrowRight, Menu, X, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
 import { useProofStore } from "@/store/useProofStore";
@@ -94,8 +94,8 @@ export default function ArenaShell({
 }: ArenaShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
-  const { user } = useUserStore();
+  const { isAuthenticated, logout } = useAuthStore();
+  const { user, clearUser } = useUserStore();
   const {
     proofsOfTheWeek,
     userProofs,
@@ -201,7 +201,7 @@ export default function ArenaShell({
 
       {/* Navigation Links */}
       <nav className="space-y-1.5">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => isAuthenticated || item.href === "/").map((item) => {
           const isActive =
             item.href === "/"
               ? pathname === "/"
@@ -219,9 +219,7 @@ export default function ArenaShell({
           return (
             <Link
               key={item.href}
-              href={
-                !isAuthenticated && item.href !== "/" ? "/login" : item.href
-              }
+              href={item.href}
               onClick={() => setMobileMenuOpen(false)}
               className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors ${
                 isActive
@@ -327,10 +325,10 @@ export default function ArenaShell({
 
       {/* User Mini Footer if logged in */}
       {isAuthenticated && user && (
-        <div className="mt-auto pt-6">
+        <div className="mt-auto pt-6 flex items-center gap-1">
           <Link
             href="/dashboard/profile"
-            className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 transition-colors"
+            className="flex-1 min-w-0 flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 transition-colors"
           >
             <UserAvatar
               name={`${user.firstName || ""} ${user.lastName || ""}`}
@@ -346,6 +344,20 @@ export default function ArenaShell({
               </p>
             </div>
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              clearUser();
+              setMobileMenuOpen(false);
+              router.replace("/");
+            }}
+            title="Log out"
+            className="p-2 rounded-xl text-[#747682] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+            aria-label="Log out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

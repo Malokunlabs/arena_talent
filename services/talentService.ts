@@ -139,6 +139,21 @@ export const talentService = {
     return apiClient.get(`/talents/me${qs}`);
   },
 
+  async getTalentProofs(
+    username: string,
+    params: { page?: number; limit?: number; search?: string } = {},
+  ): Promise<{
+    data: Proof[];
+    meta: { page: number; limit: number; total: number };
+  }> {
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", params.page.toString());
+    if (params.limit) query.set("limit", params.limit.toString());
+    if (params.search?.trim()) query.set("search", params.search.trim());
+    const qs = query.toString();
+    return apiClient.get(`/talents/${username}/proofs${qs ? `?${qs}` : ""}`);
+  },
+
   async getMyOverview(
     params: GetOverviewParams = {},
   ): Promise<TalentOverviewPayload> {

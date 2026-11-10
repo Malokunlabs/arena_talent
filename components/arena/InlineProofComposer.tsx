@@ -219,14 +219,11 @@ export default function InlineProofComposer({
 
     setIsSubmitting(true);
     try {
-      const isRealBackendGig =
-        selectedGig && !selectedGig.id.startsWith("fallback-");
-
       const ok = await createProof({
         caption: caption.trim() || undefined,
         mediaUrls: readyMediaItems.map((m) => m.url),
         mediaItems: readyMediaItems,
-        gigId: isRealBackendGig ? selectedGig.id : undefined,
+        gigId: selectedGig?.id || undefined,
         title: selectedGig?.title || undefined,
         category: selectedGig?.category || selectedGig?.title || undefined,
       });
