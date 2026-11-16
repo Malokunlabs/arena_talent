@@ -108,6 +108,7 @@ class ApiClient {
       toast({
         title: "Success",
         description: result.message,
+        duration: 2000,
       });
     }
 
