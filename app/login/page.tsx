@@ -116,11 +116,17 @@ export default function LoginPage() {
           </div>
 
           {/* Sign in with GU2K details */}
-          <div className="pt-2">
+          <div className="relative flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#ECECF0]" />
+            <span className="text-[12px] text-[#747682] font-medium">or</span>
+            <div className="flex-1 h-px bg-[#ECECF0]" />
+          </div>
+
+          <div>
             {(
               <form
                 onSubmit={handleEmailLogin}
-                className="space-y-3.5 pt-3 border-t border-[#EFEFF3] animate-in fade-in duration-200"
+                className="space-y-3.5 animate-in fade-in duration-200"
               >
                 <div className="space-y-1.5">
                   <label
