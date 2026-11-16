@@ -80,8 +80,6 @@ export function HeroArenaSwitcher() {
 export default function TopEcosystemBar() {
   const { isAuthenticated, initAuth } = useAuthStore();
   const { fetchUser } = useUserStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     initAuth();
@@ -93,47 +91,33 @@ export default function TopEcosystemBar() {
     }
   }, [isAuthenticated, fetchUser]);
 
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const handleOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [mobileMenuOpen]);
-
   return (
     <header className="sticky top-0 left-0 right-0 z-50 h-11 bg-[#F9F9FB] border-b border-[#ECECEE] px-4 md:px-6 flex items-center select-none">
       {/* Desktop / Tablet Tab Strip */}
-      <div className="hidden sm:flex items-center gap-1 overflow-x-auto no-scrollbar h-full text-[12px] tracking-[-0.01em]">
+      <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-0 sm:gap-1 overflow-x-auto no-scrollbar h-full text-[12px] tracking-[-0.01em]">
         <a
           href={ECOSYSTEM_LINKS.gu2k}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
-          GU2K - Earn Gigs
+          GU2K<span className="hidden sm:inline"> - Earn Gigs</span>
         </a>
 
         <Link
           href={ECOSYSTEM_LINKS.arena}
-          className="px-5 h-[34px] mt-[7px] bg-[#EFEFF3] rounded-t-xl flex items-center text-black font-semibold whitespace-nowrap border-t border-x border-[#E4E4E9]"
+          className="px-3.5 sm:px-5 h-[34px] mt-[7px] bg-[#EFEFF3] rounded-t-xl flex items-center text-black font-semibold whitespace-nowrap border-t border-x border-[#E4E4E9]"
         >
-          Arena - Share Proof
+          Arena<span className="hidden sm:inline"> - Share Proof</span>
         </Link>
 
         <a
           href={ECOSYSTEM_LINKS.brands}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
-          Brands - Post Gigs
+          Brands<span className="hidden sm:inline"> - Post Gigs</span>
         </a>
 
         <span className="h-3.5 w-px bg-[#DCDCE2] mx-1 shrink-0" />
@@ -142,37 +126,12 @@ export default function TopEcosystemBar() {
           href={ECOSYSTEM_LINKS.daily}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
-          Daily - Play &amp; Earn
+          Daily<span className="hidden sm:inline"> - Play &amp; Earn</span>
         </a>
       </div>
 
-      {/* Mobile Ecosystem Switcher Dropdown */}
-      <div
-        ref={dropdownRef}
-        className="flex sm:hidden w-full items-center justify-center relative"
-      >
-        <button
-          type="button"
-          onClick={() => setMobileMenuOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#E4E4E9] text-[12.5px] font-semibold text-black shadow-2xs cursor-pointer"
-        >
-          <span>Arena</span>
-          <ChevronDown
-            className={`w-3.5 h-3.5 text-[#747682] transition-transform ${
-              mobileMenuOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-
-        {mobileMenuOpen && (
-          <EcosystemDropdownMenu
-            widthClass="w-[230px]"
-            onSelect={() => setMobileMenuOpen(false)}
-          />
-        )}
-      </div>
     </header>
   );
 }
