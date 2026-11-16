@@ -23,6 +23,7 @@ function buildGu2kAuthUrl(intent: "login" | "signup" = "login") {
     scope: "profile email",
     state,
     intent,
+    prompt: "select_account",
   });
   sessionStorage.setItem("gu2k_oauth_state", state);
   return `${base}/oauth/authorize?${params.toString()}`;
