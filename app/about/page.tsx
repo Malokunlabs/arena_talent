@@ -186,7 +186,7 @@ export default function AboutPage() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 z-10 w-full sm:w-auto shrink-0">
-              <Link href={isAuthenticated ? "/dashboard" : "/signup"}>
+              <Link href={isAuthenticated ? "/dashboard" : "/login"}>
                 <Button className="w-full sm:w-auto bg-white text-[#7300E5] hover:bg-purple-50 font-bold h-12 px-8 rounded-xl text-sm shadow-sm">
                   {isAuthenticated ? "Go to Dashboard" : "Join the Arena"}{" "}
                   <ArrowRight className="w-4 h-4 ml-2" />

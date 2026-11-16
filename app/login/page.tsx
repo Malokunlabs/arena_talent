@@ -30,7 +30,6 @@ function buildGu2kAuthUrl(intent: "login" | "signup" = "login") {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const { email, password, setEmail, setPassword, login, isLoading, error } =
@@ -60,7 +59,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-[calc(100vh-44px)] grid grid-cols-1 lg:grid-cols-[54%_46%] bg-white">
       {/* Left Purple Hero Panel */}
-      <div className="relative overflow-hidden bg-[#7E00EE] flex flex-col items-center justify-between pt-12 pb-0 px-6 min-h-[420px] lg:min-h-[calc(100vh-44px)] select-none">
+      <div className="hidden lg:flex relative overflow-hidden bg-[#7E00EE] flex-col items-center justify-between pt-12 pb-0 px-6 lg:min-h-[calc(100vh-44px)] select-none">
         {/* Top "Arena v" Switcher Pill + Headline */}
         <div className="relative z-20 flex flex-col items-center text-center max-w-[460px]">
           <HeroArenaSwitcher />
@@ -81,7 +80,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Sign-in Panel */}
-      <div className="flex flex-col items-center justify-center p-6 sm:p-12">
+      <div className="flex flex-col items-center justify-center p-6 sm:p-12 min-h-[100svh] lg:min-h-0">
         <div className="w-full max-w-[340px] space-y-7">
           <div className="text-center space-y-2">
             <h2 className="text-[28px] font-bold text-black tracking-[-0.03em]">
@@ -114,29 +113,11 @@ export default function LoginPage() {
                 Continue with GU2K
               </span>
             </button>
-
-            {/* Create New Account Button -> normal /signup */}
-            <Link
-              href="/signup"
-              className="w-full h-12 rounded-xl bg-[#7E00EE] hover:bg-[#6a00c9] text-white font-semibold text-[13px] flex items-center justify-center transition-colors shadow-sm"
-            >
-              Create New Account
-            </Link>
           </div>
 
-          {/* Optional Email Sign In for existing email/password users */}
+          {/* Sign in with GU2K details */}
           <div className="pt-2">
-            {!showEmailForm ? (
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setShowEmailForm(true)}
-                  className="text-[12px] font-medium text-[#747682] hover:text-black underline underline-offset-4 cursor-pointer"
-                >
-                  Sign in with email &amp; password instead
-                </button>
-              </div>
-            ) : (
+            {(
               <form
                 onSubmit={handleEmailLogin}
                 className="space-y-3.5 pt-3 border-t border-[#EFEFF3] animate-in fade-in duration-200"
@@ -146,7 +127,7 @@ export default function LoginPage() {
                     htmlFor="email"
                     className="block text-[12px] font-semibold text-black"
                   >
-                    Email Address
+                    GU2K Email
                   </label>
                   <input
                     id="email"
@@ -203,7 +184,7 @@ export default function LoginPage() {
                   disabled={isLoading || !email || !password}
                   className="w-full h-11 rounded-xl bg-black hover:bg-neutral-800 disabled:opacity-50 text-white text-[13px] font-semibold transition-colors cursor-pointer"
                 >
-                  {isLoading ? "Signing in..." : "Sign In with Email"}
+                  {isLoading ? "Signing in..." : "Sign In with GU2K"}
                 </button>
               </form>
             )}
