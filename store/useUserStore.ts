@@ -42,6 +42,13 @@ export const useUserStore = create<UserState>((set, get) => ({
         isLoading: false,
         lastFetch: now,
       });
+      useAuthStore.getState().setUser({
+        id: userData.id,
+        email: userData.email,
+        username: userData.username,
+        avatarUrl: userData.avatarUrl,
+        role: userData.role,
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // If the token is invalid/expired, log out silently — don't surface an error toast

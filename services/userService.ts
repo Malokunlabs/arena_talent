@@ -6,6 +6,7 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   username?: string;
+  role?: string;
   avatarUrl?: string;
   coverUrl?: string | null;
   cvUrl?: string | null;
