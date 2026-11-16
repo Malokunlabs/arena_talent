@@ -70,6 +70,8 @@ export interface CreateProofData {
   mediaUrls?: string[];
   mediaItems?: ProofMediaItem[];
   gigId?: string;
+  customGigTitle?: string;
+  topic?: string;
   title?: string;
   category?: string;
   tags?: string[];
@@ -81,6 +83,8 @@ export interface UpdateProofData {
   caption?: string;
   tags?: string[];
   gigId?: string | null;
+  customGigTitle?: string;
+  topic?: string;
   mediaUrl?: string;
   mediaUrls?: string[];
   mediaItems?: ProofMediaItem[];

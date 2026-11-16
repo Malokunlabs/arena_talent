@@ -34,6 +34,9 @@ export default function SelectGigModal({
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [customTopic, setCustomTopic] = useState("");
+  const [isCustomSelected, setIsCustomSelected] = useState(false);
+  const [creatingCustom, setCreatingCustom] = useState(false);
   const [tempSelectedId, setTempSelectedId] = useState<string | null>(
     selectedGigId ?? null,
   );
@@ -45,6 +48,9 @@ export default function SelectGigModal({
       setError(null);
     } else {
       setSearchQuery("");
+      setCustomTopic("");
+      setIsCustomSelected(false);
+      setCreatingCustom(false);
       didAutoSyncRef.current = false;
     }
   }, [selectedGigId, isOpen]);
@@ -116,13 +122,45 @@ export default function SelectGigModal({
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (isCustomSelected) {
+      const title = customTopic.trim();
+      if (!title) return;
+      setCreatingCustom(true);
+      try {
+        const created = await gigService.createCustomGig({ title });
+        onSelectGig(created);
+        onClose();
+      } catch {
+        onSelectGig({
+          id: `custom:${title}`,
+          gu2kGigId: `custom:${title}`,
+          title,
+          location: null,
+          status: "CUSTOM",
+          category: title,
+          companyName: null,
+          completedAt: new Date().toISOString(),
+          syncedAt: new Date().toISOString(),
+        });
+        onClose();
+      } finally {
+        setCreatingCustom(false);
+      }
+      return;
+    }
+
     const chosen = gigs.find((g) => g.id === tempSelectedId) || gigs[0];
     if (chosen) {
       onSelectGig(chosen);
       onClose();
     }
   };
+
+  const canConfirm =
+    !creatingCustom &&
+    ((isCustomSelected && customTopic.trim().length > 0) ||
+      (!isCustomSelected && !loading && gigs.length > 0 && Boolean(tempSelectedId)));
 
   return (
     <div
@@ -158,6 +196,51 @@ export default function SelectGigModal({
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+        </div>
+
+        {/* Custom Topic / Gig Input */}
+        <div
+          onClick={() => setIsCustomSelected(true)}
+          className={`mb-3 p-3 rounded-2xl border transition-colors cursor-text ${
+            isCustomSelected
+              ? "border-[#7E00EE] bg-[#FAF5FF]/50"
+              : "border-[#E6E6EC] bg-[#FAFAFC] hover:border-[#D4D4DC]"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <label
+                htmlFor="custom-gig-topic-input"
+                className="block text-[11.5px] font-semibold text-[#747682] mb-1"
+              >
+                Or write a custom gig / topic to talk about
+              </label>
+              <input
+                id="custom-gig-topic-input"
+                type="text"
+                value={customTopic}
+                maxLength={160}
+                onFocus={() => setIsCustomSelected(true)}
+                onChange={(e) => {
+                  setCustomTopic(e.target.value);
+                  setIsCustomSelected(true);
+                }}
+                placeholder="e.g. Weekend Pop-up Activation, Field Survey..."
+                className="w-full bg-transparent text-[13.5px] font-medium text-black placeholder:text-[#9A9CA6] outline-none"
+              />
+            </div>
+            <div
+              className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                isCustomSelected
+                  ? "border-[#7E00EE] border-2"
+                  : "border-[#D4D4DC]"
+              }`}
+            >
+              {isCustomSelected && (
+                <div className="w-2.5 h-2.5 rounded-full bg-[#7E00EE]" />
+              )}
+            </div>
           </div>
         </div>
 
@@ -205,7 +288,18 @@ export default function SelectGigModal({
                 ? "Try a different keyword."
                 : "Click sync below to pull your latest completed gigs from GU2K."}
             </p>
-            {!searchQuery.trim() && (
+            {searchQuery.trim() ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomTopic(searchQuery.trim());
+                  setIsCustomSelected(true);
+                }}
+                className="mt-1 px-4 h-9 rounded-xl bg-[#F3E8FF] text-[#7E00EE] text-[12.5px] font-semibold hover:bg-[#ebd6ff] transition-colors cursor-pointer"
+              >
+                Use &ldquo;{searchQuery.trim()}&rdquo; as custom topic
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={handleManualSync}
@@ -220,14 +314,17 @@ export default function SelectGigModal({
             )}
           </div>
         ) : (
-          <div className="max-h-[320px] overflow-y-auto pr-1 divide-y divide-[#F0F0F4]">
+          <div className="max-h-[260px] overflow-y-auto pr-1 divide-y divide-[#F0F0F4]">
             {gigs.map((gig) => {
-              const isSelected = tempSelectedId === gig.id;
+              const isSelected = !isCustomSelected && tempSelectedId === gig.id;
               return (
                 <button
                   key={gig.id}
                   type="button"
-                  onClick={() => setTempSelectedId(gig.id)}
+                  onClick={() => {
+                    setTempSelectedId(gig.id);
+                    setIsCustomSelected(false);
+                  }}
                   className="w-full py-4 flex items-center justify-between gap-4 text-left group hover:bg-gray-50/60 transition-colors px-1 cursor-pointer"
                 >
                   <div className="min-w-0">
@@ -264,9 +361,10 @@ export default function SelectGigModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={loading || gigs.length === 0}
-            className="w-full h-12 rounded-2xl bg-[#7E00EE] hover:bg-[#6b00cc] disabled:opacity-50 text-white font-semibold text-[14px] transition-all cursor-pointer shadow-sm"
+            disabled={!canConfirm}
+            className="w-full h-12 rounded-2xl bg-[#7E00EE] hover:bg-[#6b00cc] disabled:opacity-50 text-white font-semibold text-[14px] transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
           >
+            {creatingCustom && <Loader2 className="w-4 h-4 animate-spin" />}
             Share Proof of Gig
           </button>
         </div>

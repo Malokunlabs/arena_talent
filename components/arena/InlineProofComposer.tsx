@@ -219,11 +219,17 @@ export default function InlineProofComposer({
 
     setIsSubmitting(true);
     try {
+      const isFallbackCustomGig = Boolean(selectedGig?.id?.startsWith("custom:"));
       const ok = await createProof({
         caption: caption.trim() || undefined,
         mediaUrls: readyMediaItems.map((m) => m.url),
         mediaItems: readyMediaItems,
-        gigId: selectedGig?.id || undefined,
+        gigId:
+          selectedGig?.id && !isFallbackCustomGig ? selectedGig.id : undefined,
+        customGigTitle:
+          isFallbackCustomGig || selectedGig?.status === "CUSTOM"
+            ? selectedGig?.title || undefined
+            : undefined,
         title: selectedGig?.title || undefined,
         category: selectedGig?.category || selectedGig?.title || undefined,
       });
