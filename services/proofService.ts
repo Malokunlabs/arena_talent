@@ -169,21 +169,21 @@ export const proofService = {
   },
 
   async saluteProof(id: string): Promise<{ salutesCount?: number }> {
-    return apiClient.post(`/proofs/${id}/salute`, {}, { silent: true });
+    return apiClient.post(`/proofs/${id}/salute`, {}, { quiet: true });
   },
 
   async recordView(id: string): Promise<{ id: string; viewsCount: number }> {
-    return apiClient.post(`/proofs/${id}/view`, {}, { silent: true });
+    return apiClient.post(`/proofs/${id}/view`, {}, { quiet: true });
   },
 
   async toggleLike(id: string): Promise<{ liked: boolean; likesCount: number }> {
-    return apiClient.post(`/proofs/${id}/like`, {}, { silent: true });
+    return apiClient.post(`/proofs/${id}/like`, {}, { quiet: true });
   },
 
   async toggleBookmark(
     id: string,
   ): Promise<{ bookmarked: boolean; bookmarksCount: number }> {
-    return apiClient.post(`/proofs/${id}/bookmark`, {}, { silent: true });
+    return apiClient.post(`/proofs/${id}/bookmark`, {}, { quiet: true });
   },
 
   async getMyProofs(params: { page?: number; limit?: number } = {}): Promise<{
@@ -217,6 +217,6 @@ export const proofService = {
     shareUrl: string;
     shareLinks: ProofShareLinks;
   }> {
-    return apiClient.post(`/proofs/${id}/share`, platform ? { platform } : {}, { silent: true });
+    return apiClient.post(`/proofs/${id}/share`, platform ? { platform } : {}, { quiet: true });
   },
 };
