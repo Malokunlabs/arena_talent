@@ -20,7 +20,7 @@ function buildGu2kAuthUrl(intent: "login" | "signup" = "login") {
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: "profile email phone kyc extended",
+    scope: "profile email",
     state,
     intent,
   });
