@@ -13,6 +13,8 @@ export interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
   /** When true, neither success nor error toasts are shown. Use for silent background fetches. */
   silent?: boolean;
+  /** When true, success toasts are suppressed but error toasts are still shown. */
+  quiet?: boolean;
 }
 
 class ApiClient {
@@ -104,10 +106,11 @@ class ApiClient {
       throw new Error(errorMessage);
     }
 
-    if (result.message && options.method !== "GET" && !options.silent) {
+    if (result.message && options.method !== "GET" && !options.silent && !options.quiet) {
       toast({
         title: "Success",
         description: result.message,
+        duration: 2000,
       });
     }
 

@@ -1,11 +1,81 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
 
-const gu2kBase = process.env.NEXT_PUBLIC_GU2K_BASE_URL ?? "https://geturgent2k.com";
+export const ECOSYSTEM_LINKS = {
+  gu2k: "https://geturgent2k.com/",
+  arena: "/",
+  brands: "https://geturgent2k.com/brands",
+  daily: "https://gu2kdaily.com/daily",
+} as const;
+
+export function EcosystemDropdownMenu({
+  onSelect,
+  widthClass = "w-52",
+}: {
+  onSelect: () => void;
+  widthClass?: string;
+}) {
+  return (
+    <div
+      className={`absolute left-1/2 -translate-x-1/2 mt-2 ${widthClass} rounded-2xl bg-[#27272A] text-white shadow-xl py-2 px-1.5 text-left z-50 border border-white/10 animate-in fade-in zoom-in-95 duration-150`}
+    >
+      <Link
+        href={ECOSYSTEM_LINKS.arena}
+        onClick={onSelect}
+        className="block px-3.5 py-2 rounded-xl text-[12px] font-semibold text-white bg-white/10 transition-colors"
+      >
+        Arena - Share Proof
+      </Link>
+      <a
+        href={ECOSYSTEM_LINKS.gu2k}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onSelect}
+        className="block px-3.5 py-2 rounded-xl text-[12px] font-medium hover:bg-white/10 transition-colors text-white/85"
+      >
+        GU2K - Earn Gigs
+      </a>
+    </div>
+  );
+}
+
+export function HeroArenaSwitcher() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full border-2 border-white text-white text-[18px] font-semibold hover:bg-white/10 transition-colors cursor-pointer"
+      >
+        <span>Arena</span>
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && <EcosystemDropdownMenu onSelect={() => setOpen(false)} />}
+    </div>
+  );
+}
 
 export default function TopEcosystemBar() {
   const { isAuthenticated, initAuth } = useAuthStore();
@@ -23,43 +93,45 @@ export default function TopEcosystemBar() {
 
   return (
     <header className="sticky top-0 left-0 right-0 z-50 h-11 bg-[#F9F9FB] border-b border-[#ECECEE] px-4 md:px-6 flex items-center select-none">
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar h-full text-[12px] tracking-[-0.01em]">
+      {/* Desktop / Tablet Tab Strip */}
+      <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-0 sm:gap-1 overflow-x-auto no-scrollbar h-full text-[12px] tracking-[-0.01em]">
         <a
-          href={gu2kBase}
+          href={ECOSYSTEM_LINKS.gu2k}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
-          GU2K - Earn Gigs
+          GU2K<span className="hidden sm:inline"> - Earn Gigs</span>
         </a>
 
         <Link
-          href="/"
-          className="px-5 h-[34px] mt-[7px] bg-[#EFEFF3] rounded-t-xl flex items-center text-black font-semibold whitespace-nowrap border-t border-x border-[#E4E4E9]"
+          href={ECOSYSTEM_LINKS.arena}
+          className="px-3.5 sm:px-5 h-[34px] mt-[7px] bg-[#EFEFF3] rounded-t-xl flex items-center text-black font-semibold whitespace-nowrap border-t border-x border-[#E4E4E9]"
         >
-          Arena - Share Proof
+          Arena<span className="hidden sm:inline"> - Share Proof</span>
         </Link>
 
         <a
-          href={`${gu2kBase}/brands`}
+          href={ECOSYSTEM_LINKS.brands}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
-          Brands - Post Gigs
+          Brands<span className="hidden sm:inline"> - Post Gigs</span>
         </a>
 
         <span className="h-3.5 w-px bg-[#DCDCE2] mx-1 shrink-0" />
 
         <a
-          href={`${gu2kBase}/daily`}
+          href={ECOSYSTEM_LINKS.daily}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
-          Daily - Play &amp; Earn
+          Daily<span className="hidden sm:inline"> - Play &amp; Earn</span>
         </a>
       </div>
+
     </header>
   );
 }

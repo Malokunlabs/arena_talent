@@ -70,6 +70,8 @@ export interface CreateProofData {
   mediaUrls?: string[];
   mediaItems?: ProofMediaItem[];
   gigId?: string;
+  customGigTitle?: string;
+  topic?: string;
   title?: string;
   category?: string;
   tags?: string[];
@@ -81,6 +83,8 @@ export interface UpdateProofData {
   caption?: string;
   tags?: string[];
   gigId?: string | null;
+  customGigTitle?: string;
+  topic?: string;
   mediaUrl?: string;
   mediaUrls?: string[];
   mediaItems?: ProofMediaItem[];
@@ -165,21 +169,21 @@ export const proofService = {
   },
 
   async saluteProof(id: string): Promise<{ salutesCount?: number }> {
-    return apiClient.post(`/proofs/${id}/salute`, {});
+    return apiClient.post(`/proofs/${id}/salute`, {}, { quiet: true });
   },
 
   async recordView(id: string): Promise<{ id: string; viewsCount: number }> {
-    return apiClient.post(`/proofs/${id}/view`, {});
+    return apiClient.post(`/proofs/${id}/view`, {}, { quiet: true });
   },
 
   async toggleLike(id: string): Promise<{ liked: boolean; likesCount: number }> {
-    return apiClient.post(`/proofs/${id}/like`, {});
+    return apiClient.post(`/proofs/${id}/like`, {}, { quiet: true });
   },
 
   async toggleBookmark(
     id: string,
   ): Promise<{ bookmarked: boolean; bookmarksCount: number }> {
-    return apiClient.post(`/proofs/${id}/bookmark`, {});
+    return apiClient.post(`/proofs/${id}/bookmark`, {}, { quiet: true });
   },
 
   async getMyProofs(params: { page?: number; limit?: number } = {}): Promise<{
@@ -213,6 +217,6 @@ export const proofService = {
     shareUrl: string;
     shareLinks: ProofShareLinks;
   }> {
-    return apiClient.post(`/proofs/${id}/share`, platform ? { platform } : {});
+    return apiClient.post(`/proofs/${id}/share`, platform ? { platform } : {}, { quiet: true });
   },
 };

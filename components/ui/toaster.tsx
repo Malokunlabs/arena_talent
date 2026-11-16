@@ -14,7 +14,7 @@ export function Toaster() {
   const { toasts } = useToast();
 
   return (
-    <ToastProvider>
+    <ToastProvider duration={2500}>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         const lines =
           typeof description === "string" && description.includes("\n")

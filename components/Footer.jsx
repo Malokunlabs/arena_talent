@@ -104,36 +104,64 @@ export default function Footer() {
                 <Link href="/">
                   <p className="text-sm">Home</p>
                 </Link>
-                <Link href="/marketplace">
-                  <p className="text-sm">Marketplace</p>
-                </Link>
-                <Link href="/contact">
-                  <p className="text-sm">Contact Us</p>
-                </Link>
+                <a
+                  href="https://geturgent2k.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <p className="text-sm">GU2K - Earn Gigs</p>
+                </a>
+                <a
+                  href="https://gu2kdaily.com/daily"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <p className="text-sm">Daily - Play &amp; Earn</p>
+                </a>
                 <Link href="/about">
                   <p className="text-sm">About Us</p>
                 </Link>
               </div>
               <div className="flex flex-col gap-2">
                 <p className="mb-3 text-sm font-semibold">ACCOUNT</p>
-                <Link href="/brands">
-                  <p className="text-sm">For Brands</p>
-                </Link>
-                <Link href="/">
+                <a
+                  href="https://geturgent2k.com/brands"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <p className="text-sm">Brands - Post Gigs</p>
+                </a>
+                <a
+                  href="https://geturgent2k.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <p className="text-sm">Earners</p>
-                </Link>
+                </a>
               </div>
               <div className="flex flex-col gap-2">
                 <p className="mb-3 text-sm font-semibold">ABOUT</p>
-                <Link href="/faq">
+                <a
+                  href="https://geturgent2k.com/faq"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <p className="text-sm">FAQs</p>
-                </Link>
-                <Link href="/privacy">
+                </a>
+                <a
+                  href="https://geturgent2k.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <p className="text-sm">Privacy Policy</p>
-                </Link>
-                <Link href="/terms">
+                </a>
+                <a
+                  href="https://geturgent2k.com/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <p className="text-sm">Terms and Conditions</p>
-                </Link>
+                </a>
               </div>
             </div>
           </div>

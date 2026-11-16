@@ -46,4 +46,13 @@ export const gigService = {
   ): Promise<{ synced: number; source?: string }> {
     return apiClient.post("/gigs/sync", { forceFull }, { silent: true });
   },
+
+  async createCustomGig(payload: {
+    title: string;
+    category?: string;
+    location?: string;
+    companyName?: string;
+  }): Promise<Gig> {
+    return apiClient.post<Gig>("/gigs/custom", payload);
+  },
 };
