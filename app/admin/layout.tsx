@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -10,11 +11,10 @@ import {
   CreditCard,
   BarChart3,
   LogOut,
-  Bell,
   Search,
   BadgeCheck,
+  Loader2,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -46,13 +46,77 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
-  const { clearUser } = useUserStore();
+  const isLoginRoute = pathname === "/admin/login";
+
+  const {
+    user,
+    isAuthenticated,
+    isInitialized,
+    initAuth,
+    logout,
+  } = useAuthStore();
+  const {
+    user: profileUser,
+    isLoading: isProfileLoading,
+    fetchUser,
+    clearUser,
+  } = useUserStore();
+
+  useEffect(() => {
+    if (!isLoginRoute) {
+      initAuth();
+    }
+  }, [isLoginRoute, initAuth]);
+
+  const effectiveRole = user?.role || profileUser?.role;
+
+  useEffect(() => {
+    if (isLoginRoute || !isInitialized) return;
+
+    if (!isAuthenticated) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    if (!effectiveRole) {
+      fetchUser();
+      return;
+    }
+
+    if (effectiveRole !== "ADMIN") {
+      router.replace("/admin/login");
+    }
+  }, [
+    isLoginRoute,
+    isInitialized,
+    isAuthenticated,
+    effectiveRole,
+    fetchUser,
+    router,
+  ]);
+
+  if (isLoginRoute) {
+    return <>{children}</>;
+  }
+
+  if (
+    !isInitialized ||
+    !isAuthenticated ||
+    (!effectiveRole && isProfileLoading) ||
+    effectiveRole !== "ADMIN"
+  ) {
+    return (
+      <div className="min-h-[calc(100vh-44px)] bg-gray-50 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-7 h-7 animate-spin text-[#7300E5]" />
+        <p className="text-sm text-gray-500">Verifying admin access...</p>
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     logout();
     clearUser();
-    router.push("/");
+    router.push("/admin/login");
   };
 
   return (

@@ -67,7 +67,7 @@ export default function Gu2kCallbackPage() {
           username:  user.username,
         });
 
-        router.replace('/');
+        router.replace(user.role === 'ADMIN' ? '/admin/dashboard' : '/');
       })
       .catch((err: Error) => {
         setErrorMsg(err.message);
