@@ -272,7 +272,10 @@ export default function ArenaFeedPost({
 
   // Only posts linked to a gig synced from GU2K count as verified work
   const isVerifiedGig = Boolean(
-    proof.gigId && proof.gig && proof.gig.status !== "CUSTOM",
+    proof.gigId &&
+      proof.gig &&
+      proof.gig.status !== "CUSTOM" &&
+      !proof.gig.gu2kGigId?.startsWith("custom_"),
   );
 
   const mediaItems = getNormalizedMediaItems(proof);
@@ -359,9 +362,11 @@ export default function ArenaFeedPost({
       </div>
 
       {/* Caption Text */}
-      <p className="mt-3 text-[13.5px] leading-[1.55] text-[#747682] whitespace-pre-line">
-        {captionText}
-      </p>
+      {captionText ? (
+        <p className="mt-3 text-[13.5px] leading-[1.55] text-[#747682] whitespace-pre-line">
+          {captionText}
+        </p>
+      ) : null}
 
       {/* Media Collage (if any media exists) */}
       {mediaItems.length === 1 && (

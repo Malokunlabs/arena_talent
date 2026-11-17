@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -22,8 +22,12 @@ export default function Gu2kCallbackPage() {
   const { setUser, setToken } = useAuthStore();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
+  const didRunRef = useRef(false);
 
   useEffect(() => {
+    if (didRunRef.current) return;
+    didRunRef.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code  = params.get('code');
     const error = params.get('error');

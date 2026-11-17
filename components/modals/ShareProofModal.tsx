@@ -49,16 +49,22 @@ export default function ShareProofModal({
       "Arena Creator"
     : "Arena Creator";
   const locationText =
-    proof.talent?.location || proof.gig?.location || "Ikoyi, Lagos";
+    proof.talent?.location || proof.gig?.location || "";
   const relTime = formatShortRelativeTime(proof.createdAt);
   const gigRoleTitle =
     proof.gig?.category ||
     proof.category ||
     proof.gig?.title ||
     proof.title ||
-    "Field Operations Coordinator";
+    "Arena post";
   const completedText = formatCompletedMonthYear(
     proof.gig?.completedAt || proof.createdAt,
+  );
+  const isVerifiedGig = Boolean(
+    proof.gigId &&
+      proof.gig &&
+      proof.gig.status !== "CUSTOM" &&
+      !proof.gig.gu2kGigId?.startsWith("custom_"),
   );
 
   const previewMediaUrl =
@@ -165,7 +171,8 @@ export default function ShareProofModal({
                 />
               </div>
               <p className="text-[11.5px] text-[#747682] mt-0.5 truncate">
-                {locationText} &bull; {relTime}
+                {locationText ? <>{locationText} &bull; </> : null}
+                {relTime}
               </p>
             </div>
           </div>
@@ -183,6 +190,13 @@ export default function ShareProofModal({
             </div>
             <span className="text-[10.5px] text-[#747682] mt-1">
               {completedText}
+            </span>
+            <span
+              className={`mt-0.5 text-[10.5px] font-semibold ${
+                isVerifiedGig ? "text-[#1F8A3B]" : "text-[#747682]"
+              }`}
+            >
+              {isVerifiedGig ? "Verified GU2K gig" : "Self-reported"}
             </span>
           </div>
         </div>
