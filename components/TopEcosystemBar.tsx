@@ -112,23 +112,23 @@ export default function TopEcosystemBar() {
         </Link>
 
         <a
-          href={ECOSYSTEM_LINKS.brands}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
-        >
-          Brands<span className="hidden sm:inline"> - Post Gigs</span>
-        </a>
-
-        <span className="h-3.5 w-px bg-[#DCDCE2] mx-1 shrink-0" />
-
-        <a
           href={ECOSYSTEM_LINKS.daily}
           target="_blank"
           rel="noopener noreferrer"
           className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
         >
           Daily<span className="hidden sm:inline"> - Play &amp; Earn</span>
+        </a>
+
+        <span className="h-3.5 w-px bg-[#DCDCE2] mx-1 shrink-0" />
+
+        <a
+          href={ECOSYSTEM_LINKS.brands}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-2.5 sm:px-4 h-full flex items-center text-[#747682] hover:text-black font-medium whitespace-nowrap transition-colors"
+        >
+          Brands<span className="hidden sm:inline"> - Post Gigs</span>
         </a>
       </div>
 
