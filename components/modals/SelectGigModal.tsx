@@ -333,7 +333,7 @@ export default function SelectGigModal({
                     </p>
                     <p className="text-[12px] text-[#747682] mt-0.5 truncate">
                       {gig.companyName ? `${gig.companyName} • ` : ""}
-                      {gig.location || "Lagos, Nigeria"} &bull;{" "}
+                      {gig.location ? `${gig.location} • ` : ""}
                       {formatCompletedDate(gig.completedAt)}
                     </p>
                   </div>

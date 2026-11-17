@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { TrophyGraphic, GreenSquiggle } from "@/components/arena/HeroBannerSvg";
 import { HeroArenaSwitcher } from "@/components/TopEcosystemBar";
@@ -30,32 +27,13 @@ function buildGu2kAuthUrl(intent: "login" | "signup" = "login") {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-
-  const { email, password, setEmail, setPassword, login, isLoading, error } =
-    useAuthStore();
+  const { error } = useAuthStore();
 
   React.useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error]);
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
-
-    const success = await login();
-    if (success) {
-      const state = useAuthStore.getState();
-      if (state.user?.role === "ADMIN") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/");
-      }
-    }
-  };
 
   return (
     <div className="min-h-[calc(100vh-44px)] grid grid-cols-1 lg:grid-cols-[54%_46%] bg-white">
@@ -116,86 +94,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Sign in with GU2K details */}
-          <div className="relative flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#ECECF0]" />
-            <span className="text-[12px] text-[#747682] font-medium">or</span>
-            <div className="flex-1 h-px bg-[#ECECF0]" />
-          </div>
-
-          <div>
-            {(
-              <form
-                onSubmit={handleEmailLogin}
-                className="space-y-3.5 animate-in fade-in duration-200"
-              >
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="email"
-                    className="block text-[12px] font-semibold text-black"
-                  >
-                    GU2K Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#E4E4EA] text-[13px] text-black placeholder:text-[#747682] outline-none focus:border-[#7E00EE]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="password"
-                      className="block text-[12px] font-semibold text-black"
-                    >
-                      Password
-                    </label>
-                    <Link
-                      href="/forgot-password"
-                      className="text-[11px] font-medium text-[#7E00EE] hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-11 px-3.5 pr-10 rounded-xl border border-[#E4E4EA] text-[13px] text-black placeholder:text-[#747682] outline-none focus:border-[#7E00EE]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#747682] hover:text-black"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading || !email || !password}
-                  className="w-full h-11 rounded-xl bg-black hover:bg-neutral-800 disabled:opacity-50 text-white text-[13px] font-semibold transition-colors cursor-pointer"
-                >
-                  {isLoading ? "Signing in..." : "Sign In with GU2K"}
-                </button>
-              </form>
-            )}
-          </div>
         </div>
       </div>
     </div>

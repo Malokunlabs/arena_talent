@@ -255,24 +255,28 @@ export default function ArenaFeedPost({
       "Arena Creator"
     : "Arena Creator";
 
-  const locationText =
-    proof.talent?.location || proof.gig?.location || "Lekki, Lagos";
+  const locationText = proof.talent?.location || proof.gig?.location || "";
   const relTime = formatShortRelativeTime(proof.createdAt);
   const gigRoleTitle =
     proof.gig?.category ||
     proof.category ||
     proof.gig?.title ||
     proof.title ||
-    "Market Analysis Facilitator";
+    "Arena post";
 
   const completedDateText = formatCompletedMonthYear(
     proof.gig?.completedAt || proof.createdAt,
   );
 
-  const captionText =
-    proof.caption ||
-    proof.title ||
-    "Completed retail evaluations and documented insights with photographic and video evidence.";
+  const captionText = proof.caption || proof.title || "";
+
+  // Only posts linked to a gig synced from GU2K count as verified work
+  const isVerifiedGig = Boolean(
+    proof.gigId &&
+      proof.gig &&
+      proof.gig.status !== "CUSTOM" &&
+      !proof.gig.gu2kGigId?.startsWith("custom_"),
+  );
 
   const mediaItems = getNormalizedMediaItems(proof);
 
@@ -321,7 +325,8 @@ export default function ArenaFeedPost({
               />
             </div>
             <p className="text-[12px] text-[#747682] mt-0.5 truncate">
-              {locationText} &bull; {relTime}
+              {locationText ? <>{locationText} &bull; </> : null}
+              {relTime}
             </p>
           </div>
         </div>
@@ -341,13 +346,27 @@ export default function ArenaFeedPost({
           <span className="text-[11px] text-[#747682] mt-1">
             {completedDateText}
           </span>
+          <span
+            className={`mt-1 text-[11px] font-semibold ${
+              isVerifiedGig ? "text-[#1F8A3B]" : "text-[#747682]"
+            }`}
+            title={
+              isVerifiedGig
+                ? "Linked to a gig completed and recorded on GU2K"
+                : "Not linked to a GU2K gig record"
+            }
+          >
+            {isVerifiedGig ? "Verified GU2K gig" : "Self-reported"}
+          </span>
         </div>
       </div>
 
       {/* Caption Text */}
-      <p className="mt-3 text-[13.5px] leading-[1.55] text-[#747682] whitespace-pre-line">
-        {captionText}
-      </p>
+      {captionText ? (
+        <p className="mt-3 text-[13.5px] leading-[1.55] text-[#747682] whitespace-pre-line">
+          {captionText}
+        </p>
+      ) : null}
 
       {/* Media Collage (if any media exists) */}
       {mediaItems.length === 1 && (
