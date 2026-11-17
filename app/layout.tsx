@@ -36,13 +36,6 @@ export const metadata: Metadata = {
   authors: [{ name: "Arena by GU2K" }],
   creator: "GU2K",
   publisher: "Arena",
-  icons: {
-    icon: [
-      { url: "/icons/gu2k-logo.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/icons/gu2k-logo.svg",
-    apple: "/icons/gu2k-logo.svg",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
