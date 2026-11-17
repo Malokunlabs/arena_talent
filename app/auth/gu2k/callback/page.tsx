@@ -40,6 +40,15 @@ export default function Gu2kCallbackPage() {
       return;
     }
 
+    // The state we sent must come back unchanged, or this sign-in was not started here
+    const expectedState = sessionStorage.getItem('gu2k_oauth_state');
+    sessionStorage.removeItem('gu2k_oauth_state');
+    if (!expectedState || params.get('state') !== expectedState) {
+      setErrorMsg('This sign-in link is not valid. Please start again from the Arena sign-in page.');
+      setStatus('error');
+      return;
+    }
+
     const arenaApiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
 
     fetch(`${arenaApiBase}/auth/gu2k/callback`, {
