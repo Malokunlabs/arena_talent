@@ -1,18 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/store/useAdminStore";
 import { AdminProof } from "@/services/adminService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import UserAvatar from "@/components/UserAvatar";
 import {
   Table,
   TableBody,
@@ -22,6 +17,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Search,
   Eye,
   Check,
@@ -30,21 +33,59 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
-  Download,
+  Trash2,
+  Loader2,
+  BadgeCheck,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import ProofDetailModal from "@/components/admin/ProofDetailModal";
-import ActionFeedbackModal from "@/components/admin/ActionFeedbackModal";
+import ActionFeedbackModal, {
+  AdminFeedbackType,
+} from "@/components/admin/ActionFeedbackModal";
 
-export default function ProofModerationPage() {
-  const { proofs, proofsMeta, fetchProofs, isLoading } = useAdminStore();
+type FilterTab =
+  | "ALL"
+  | "FEATURED"
+  | "PENDING"
+  | "APPROVED"
+  | "FLAGGED"
+  | "REJECTED";
+
+const FILTER_TABS: { key: FilterTab; label: string }[] = [
+  { key: "ALL", label: "All Posts" },
+  { key: "FEATURED", label: "Proof of the Week" },
+  { key: "PENDING", label: "Pending" },
+  { key: "APPROVED", label: "Approved" },
+  { key: "FLAGGED", label: "Flagged" },
+  { key: "REJECTED", label: "Rejected" },
+];
+
+function ProofModerationContent() {
+  const searchParams = useSearchParams();
+  const initialTab: FilterTab =
+    searchParams.get("featured") === "true" ? "FEATURED" : "ALL";
+
+  const {
+    proofs,
+    proofsMeta,
+    fetchProofs,
+    approveProof,
+    rejectProof,
+    flagProof,
+    toggleFeatureProof,
+    deleteProof,
+    isLoading,
+  } = useAdminStore();
+
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<FilterTab>(initialTab);
   const [selectedProof, setSelectedProof] = useState<AdminProof | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminProof | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [feedbackState, setFeedbackState] = useState<{
     isOpen: boolean;
-    type: "approved" | "rejected" | "featured" | "verified" | "flagged";
+    type: AdminFeedbackType;
     message: string;
     subMessage: string;
   }>({
@@ -55,20 +96,29 @@ export default function ProofModerationPage() {
   });
 
   useEffect(() => {
-    fetchProofs({
-      search,
-      status: status === "All" ? undefined : status,
-      page: 1,
-    });
-  }, [search, status, fetchProofs]);
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const buildFilter = useCallback(
+    (page: number) => ({
+      page,
+      limit: 20,
+      search: debouncedSearch || undefined,
+      isFeatured: activeTab === "FEATURED" ? true : undefined,
+      status:
+        activeTab !== "ALL" && activeTab !== "FEATURED" ? activeTab : undefined,
+    }),
+    [debouncedSearch, activeTab],
+  );
+
+  useEffect(() => {
+    fetchProofs(buildFilter(1));
+  }, [buildFilter, fetchProofs]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= proofsMeta.pageCount) {
-      fetchProofs({
-        search,
-        status: status === "All" ? undefined : status,
-        page: newPage,
-      });
+      fetchProofs(buildFilter(newPage));
     }
   };
 
@@ -85,37 +135,47 @@ export default function ProofModerationPage() {
     }
   };
 
-  const formatStatus = (status: string) => {
-    return status.charAt(0) + status.slice(1).toLowerCase();
-  };
+  const formatStatus = (status: string) =>
+    status.charAt(0) + status.slice(1).toLowerCase();
 
   const handleActionComplete = (
-    type: "approved" | "rejected" | "featured" | "verified" | "flagged",
+    type: AdminFeedbackType,
     proof: AdminProof,
   ) => {
+    const authorLabel = proof.talent?.username
+      ? `@${proof.talent.username}`
+      : proof.talent?.firstName || "User";
     let message = "";
-    let subMessage = `@${proof.talent?.username || proof.talent?.firstName} 's proof `;
+    let subMessage = `${authorLabel}'s post `;
 
     switch (type) {
       case "approved":
-        message = "Proof approved";
-        subMessage += "has been approved";
+        message = "Post Approved";
+        subMessage += "has been approved.";
         break;
       case "rejected":
-        message = "Proof rejected";
-        subMessage += "has been rejected";
+        message = "Post Rejected";
+        subMessage += "has been rejected.";
         break;
       case "featured":
-        message = "Proof featured";
-        subMessage += "has been featured";
+        message = "Set as Proof of the Week";
+        subMessage += "is now featured as Proof of the Week.";
+        break;
+      case "unfeatured":
+        message = "Removed from Proof of the Week";
+        subMessage += "was removed from Proof of the Week.";
         break;
       case "verified":
-        message = "Proof verified";
-        subMessage += "has been verified";
+        message = "Visibility Updated";
+        subMessage += "visibility settings were updated.";
         break;
       case "flagged":
-        message = "Proof flagged";
-        subMessage += "has been flagged";
+        message = "Post Flagged";
+        subMessage += "has been flagged for review.";
+        break;
+      case "deleted":
+        message = "Post Deleted";
+        subMessage += "has been permanently removed.";
         break;
     }
 
@@ -125,236 +185,338 @@ export default function ProofModerationPage() {
       message,
       subMessage,
     });
-    setSelectedProof(null); // Close detail modal
-    // Refresh list
-    fetchProofs({
-      search,
-      status: status === "All" ? undefined : status,
-      page: proofsMeta.page,
-    });
+    setSelectedProof(null);
+    fetchProofs(buildFilter(proofsMeta.page));
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    await deleteProof(deleteTarget.id);
+    setIsDeleting(false);
+    const deleted = deleteTarget;
+    setDeleteTarget(null);
+    handleActionComplete("deleted", deleted);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Proof Moderation</h1>
-        <p className="text-muted-foreground">
-          Review and moderate community proofs
+      <div className="flex flex-col space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight">
+          Posts &amp; Proof of the Week
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Inspect community posts, feature or remove Proofs of the Week, and
+          moderate content.
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+      {/* Filter Tabs & Search */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTER_TABS.map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer",
+                  active
+                    ? tab.key === "FEATURED"
+                      ? "bg-yellow-100 text-yellow-900 border-yellow-300"
+                      : "bg-[#7300E5] text-white border-[#7300E5]"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50",
+                )}
+              >
+                {tab.key === "FEATURED" && (
+                  <Star
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      active
+                        ? "fill-yellow-500 text-yellow-600"
+                        : "text-yellow-500",
+                    )}
+                  />
+                )}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative w-full lg:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search by user, title, or category"
+            placeholder="Search user, topic, or post text..."
             className="pl-9 bg-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-sm text-gray-500 whitespace-nowrap">
-            Status
-          </span>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full md:w-[180px] bg-white">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-              <SelectItem value="FLAGGED">Flagged</SelectItem>
-              <SelectItem value="APPROVED">Approved</SelectItem>
-              <SelectItem value="VERIFIED">Verified</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon" className="shrink-0 bg-white">
-            <Download className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-xl border bg-white overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50">
-              <TableHead className="w-[50px]">
-                <Input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-              </TableHead>
-              <TableHead>Proof ID</TableHead>
-              <TableHead>Category</TableHead>
+            <TableRow className="bg-gray-50/60">
+              <TableHead>Post &amp; Topic</TableHead>
               <TableHead>User</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead>Salutes</TableHead>
+              <TableHead>Engagement</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>Proof of the Week</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  Loading proofs...
+                <TableCell colSpan={6} className="h-28 text-center">
+                  <div className="inline-flex items-center gap-2 text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#7300E5]" />
+                    <span>Loading posts...</span>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : proofs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  No proofs found.
+                <TableCell
+                  colSpan={6}
+                  className="h-28 text-center text-gray-500"
+                >
+                  No posts match this filter.
                 </TableCell>
               </TableRow>
             ) : (
-              proofs.map((proof) => (
-                <TableRow key={proof.id}>
-                  <TableCell>
-                    <Input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-gray-500 text-xs">
-                    #{proof.id.slice(0, 8)}
-                  </TableCell>
-                  <TableCell>{proof.category || "General"}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                        <Image
-                          src={
-                            proof.talent?.avatarUrl ||
-                            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=2576&auto=format&fit=crop"
-                          }
-                          alt="Avatar"
-                          fill
-                          className="object-cover"
-                        />
+              proofs.map((proof) => {
+                const isGu2k = Boolean(
+                  proof.gig?.gu2kGigId &&
+                    !proof.gig.gu2kGigId.startsWith("custom_"),
+                );
+                const headline =
+                  proof.gig?.title || proof.title || "Untitled Post";
+                const talentName = proof.talent
+                  ? `${proof.talent.firstName} ${proof.talent.lastName}`.trim()
+                  : "Arena User";
+
+                return (
+                  <TableRow key={proof.id} className="hover:bg-gray-50/50">
+                    <TableCell className="max-w-[280px]">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-sm text-gray-900 truncate">
+                            {headline}
+                          </span>
+                          {isGu2k && (
+                            <BadgeCheck
+                              className="h-4 w-4 text-[#7300E5] shrink-0"
+                              aria-label="Verified GU2K Gig"
+                            />
+                          )}
+                        </div>
+                        {proof.caption && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {proof.caption}
+                          </p>
+                        )}
                       </div>
-                      <span className="font-medium text-sm">
-                        {proof.talent?.firstName} {proof.talent?.lastName}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{proof.talent?.location || "-"}</TableCell>
-                  <TableCell>{proof.salutesCount}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`rounded-full px-3 py-1 font-normal ${getStatusColor(proof.status)}`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full mr-2 ${proof.status === "APPROVED" ? "bg-green-500" : proof.status === "REJECTED" ? "bg-red-500" : proof.status === "FLAGGED" ? "bg-orange-500" : "bg-blue-500"}`}
-                      ></span>
-                      {formatStatus(proof.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1 text-gray-400">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:text-gray-900"
-                        onClick={() => setSelectedProof(proof)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:text-green-600",
-                          proof.status === "APPROVED" && "text-green-600",
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <UserAvatar
+                          name={talentName}
+                          src={proof.talent?.avatarUrl}
+                          size={32}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">
+                            {talentName}
+                          </p>
+                          {proof.talent?.username && (
+                            <p className="text-xs text-gray-400 truncate">
+                              @{proof.talent.username}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-xs text-gray-600 whitespace-nowrap">
+                      <span>{proof.likesCount} likes</span>
+                      <span className="mx-1.5 text-gray-300">•</span>
+                      <span>{proof.salutesCount} salutes</span>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-normal ${getStatusColor(proof.status)}`}
+                        >
+                          {formatStatus(proof.status)}
+                        </Badge>
+                        {proof.shadowLimited && (
+                          <Badge
+                            variant="outline"
+                            className="rounded-full px-2 py-0.5 text-[11px] bg-gray-100 text-gray-700 border-gray-200"
+                          >
+                            Shadow Limited
+                          </Badge>
                         )}
-                        onClick={() =>
-                          useAdminStore.getState().approveProof(proof.id).then(() => handleActionComplete("approved", proof))
-                        }
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:text-red-600",
-                          proof.status === "REJECTED" && "text-red-600",
-                        )}
+                        variant="outline"
+                        size="sm"
                         onClick={() =>
-                          useAdminStore.getState().rejectProof(proof.id, "Content does not meet guidelines").then(() => handleActionComplete("rejected", proof))
+                          toggleFeatureProof(proof.id, !proof.isFeatured).then(
+                            () =>
+                              handleActionComplete(
+                                !proof.isFeatured ? "featured" : "unfeatured",
+                                proof,
+                              ),
+                          )
                         }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
                         className={cn(
-                          "h-8 w-8 hover:text-orange-600",
-                          proof.status === "FLAGGED" && "text-orange-600",
+                          "h-8 rounded-full text-xs font-semibold gap-1.5",
+                          proof.isFeatured
+                            ? "bg-yellow-50 text-yellow-800 border-yellow-300 hover:bg-yellow-100"
+                            : "text-gray-600 border-gray-200 hover:text-yellow-700 hover:border-yellow-300",
                         )}
-                        onClick={() =>
-                          useAdminStore.getState().flagProof(proof.id).then(() => handleActionComplete("flagged", proof))
-                        }
                       >
-                        <ShieldAlert className="h-4 w-4" />
+                        <Star
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            proof.isFeatured &&
+                              "fill-yellow-500 text-yellow-500",
+                          )}
+                        />
+                        {proof.isFeatured
+                          ? "Remove Proof of the Week"
+                          : "Make Proof of the Week"}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8 hover:text-yellow-500",
-                          proof.isFeatured && "text-yellow-500",
-                        )}
-                        onClick={() =>
-                          useAdminStore.getState().toggleFeatureProof(proof.id, !proof.isFeatured).then(() => handleActionComplete("featured", proof))
-                        }
-                      >
-                        <Star className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1 text-gray-400">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Inspect post"
+                          className="h-8 w-8 hover:text-gray-900"
+                          onClick={() => setSelectedProof(proof)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Approve post"
+                          className={cn(
+                            "h-8 w-8 hover:text-green-600",
+                            proof.status === "APPROVED" && "text-green-600",
+                          )}
+                          onClick={() =>
+                            approveProof(proof.id).then(() =>
+                              handleActionComplete("approved", proof),
+                            )
+                          }
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Reject post"
+                          className={cn(
+                            "h-8 w-8 hover:text-red-600",
+                            proof.status === "REJECTED" && "text-red-600",
+                          )}
+                          onClick={() =>
+                            rejectProof(
+                              proof.id,
+                              "Content does not meet guidelines",
+                            ).then(() =>
+                              handleActionComplete("rejected", proof),
+                            )
+                          }
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Flag post"
+                          className={cn(
+                            "h-8 w-8 hover:text-orange-600",
+                            proof.status === "FLAGGED" && "text-orange-600",
+                          )}
+                          onClick={() =>
+                            flagProof(proof.id).then(() =>
+                              handleActionComplete("flagged", proof),
+                            )
+                          }
+                        >
+                          <ShieldAlert className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Delete post"
+                          className="h-8 w-8 hover:text-red-600"
+                          onClick={() => setDeleteTarget(proof)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between py-4">
-        <Button
-          variant="outline"
-          onClick={() => handlePageChange(proofsMeta.page - 1)}
-          disabled={proofsMeta.page <= 1}
-          className="gap-1 pl-2.5"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        <div className="flex items-center gap-1 text-sm text-gray-600">
-          {Array.from({ length: proofsMeta.pageCount }, (_, i) => (
-            <Button
-              key={i + 1}
-              variant={proofsMeta.page === i + 1 ? "secondary" : "ghost"}
-              className={`h-8 w-8 p-0 ${proofsMeta.page === i + 1 ? "bg-purple-100 text-purple-700 font-bold" : ""}`}
-              onClick={() => handlePageChange(i + 1)}
-            >
-              {i + 1}
-            </Button>
-          ))}
+      {proofsMeta.pageCount > 1 && (
+        <div className="flex items-center justify-between py-2">
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(proofsMeta.page - 1)}
+            disabled={proofsMeta.page <= 1}
+            className="gap-1 pl-2.5"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            {Array.from({ length: proofsMeta.pageCount }, (_, i) => (
+              <Button
+                key={i + 1}
+                variant={proofsMeta.page === i + 1 ? "secondary" : "ghost"}
+                className={`h-8 w-8 p-0 ${proofsMeta.page === i + 1 ? "bg-purple-100 text-purple-700 font-bold" : ""}`}
+                onClick={() => handlePageChange(i + 1)}
+              >
+                {i + 1}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(proofsMeta.page + 1)}
+            disabled={proofsMeta.page >= proofsMeta.pageCount}
+            className="gap-1 pr-2.5"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => handlePageChange(proofsMeta.page + 1)}
-          disabled={proofsMeta.page >= proofsMeta.pageCount}
-          className="gap-1 pr-2.5"
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      )}
 
       {selectedProof && (
         <ProofDetailModal
@@ -362,8 +524,40 @@ export default function ProofModerationPage() {
           onClose={() => setSelectedProof(null)}
           proof={selectedProof}
           onActionComplete={handleActionComplete}
+          onRequestDelete={(p) => {
+            setSelectedProof(null);
+            setDeleteTarget(p);
+          }}
         />
       )}
+
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Post</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete this post
+              {deleteTarget?.title ? ` ("${deleteTarget.title}")` : ""}? This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Post"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {feedbackState.isOpen && (
         <ActionFeedbackModal
@@ -377,5 +571,20 @@ export default function ProofModerationPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ProofModerationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 flex items-center justify-center gap-2 text-gray-500">
+          <Loader2 className="h-5 w-5 animate-spin text-[#7300E5]" />
+          <span>Loading moderation tools...</span>
+        </div>
+      }
+    >
+      <ProofModerationContent />
+    </Suspense>
   );
 }

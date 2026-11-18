@@ -4,39 +4,26 @@ import { useEffect } from "react";
 import {
   LayoutDashboard,
   ShieldCheck,
-  Briefcase,
   Users,
-  Activity,
-  UserCheck,
-  CreditCard,
-  BarChart3,
   LogOut,
-  Search,
-  BadgeCheck,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
 import NotificationPopover from "@/components/NotificationPopover";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
-  { icon: ShieldCheck, label: "Proof Moderation", href: "/admin/moderation" },
-  { icon: Briefcase, label: "Hire Requests", href: "/admin/requests" },
   {
-    icon: Users,
-    label: "Collaborations",
-    href: "/admin/collaboration-requests",
+    icon: ShieldCheck,
+    label: "Posts & Proof of the Week",
+    href: "/admin/moderation",
   },
-  { icon: Activity, label: "Pulse Manager", href: "/admin/pulse" },
-  { icon: UserCheck, label: "Talent Directory", href: "/admin/talents" },
-  { icon: BadgeCheck, label: "Badges", href: "/admin/badges" },
-  { icon: CreditCard, label: "Finance & Payouts", href: "/admin/finance" },
-  { icon: BarChart3, label: "Reports", href: "/admin/reports" },
+  { icon: Users, label: "Users & Connections", href: "/admin/talents" },
 ];
 
 export default function AdminLayout({
@@ -194,14 +181,14 @@ export default function AdminLayout({
               "Dashboard"}
           </h1>
 
-          <div className="flex items-center gap-4">
-            <div className="relative hidden md:block">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search..."
-                className="w-64 pl-9 rounded-full bg-gray-50 border-transparent focus:bg-white focus:border-gray-200"
-              />
-            </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#7300E5] px-3 py-1.5 rounded-full border border-gray-200 hover:border-purple-200 transition-colors"
+            >
+              <span>View Arena</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
             <NotificationPopover isAdmin={true} />
           </div>
         </header>
