@@ -296,10 +296,10 @@ export default function InlineProofComposer({
 
       <div
         ref={composerRef}
-        className="bg-white border border-[#ECECF0] rounded-[24px] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
+        className="w-full max-w-full overflow-hidden bg-white border border-[#ECECF0] rounded-[24px] p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)]"
       >
         {/* Top Row: User Avatar + Select/Selected Gig Pill */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 w-full min-w-0">
           <div className="rounded-full p-[2px] bg-gradient-to-tr from-[#F59E0B] to-[#7E00EE] shrink-0">
             <UserAvatar
               name={fullName}
@@ -310,11 +310,11 @@ export default function InlineProofComposer({
           </div>
 
           {selectedGig ? (
-            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#E4E4EA] bg-white text-[13px] font-medium text-black max-w-[320px]">
+            <div className="flex items-center justify-between gap-1.5 px-3 py-2 rounded-full border border-[#E4E4EA] bg-white text-[12.5px] sm:text-[13px] font-medium text-black min-w-0 max-w-full sm:max-w-[320px] overflow-hidden">
               <button
                 type="button"
                 onClick={() => setIsGigModalOpen(true)}
-                className="inline-flex items-center gap-2 min-w-0 cursor-pointer"
+                className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden cursor-pointer"
               >
                 <Image
                   src="/icons/briefcase.svg"
@@ -323,7 +323,7 @@ export default function InlineProofComposer({
                   height={16}
                   className="shrink-0"
                 />
-                <span className="truncate">{selectedGig.title}</span>
+                <span className="truncate block">{selectedGig.title}</span>
               </button>
               <button
                 type="button"
@@ -338,7 +338,7 @@ export default function InlineProofComposer({
             <button
               type="button"
               onClick={() => setIsGigModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 transition-colors text-[13px] font-medium text-[#747682] max-w-[300px] cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 transition-colors text-[12.5px] sm:text-[13px] font-medium text-[#747682] min-w-0 max-w-full sm:max-w-[300px] overflow-hidden cursor-pointer"
             >
               <Image
                 src="/icons/briefcase.svg"
@@ -347,7 +347,7 @@ export default function InlineProofComposer({
                 height={16}
                 className="shrink-0"
               />
-              <span className="truncate">Select a Gig to talk about</span>
+              <span className="truncate block">Select a Gig to talk about</span>
               <ChevronDown className="w-4 h-4 text-[#747682] shrink-0" />
             </button>
           )}
@@ -449,8 +449,8 @@ export default function InlineProofComposer({
             >
               <Plus className="w-4 h-4" />
             </button>
-            <span className="text-[11px] text-[#747682] truncate">
-              Images up to 10MB • Videos up to 50MB
+            <span className="text-[11px] text-[#747682] leading-tight min-w-0">
+              Max 10MB image • 50MB video
             </span>
           </div>
 
@@ -458,7 +458,7 @@ export default function InlineProofComposer({
             type="button"
             disabled={!canSubmit && !isSubmitting}
             onClick={handleSubmit}
-            className={`min-w-[112px] px-5 h-9 rounded-full text-[13px] font-semibold text-white transition-all flex items-center justify-center ${
+            className={`shrink-0 whitespace-nowrap min-w-[104px] px-4 sm:px-5 h-9 rounded-full text-[13px] font-semibold text-white transition-all flex items-center justify-center ${
               isSubmitting
                 ? "bg-[#7E00EE] cursor-wait"
                 : canSubmit
