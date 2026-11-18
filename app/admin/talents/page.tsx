@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import { useAdminStore } from "@/store/useAdminStore";
 import {
@@ -52,6 +53,7 @@ import {
   ArrowDownLeft,
   Loader2,
   Link2,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -341,7 +343,7 @@ export default function TalentDirectoryPage() {
           </div>
 
           {/* Users Table */}
-          <div className="rounded-xl border bg-white overflow-hidden">
+          <div className="rounded-xl border bg-white overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50/50">
@@ -387,23 +389,26 @@ export default function TalentDirectoryPage() {
                       <TableRow key={talent.id} className="hover:bg-gray-50/50">
                         {/* User */}
                         <TableCell>
-                          <div className="flex items-center gap-3">
+                          <Link
+                            href={`/admin/talents/${talent.id}`}
+                            className="flex items-center gap-3 group min-w-[180px]"
+                          >
                             <UserAvatar
                               name={`${talent.firstName} ${talent.lastName}`}
                               src={talent.avatarUrl}
                               size={36}
                             />
-                            <div>
-                              <p className="font-medium text-sm text-gray-900">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-gray-900 group-hover:text-[#7300E5] transition-colors truncate">
                                 {talent.firstName} {talent.lastName}
                               </p>
-                              {talent.username && (
-                                <p className="text-xs text-gray-400">
-                                  @{talent.username}
-                                </p>
-                              )}
+                              <p className="text-xs text-gray-400 truncate">
+                                {talent.username
+                                  ? `@${talent.username}`
+                                  : "View profile"}
+                              </p>
                             </div>
-                          </div>
+                          </Link>
                         </TableCell>
 
                         {/* Contact */}
@@ -486,6 +491,16 @@ export default function TalentDirectoryPage() {
                         {/* Actions */}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Link href={`/admin/talents/${talent.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Open user page"
+                                className="h-8 w-8 text-gray-400 hover:text-[#7300E5]"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
                             {talent.verificationStatus === "VERIFIED" ? (
                               <Button
                                 variant="ghost"
@@ -612,7 +627,7 @@ export default function TalentDirectoryPage() {
           </div>
 
           {/* All Connection Requests Table */}
-          <div className="rounded-xl border bg-white overflow-hidden">
+          <div className="rounded-xl border bg-white overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50/50">
@@ -646,14 +661,17 @@ export default function TalentDirectoryPage() {
                   connectionsList.map((conn) => (
                     <TableRow key={conn.id} className="hover:bg-gray-50/50">
                       <TableCell>
-                        <div className="flex items-center gap-2.5">
+                        <Link
+                          href={`/admin/talents/${conn.requester.id}`}
+                          className="flex items-center gap-2.5 group"
+                        >
                           <UserAvatar
                             name={`${conn.requester.firstName} ${conn.requester.lastName}`}
                             src={conn.requester.avatarUrl}
                             size={32}
                           />
                           <div>
-                            <p className="font-medium text-sm text-gray-900">
+                            <p className="font-medium text-sm text-gray-900 group-hover:text-[#7300E5]">
                               {conn.requester.firstName}{" "}
                               {conn.requester.lastName}
                             </p>
@@ -663,7 +681,7 @@ export default function TalentDirectoryPage() {
                                 : conn.requester.email}
                             </p>
                           </div>
-                        </div>
+                        </Link>
                       </TableCell>
 
                       <TableCell className="w-10 text-center">
@@ -671,14 +689,17 @@ export default function TalentDirectoryPage() {
                       </TableCell>
 
                       <TableCell>
-                        <div className="flex items-center gap-2.5">
+                        <Link
+                          href={`/admin/talents/${conn.recipient.id}`}
+                          className="flex items-center gap-2.5 group"
+                        >
                           <UserAvatar
                             name={`${conn.recipient.firstName} ${conn.recipient.lastName}`}
                             src={conn.recipient.avatarUrl}
                             size={32}
                           />
                           <div>
-                            <p className="font-medium text-sm text-gray-900">
+                            <p className="font-medium text-sm text-gray-900 group-hover:text-[#7300E5]">
                               {conn.recipient.firstName}{" "}
                               {conn.recipient.lastName}
                             </p>
@@ -688,7 +709,7 @@ export default function TalentDirectoryPage() {
                                 : conn.recipient.email}
                             </p>
                           </div>
-                        </div>
+                        </Link>
                       </TableCell>
 
                       <TableCell>
@@ -826,21 +847,25 @@ export default function TalentDirectoryPage() {
                         key={req.id}
                         className="flex items-center justify-between gap-3 p-3"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <Link
+                          href={`/admin/talents/${peer.id}`}
+                          onClick={() => setConnectionsModalUser(null)}
+                          className="flex items-center gap-3 min-w-0 group"
+                        >
                           <UserAvatar
                             name={`${peer.firstName} ${peer.lastName}`}
                             src={peer.avatarUrl}
                             size={34}
                           />
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">
+                            <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#7300E5]">
                               {peer.firstName} {peer.lastName}
                             </p>
                             <p className="text-xs text-gray-500 truncate">
                               {peer.username ? `@${peer.username}` : peer.email}
                             </p>
                           </div>
-                        </div>
+                        </Link>
 
                         <div className="flex items-center gap-2 shrink-0">
                           <span

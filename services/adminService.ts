@@ -97,6 +97,87 @@ export interface TalentConnectionsResponse {
   };
 }
 
+export interface AdminUserGigItem {
+  id: string;
+  completedAt?: string | null;
+  source: string;
+  createdAt: string;
+  gig: {
+    id: string;
+    gu2kGigId: string;
+    title: string;
+    companyName?: string | null;
+    category?: string | null;
+    location?: string | null;
+    status?: string | null;
+  };
+}
+
+export interface AdminTalentActivity {
+  id: string;
+  type: "JOINED" | "PROOF_POSTED" | "CONNECTION" | "ENGAGEMENT";
+  title: string;
+  description: string;
+  status?: string;
+  createdAt: string;
+  proofId?: string;
+  peerId?: string;
+  peerName?: string;
+  isFeatured?: boolean;
+  direction?: "SENT" | "RECEIVED";
+}
+
+export interface AdminTalentDetailResponse {
+  user: AdminTalent & {
+    gu2kId?: string | null;
+    coverUrl?: string | null;
+    cvUrl?: string | null;
+    skills?: string[];
+    totalGigs?: number;
+    followerCount?: number;
+    isAvailable?: boolean;
+    isPublic?: boolean;
+    levelProgress?: {
+      totalProofs: number;
+      currentLevel: { name: string; color?: string | null };
+      nextLevel?: { name: string } | null;
+      proofsToNextLevel: number;
+      progressPercent: number;
+    };
+  };
+  stats: {
+    totalProofs: number;
+    approvedProofs: number;
+    pendingProofs: number;
+    featuredProofs: number;
+    totalLikesReceived: number;
+    totalViewsReceived: number;
+    totalSalutesReceived: number;
+    acceptedConnections: number;
+    pendingConnectionsSent: number;
+    pendingConnectionsReceived: number;
+    totalConnectionRequests: number;
+    followersCount: number;
+    followingCount: number;
+    completedGigsCount: number;
+    recommendationsCount: number;
+  };
+  proofs: AdminProof[];
+  connections: {
+    data: AdminConnectionItem[];
+    summary: {
+      total: number;
+      pending: number;
+      accepted: number;
+      declined: number;
+      sent: number;
+      received: number;
+    };
+  };
+  userGigs: AdminUserGigItem[];
+  activities: AdminTalentActivity[];
+}
+
 export interface DashboardStats {
   proofs: {
     total: number;
@@ -302,6 +383,10 @@ export const adminService = {
 
   async getTalentConnections(userId: string): Promise<TalentConnectionsResponse> {
     return apiClient.get(`/admin/talents/${userId}/connections`);
+  },
+
+  async getTalentDetail(userId: string): Promise<AdminTalentDetailResponse> {
+    return apiClient.get(`/admin/talents/${userId}`);
   },
 
   async verifyTalent(id: string): Promise<AdminTalent> {
