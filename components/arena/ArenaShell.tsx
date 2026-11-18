@@ -376,7 +376,7 @@ export default function ArenaShell({
   );
 
   return (
-    <div className="min-h-[calc(100vh-44px)] w-full max-w-full overflow-x-hidden bg-white">
+    <div className="min-h-[calc(100vh-44px)] w-full max-w-full bg-white">
       {/* Mobile Top Bar for Drawer */}
       <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-[#EFEFF3]">
         <button
@@ -434,7 +434,7 @@ export default function ArenaShell({
         }`}
       >
         {/* Column 1: Left Sidebar */}
-        <aside className="hidden lg:block sticky top-11 h-[calc(100vh-44px)] border-r border-[#EFEFF3]">
+        <aside className="hidden lg:block sticky top-11 self-start h-[calc(100vh-44px)] border-r border-[#EFEFF3]">
           {SidebarBody}
         </aside>
 
@@ -449,7 +449,7 @@ export default function ArenaShell({
 
         {/* Column 3: Right Sidebar */}
         {showRightSidebar && (
-          <aside className="hidden xl:block sticky top-11 h-[calc(100vh-44px)] overflow-y-auto px-6 py-6 space-y-5">
+          <aside className="hidden xl:block sticky top-11 self-start h-[calc(100vh-44px)] overflow-y-auto px-6 py-6 space-y-5">
             {customRightSidebar ? (
               customRightSidebar
             ) : (
