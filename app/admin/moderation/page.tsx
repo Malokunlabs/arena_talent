@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAdminStore } from "@/store/useAdminStore";
 import { AdminProof } from "@/services/adminService";
@@ -36,6 +37,7 @@ import {
   Trash2,
   Loader2,
   BadgeCheck,
+  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProofDetailModal from "@/components/admin/ProofDetailModal";
@@ -257,7 +259,7 @@ function ProofModerationContent() {
         </div>
       </div>
 
-      <div className="rounded-xl border bg-white overflow-hidden">
+      <div className="rounded-xl border bg-white overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/60">
@@ -299,48 +301,111 @@ function ProofModerationContent() {
                 const talentName = proof.talent
                   ? `${proof.talent.firstName} ${proof.talent.lastName}`.trim()
                   : "Arena User";
+                const firstUrl =
+                  proof.mediaItems?.[0]?.url ||
+                  proof.mediaUrls?.[0] ||
+                  proof.mediaUrl;
+                const isFirstVideo =
+                  proof.mediaItems?.[0]?.type === "video" ||
+                  Boolean(
+                    firstUrl && /\.(mp4|mov|webm|m4v)(\?|$)/i.test(firstUrl),
+                  );
+                const mediaCount =
+                  proof.mediaItems?.length ||
+                  proof.mediaUrls?.length ||
+                  (proof.mediaUrl ? 1 : 0);
 
                 return (
                   <TableRow key={proof.id} className="hover:bg-gray-50/50">
-                    <TableCell className="max-w-[280px]">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-sm text-gray-900 truncate">
-                            {headline}
-                          </span>
-                          {isGu2k && (
-                            <BadgeCheck
-                              className="h-4 w-4 text-[#7300E5] shrink-0"
-                              aria-label="Verified GU2K Gig"
-                            />
-                          )}
-                        </div>
-                        {proof.caption && (
-                          <p className="text-xs text-gray-500 truncate">
-                            {proof.caption}
-                          </p>
+                    <TableCell className="max-w-[300px]">
+                      <div className="flex items-center gap-3 min-w-[200px]">
+                        {firstUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProof(proof)}
+                            className="relative w-10 h-10 rounded-lg overflow-hidden bg-zinc-900 shrink-0 border border-gray-200 cursor-pointer"
+                            title="Preview media"
+                          >
+                            {isFirstVideo ? (
+                              <div className="w-full h-full flex items-center justify-center text-white">
+                                <Play className="w-4 h-4 fill-white" />
+                              </div>
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={firstUrl}
+                                alt={headline}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            {mediaCount > 1 && (
+                              <span className="absolute bottom-0 right-0 rounded-tl bg-black/75 text-white text-[9px] px-1 font-semibold">
+                                +{mediaCount - 1}
+                              </span>
+                            )}
+                          </button>
                         )}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <UserAvatar
-                          name={talentName}
-                          src={proof.talent?.avatarUrl}
-                          size={32}
-                        />
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm text-gray-900 truncate">
-                            {talentName}
-                          </p>
-                          {proof.talent?.username && (
-                            <p className="text-xs text-gray-400 truncate">
-                              @{proof.talent.username}
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProof(proof)}
+                              className="font-semibold text-sm text-gray-900 hover:text-[#7300E5] transition-colors truncate text-left cursor-pointer"
+                            >
+                              {headline}
+                            </button>
+                            {isGu2k && (
+                              <BadgeCheck
+                                className="h-4 w-4 text-[#7300E5] shrink-0"
+                                aria-label="Verified GU2K Gig"
+                              />
+                            )}
+                          </div>
+                          {proof.caption && (
+                            <p className="text-xs text-gray-500 truncate">
+                              {proof.caption}
                             </p>
                           )}
                         </div>
                       </div>
+                    </TableCell>
+
+                    <TableCell>
+                      {proof.talent?.id ? (
+                        <Link
+                          href={`/admin/talents/${proof.talent.id}`}
+                          className="flex items-center gap-2.5 group min-w-[150px]"
+                        >
+                          <UserAvatar
+                            name={talentName}
+                            src={proof.talent?.avatarUrl}
+                            size={32}
+                          />
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-gray-900 group-hover:text-[#7300E5] transition-colors truncate">
+                              {talentName}
+                            </p>
+                            {proof.talent?.username && (
+                              <p className="text-xs text-gray-400 truncate">
+                                @{proof.talent.username}
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-2.5 min-w-[150px]">
+                          <UserAvatar
+                            name={talentName}
+                            src={proof.talent?.avatarUrl}
+                            size={32}
+                          />
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-gray-900 truncate">
+                              {talentName}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </TableCell>
 
                     <TableCell className="text-xs text-gray-600 whitespace-nowrap">
@@ -520,6 +585,7 @@ function ProofModerationContent() {
 
       {selectedProof && (
         <ProofDetailModal
+          key={selectedProof.id}
           isOpen={!!selectedProof}
           onClose={() => setSelectedProof(null)}
           proof={selectedProof}
