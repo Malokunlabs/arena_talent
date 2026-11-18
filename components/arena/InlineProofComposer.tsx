@@ -6,7 +6,10 @@ import { ChevronDown, Plus, X, Loader2, Play, CheckCircle2 } from "lucide-react"
 import UserAvatar from "@/components/UserAvatar";
 import { useUserStore } from "@/store/useUserStore";
 import { useProofStore } from "@/store/useProofStore";
-import { mediaService } from "@/services/mediaService";
+import {
+  mediaService,
+  validateMediaFileSize,
+} from "@/services/mediaService";
 import { ProofMediaItem } from "@/services/proofService";
 import { Gig } from "@/services/gigService";
 import SelectGigModal from "@/components/modals/SelectGigModal";
@@ -124,6 +127,7 @@ export default function InlineProofComposer({
   const [isGigModalOpen, setIsGigModalOpen] = useState(false);
   const [attachments, setAttachments] = useState<UploadedAttachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -137,11 +141,23 @@ export default function InlineProofComposer({
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    setUploadWarning(null);
+    const warnings: string[] = [];
+
     for (const file of files) {
       const isVideo = file.type.startsWith("video/");
       const isImage = file.type.startsWith("image/");
       if (!isVideo && !isImage) {
-        toast.error(`Unsupported file type: ${file.name}`);
+        const msg = `Unsupported file type: ${file.name}`;
+        warnings.push(msg);
+        toast.error(msg, { duration: 5000 });
+        continue;
+      }
+
+      const sizeError = validateMediaFileSize(file);
+      if (sizeError) {
+        warnings.push(sizeError);
+        toast.error(sizeError, { duration: 6000 });
         continue;
       }
 
@@ -185,10 +201,19 @@ export default function InlineProofComposer({
               : item,
           ),
         );
-      } catch {
-        toast.error(`Failed to upload ${file.name}`);
+      } catch (err) {
+        const errMsg =
+          err instanceof Error && err.message
+            ? err.message
+            : `Failed to upload ${file.name}`;
+        warnings.push(errMsg);
+        toast.error(errMsg, { duration: 6000 });
         setAttachments((prev) => prev.filter((item) => item.id !== tempId));
       }
+    }
+
+    if (warnings.length > 0) {
+      setUploadWarning(warnings.join(" "));
     }
 
     if (fileInputRef.current) {
@@ -340,6 +365,20 @@ export default function InlineProofComposer({
           />
         </div>
 
+        {uploadWarning && (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
+            <span>{uploadWarning}</span>
+            <button
+              type="button"
+              onClick={() => setUploadWarning(null)}
+              className="p-0.5 rounded hover:bg-red-100 transition-colors cursor-pointer shrink-0"
+              aria-label="Dismiss upload warning"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Multi-Media Preview Grid (4-column cards with circular upload % & remove X) */}
         {attachments.length > 0 && (
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -391,8 +430,8 @@ export default function InlineProofComposer({
         )}
 
         {/* Bottom Action Row */}
-        <div className="mt-4 flex items-center justify-between">
-          <div>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <input
               ref={fileInputRef}
               type="file"
@@ -405,11 +444,14 @@ export default function InlineProofComposer({
               type="button"
               disabled={isSubmitting}
               onClick={() => fileInputRef.current?.click()}
-              className="w-9 h-9 rounded-full border border-[#E4E4EA] flex items-center justify-center text-[#747682] hover:text-black hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
+              className="w-9 h-9 rounded-full border border-[#E4E4EA] flex items-center justify-center text-[#747682] hover:text-black hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
               title="Add images or videos"
             >
               <Plus className="w-4 h-4" />
             </button>
+            <span className="text-[11px] text-[#747682] truncate">
+              Images up to 10MB • Videos up to 50MB
+            </span>
           </div>
 
           <button

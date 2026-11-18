@@ -1,6 +1,22 @@
 import { apiClient } from "./apiClient";
 import { R2_PUBLIC_URL } from "@/lib/config";
 
+export const MAX_IMAGE_SIZE_MB = 10;
+export const MAX_VIDEO_SIZE_MB = 50;
+export const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+export const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
+
+export function validateMediaFileSize(file: File): string | null {
+  const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+  if (file.type.startsWith("image/") && file.size > MAX_IMAGE_SIZE_BYTES) {
+    return `"${file.name}" is ${sizeMb}MB. Images must be ${MAX_IMAGE_SIZE_MB}MB or less.`;
+  }
+  if (file.type.startsWith("video/") && file.size > MAX_VIDEO_SIZE_BYTES) {
+    return `"${file.name}" is ${sizeMb}MB. Videos must be ${MAX_VIDEO_SIZE_MB}MB or less.`;
+  }
+  return null;
+}
+
 export type MediaPrefix =
   | "proofs"
   | "avatars"
@@ -21,13 +37,19 @@ export const mediaService = {
   async presign(
     filename: string,
     contentType: string,
-    prefix: MediaPrefix
+    prefix: MediaPrefix,
+    fileSize?: number,
   ): Promise<PresignResponse> {
-    return apiClient.post<PresignResponse>("/media/presign", {
-      filename,
-      contentType,
-      prefix,
-    });
+    return apiClient.post<PresignResponse>(
+      "/media/presign",
+      {
+        filename,
+        contentType,
+        prefix,
+        ...(fileSize !== undefined ? { fileSize } : {}),
+      },
+      { quiet: true },
+    );
   },
 
   /**
@@ -110,12 +132,17 @@ export const mediaService = {
    * Convenience: run all 3 steps and return the final public URL.
    */
   async upload(file: File, prefix: MediaPrefix): Promise<string> {
+    const sizeError = validateMediaFileSize(file);
+    if (sizeError) {
+      throw new Error(sizeError);
+    }
+
     // Step 1: Presign
     const {
       url: presignedUrl,
       key,
       uploadHeaders,
-    } = await mediaService.presign(file.name, file.type, prefix);
+    } = await mediaService.presign(file.name, file.type, prefix, file.size);
 
     // Step 2: Upload directly to R2 (using headers from backend if provided)
     await mediaService.uploadToR2(presignedUrl, file, uploadHeaders);
@@ -132,12 +159,17 @@ export const mediaService = {
     prefix: MediaPrefix,
     onProgress?: (percent: number) => void
   ): Promise<string> {
+    const sizeError = validateMediaFileSize(file);
+    if (sizeError) {
+      throw new Error(sizeError);
+    }
+
     onProgress?.(5);
     const {
       url: presignedUrl,
       key,
       uploadHeaders,
-    } = await mediaService.presign(file.name, file.type, prefix);
+    } = await mediaService.presign(file.name, file.type, prefix, file.size);
 
     await mediaService.uploadToR2WithProgress(
       presignedUrl,
