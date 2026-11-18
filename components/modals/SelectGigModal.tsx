@@ -12,15 +12,17 @@ interface SelectGigModalProps {
   onSelectGig: (gig: Gig) => void;
 }
 
-function formatCompletedDate(dateStr?: string | null) {
-  if (!dateStr) return "Completed recently";
+function formatCompletedDate(dateStr?: string | null, status?: string | null) {
+  const isActive = status?.toUpperCase() === "ACTIVE";
+  if (!dateStr) return isActive ? "Active now" : "Completed recently";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "Completed recently";
-  return `Completed ${d.toLocaleDateString("en-US", {
+  if (isNaN(d.getTime())) return isActive ? "Active now" : "Completed recently";
+  const formatted = d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  })}`;
+  });
+  return isActive ? `Posted ${formatted}` : `Completed ${formatted}`;
 }
 
 export default function SelectGigModal({
@@ -334,7 +336,7 @@ export default function SelectGigModal({
                     <p className="text-[12px] text-[#747682] mt-0.5 truncate">
                       {gig.companyName ? `${gig.companyName} • ` : ""}
                       {gig.location ? `${gig.location} • ` : ""}
-                      {formatCompletedDate(gig.completedAt)}
+                      {formatCompletedDate(gig.completedAt, gig.status)}
                     </p>
                   </div>
 
