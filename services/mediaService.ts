@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient";
-import { R2_PUBLIC_URL } from "@/lib/config";
+import { tokenStorage } from "./authService";
+import { API_BASE_URL, R2_PUBLIC_URL } from "@/lib/config";
 
 export const MAX_IMAGE_SIZE_MB = 10;
 export const MAX_VIDEO_SIZE_MB = 50;
@@ -121,6 +122,78 @@ export const mediaService = {
   },
 
   /**
+   * Fallback upload via the backend API (multipart/form-data to POST /media/upload)
+   * when direct browser-to-R2 PUT is blocked by bucket CORS or network restrictions.
+   */
+  uploadViaBackendWithProgress(
+    file: File,
+    prefix: MediaPrefix,
+    onProgress?: (percent: number) => void,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("prefix", prefix);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/media/upload`, true);
+
+      const token = tokenStorage.getToken();
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.min(
+            99,
+            Math.max(1, Math.round((event.loaded / event.total) * 100)),
+          );
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress?.(100);
+          try {
+            const parsed = JSON.parse(xhr.responseText);
+            const data = parsed?.data ?? parsed;
+            const url =
+              typeof data?.url === "string" && data.url.startsWith("http")
+                ? data.url
+                : data?.key
+                  ? mediaService.getPublicUrl(data.key)
+                  : "";
+            if (!url) {
+              reject(new Error("Upload succeeded but no file URL was returned"));
+              return;
+            }
+            resolve(url);
+          } catch {
+            reject(new Error("Invalid response from media upload server"));
+          }
+        } else {
+          let message = `Upload failed with status ${xhr.status}`;
+          try {
+            const errJson = JSON.parse(xhr.responseText);
+            if (errJson?.message) message = errJson.message;
+          } catch {
+            // ignore
+          }
+          reject(new Error(message));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Network error while uploading file"));
+      };
+
+      xhr.send(formData);
+    });
+  },
+
+  /**
    * Build the public CDN URL from the R2 object key.
    */
   getPublicUrl(key: string): string {
@@ -129,7 +202,8 @@ export const mediaService = {
   },
 
   /**
-   * Convenience: run all 3 steps and return the final public URL.
+   * Convenience: run all steps and return the final public URL.
+   * Automatically falls back to backend multipart upload if direct R2 PUT fails (e.g. CORS).
    */
   async upload(file: File, prefix: MediaPrefix): Promise<string> {
     const sizeError = validateMediaFileSize(file);
@@ -144,15 +218,18 @@ export const mediaService = {
       uploadHeaders,
     } = await mediaService.presign(file.name, file.type, prefix, file.size);
 
-    // Step 2: Upload directly to R2 (using headers from backend if provided)
-    await mediaService.uploadToR2(presignedUrl, file, uploadHeaders);
-
-    // Return the public CDN URL
-    return mediaService.getPublicUrl(key);
+    // Step 2: Upload directly to R2, falling back to backend proxy if blocked
+    try {
+      await mediaService.uploadToR2(presignedUrl, file, uploadHeaders);
+      return mediaService.getPublicUrl(key);
+    } catch {
+      return mediaService.uploadViaBackendWithProgress(file, prefix);
+    }
   },
 
   /**
    * Upload with live progress callback (0..100).
+   * Automatically falls back to backend multipart upload if direct R2 PUT fails (e.g. CORS).
    */
   async uploadWithProgress(
     file: File,
@@ -171,13 +248,16 @@ export const mediaService = {
       uploadHeaders,
     } = await mediaService.presign(file.name, file.type, prefix, file.size);
 
-    await mediaService.uploadToR2WithProgress(
-      presignedUrl,
-      file,
-      uploadHeaders,
-      onProgress
-    );
-
-    return mediaService.getPublicUrl(key);
+    try {
+      await mediaService.uploadToR2WithProgress(
+        presignedUrl,
+        file,
+        uploadHeaders,
+        onProgress
+      );
+      return mediaService.getPublicUrl(key);
+    } catch {
+      return mediaService.uploadViaBackendWithProgress(file, prefix, onProgress);
+    }
   },
 };

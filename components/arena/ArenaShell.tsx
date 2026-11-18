@@ -119,17 +119,20 @@ export default function ArenaShell({
   }, [fetchProofsOfTheWeek]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchUserProofs();
-      fetchMyLevelProgress();
-      connectionService
-        .getIncomingRequests(20)
-        .then((list) => setPendingRequestsCount(Array.isArray(list) ? list.length : 0))
-        .catch(() => {});
-    } else {
-      setPendingRequestsCount(0);
-    }
+    if (!isAuthenticated) return;
+    fetchUserProofs();
+    fetchMyLevelProgress();
+    connectionService
+      .getIncomingRequests(20)
+      .then((list) =>
+        setPendingRequestsCount(Array.isArray(list) ? list.length : 0),
+      )
+      .catch(() => {});
   }, [isAuthenticated, fetchUserProofs, fetchMyLevelProgress]);
+
+  const effectivePendingRequestsCount = isAuthenticated
+    ? pendingRequestsCount
+    : 0;
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -213,7 +216,7 @@ export default function ArenaShell({
 
           const resolvedBadge =
             item.href === "/dashboard/profile"
-              ? (profileBadgeCount ?? pendingRequestsCount)
+              ? (profileBadgeCount ?? effectivePendingRequestsCount)
               : 0;
 
           return (
@@ -373,7 +376,7 @@ export default function ArenaShell({
   );
 
   return (
-    <div className="min-h-[calc(100vh-44px)] bg-white">
+    <div className="min-h-[calc(100vh-44px)] w-full max-w-full overflow-x-hidden bg-white">
       {/* Mobile Top Bar for Drawer */}
       <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-[#EFEFF3]">
         <button
@@ -437,7 +440,7 @@ export default function ArenaShell({
 
         {/* Column 2: Center Content */}
         <main
-          className={`min-w-0 px-4 sm:px-7 py-6 ${
+          className={`min-w-0 w-full max-w-full overflow-x-hidden px-3.5 sm:px-7 py-5 sm:py-6 ${
             showRightSidebar ? "border-r border-[#EFEFF3]" : ""
           }`}
         >
