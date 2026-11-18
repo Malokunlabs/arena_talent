@@ -4,7 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { X, Search, ImageIcon, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import { UserProfile } from "@/services/userService";
-import { mediaService } from "@/services/mediaService";
+import {
+  mediaService,
+  validateMediaFileSize,
+} from "@/services/mediaService";
 import { useUserStore } from "@/store/useUserStore";
 import { toast } from "sonner";
 
@@ -79,6 +82,13 @@ export default function EditProfileModal({
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a PNG or JPEG image.");
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+      return;
+    }
+    const sizeError = validateMediaFileSize(file);
+    if (sizeError) {
+      toast.error(sizeError);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
       return;
     }
 
@@ -87,8 +97,12 @@ export default function EditProfileModal({
       const url = await mediaService.upload(file, "avatars");
       setAvatarUrl(url);
       toast.success("Profile picture uploaded");
-    } catch {
-      toast.error("Failed to upload profile picture");
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to upload profile picture",
+      );
     } finally {
       setUploadingAvatar(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -100,8 +114,9 @@ export default function EditProfileModal({
       toast.error("Please upload a PNG or JPG image.");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Banner image must be under 20MB.");
+    const sizeError = validateMediaFileSize(file);
+    if (sizeError) {
+      toast.error(sizeError);
       return;
     }
 
@@ -110,8 +125,12 @@ export default function EditProfileModal({
       const url = await mediaService.upload(file, "covers");
       setCoverUrl(url);
       toast.success("Banner image uploaded");
-    } catch {
-      toast.error("Failed to upload banner image");
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to upload banner image",
+      );
     } finally {
       setUploadingCover(false);
     }
@@ -463,7 +482,7 @@ export default function EditProfileModal({
                   or Drag and Drop
                 </p>
                 <p className="text-[11px] text-[#747682] mt-0.5">
-                  PNG or JPG (Max Size: 20MB)
+                  PNG or JPG (Max Size: 10MB)
                 </p>
               </>
             )}
