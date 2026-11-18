@@ -59,11 +59,10 @@ class ApiClient {
       const isAuthEndpoint = endpoint.startsWith("/auth/login") || endpoint.startsWith("/auth/register") || endpoint.startsWith("/auth/resend");
       const isAuthFlow = typeof window !== "undefined" && (
         window.location.pathname.includes("/signup") ||
-        window.location.pathname.includes("/login") ||
-        window.location.pathname.includes("/verify-email")
+        window.location.pathname.includes("/login")
       );
 
-      const publicRoutes = ["/", "/talent", "/profile", "/proofs", "/about", "/signup", "/login", "/reset-password", "/forgot-password", "/verify-email"];
+      const publicRoutes = ["/", "/profile", "/proofs", "/signup", "/login"];
       const isPublicRoute = publicRoutes.some(route => 
         route === "/" ? typeof window !== "undefined" && window.location.pathname === "/" : typeof window !== "undefined" && window.location.pathname.startsWith(route)
       );

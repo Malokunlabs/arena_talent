@@ -165,8 +165,7 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
       const errMsg = (error.message || "").toLowerCase();
       if (errMsg.includes("verif") || errMsg.includes("unverified")) {
         set({ isLoading: false });
-        // Return true so the signup page handles the router.push("/verify-email")
-        return true; 
+        return false;
       }
       set({
         isLoading: false,
@@ -196,16 +195,10 @@ export const useAuthStore = create<SignUpState>((set, get) => ({
     } catch (error: any) {
       const errMsg = (error.message || "").toLowerCase();
       if (errMsg.includes("verif") || errMsg.includes("unverified")) {
-        try {
-          // Send a new token using the API
-          await authService.resendVerification({ email });
-        } catch {
-          // ignore
-        }
-        if (typeof window !== "undefined") {
-          window.location.href = "/verify-email";
-        }
-        set({ isLoading: false });
+        set({
+          isLoading: false,
+          error: "Please verify your email on GU2K before signing in.",
+        });
         return false;
       }
       set({

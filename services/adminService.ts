@@ -1,4 +1,6 @@
+import { API_BASE_URL } from "@/lib/config";
 import { apiClient } from "@/services/apiClient";
+import { tokenStorage } from "@/services/authService";
 import { Proof } from "@/services/proofService";
 
 export interface AdminTalent {
@@ -15,6 +17,11 @@ export interface AdminTalent {
   verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
   createdAt: string;
   updatedAt: string;
+  _count?: {
+    proofs: number;
+    connectionRequestsSent: number;
+    connectionRequestsReceived: number;
+  };
 }
 
 export interface TalentListResponse {
@@ -35,16 +42,66 @@ export interface TalentFilter {
   isEmailVerified?: boolean;
 }
 
+export interface AdminConnectionUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  username?: string | null;
+  email: string;
+  avatarUrl?: string | null;
+  location?: string | null;
+  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+}
+
+export type ConnectionRequestStatus = "PENDING" | "ACCEPTED" | "DECLINED";
+
+export interface AdminConnectionItem {
+  id: string;
+  requesterId: string;
+  recipientId: string;
+  status: ConnectionRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  requester: AdminConnectionUser;
+  recipient: AdminConnectionUser;
+}
+
+export interface AdminConnectionFilter {
+  page?: number;
+  limit?: number;
+  status?: ConnectionRequestStatus;
+  search?: string;
+  userId?: string;
+}
+
+export interface AdminConnectionListResponse {
+  data: AdminConnectionItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    pageCount: number;
+  };
+}
+
+export interface TalentConnectionsResponse {
+  user: AdminTalent;
+  data: AdminConnectionItem[];
+  summary: {
+    total: number;
+    pending: number;
+    accepted: number;
+    declined: number;
+    sent: number;
+    received: number;
+  };
+}
+
 export interface DashboardStats {
   proofs: {
     total: number;
     featured: number;
     shadowLimited: number;
-    byStatus: { status: string; count: number }[];
-  };
-  talentRequests: {
-    total: number;
-    overdue: number;
     byStatus: { status: string; count: number }[];
   };
   talents: {
@@ -53,6 +110,30 @@ export interface DashboardStats {
     verified: number;
     newThisWeek: number;
   };
+  connections: {
+    total: number;
+    pending: number;
+    accepted: number;
+    declined: number;
+  };
+  gigs?: {
+    total: number;
+  };
+}
+
+export interface AdminAnalyticsPayload {
+  topProofs: {
+    id: string;
+    title: string;
+    creator: string;
+    salutes: number;
+    likes: number;
+  }[];
+  weeklyActivity: {
+    weekLabel: string;
+    proofCount: number;
+    newTalentsCount: number;
+  }[];
 }
 
 export interface AdminProof extends Proof {
@@ -77,6 +158,8 @@ export interface ProofFilter {
   limit?: number;
   status?: string;
   search?: string;
+  isFeatured?: boolean;
+  shadowLimited?: boolean;
 }
 
 export const adminService = {
@@ -84,15 +167,51 @@ export const adminService = {
     return apiClient.get("/admin/dashboard");
   },
 
+  async getAnalytics(): Promise<AdminAnalyticsPayload> {
+    return apiClient.get("/admin/dashboard/analytics");
+  },
+
+  async exportReport(
+    reportType: "arena-metrics" | "user-engagement",
+  ): Promise<void> {
+    const token = tokenStorage.getToken();
+    const res = await fetch(
+      `${API_BASE_URL}/admin/dashboard/export/${reportType}`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      },
+    );
+    if (!res.ok) {
+      throw new Error("Failed to export report");
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download =
+      reportType === "arena-metrics"
+        ? "arena-metrics-report.csv"
+        : "user-engagement-report.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   async getProofs(filter: ProofFilter = {}): Promise<ProofResponse> {
     const params = new URLSearchParams();
     if (filter.page) params.append("page", filter.page.toString());
     if (filter.limit) params.append("limit", filter.limit.toString());
-    if (filter.status && filter.status !== "All")
+    if (filter.status && filter.status !== "All") {
       params.append("status", filter.status);
-    // Note: Search probably goes to a generic 'search' or 'q' param, assuming 'search' based on standard practices, or handle client side if API doesn't support.
-    // The dummy.txt didn't explicitly show search param in the curl example but image has search. I'll add it.
+    }
     if (filter.search) params.append("search", filter.search);
+    if (filter.isFeatured !== undefined) {
+      params.append("isFeatured", String(filter.isFeatured));
+    }
+    if (filter.shadowLimited !== undefined) {
+      params.append("shadowLimited", String(filter.shadowLimited));
+    }
 
     return apiClient.get(`/admin/proofs?${params.toString()}`);
   },
@@ -150,79 +269,39 @@ export const adminService = {
     });
   },
 
-  async getTalentRequestsKanban(): Promise<KanbanColumn[]> {
-    return apiClient.get("/admin/talent-requests/kanban");
+  async deleteProof(id: string): Promise<{ id: string; deleted: boolean }> {
+    return apiClient.delete(`/admin/proofs/${id}`);
   },
 
-  async getCollaborationRequestsKanban(): Promise<CollaborationKanbanColumn[]> {
-    return apiClient.get("/admin/collaboration-requests/kanban");
-  },
-
-  async updateTalentRequest(
-    id: string,
-    data: Partial<TalentRequest>,
-  ): Promise<TalentRequest> {
-    return apiClient.patch(`/admin/talent-requests/${id}`, data);
-  },
-
-  async acceptTalentRequest(id: string): Promise<TalentRequest> {
-    return apiClient.patch(`/admin/talent-requests/${id}/accept`, {});
-  },
-
-  async rejectTalentRequest(id: string): Promise<TalentRequest> {
-    return apiClient.patch(`/admin/talent-requests/${id}/reject`, {});
-  },
-
-  async completeTalentRequest(id: string): Promise<TalentRequest> {
-    return apiClient.patch(`/admin/talent-requests/${id}/complete`, {});
-  },
-
-  async acceptCollaborationRequest(id: string): Promise<CollaborationRequestAdmin> {
-    return apiClient.patch(`/admin/collaboration-requests/${id}/accept`, {});
-  },
-
-  async rejectCollaborationRequest(id: string): Promise<CollaborationRequestAdmin> {
-    return apiClient.patch(`/admin/collaboration-requests/${id}/reject`, {});
-  },
-
-  async updateCollaborationRequest(
-    id: string,
-    data: Partial<CollaborationRequestAdmin>,
-  ): Promise<CollaborationRequestAdmin> {
-    return apiClient.patch(`/admin/collaboration-requests/${id}`, data);
-  },
-
-  async getPulses(filter: PulseFilter = {}): Promise<PulseResponse> {
-    const params = new URLSearchParams();
-    if (filter.page) params.append("page", filter.page.toString());
-    if (filter.limit) params.append("limit", filter.limit.toString());
-    if (filter.status && filter.status !== "All")
-      params.append("status", filter.status);
-    if (filter.search) params.append("search", filter.search);
-    return apiClient.get(`/admin/pulses?${params.toString()}`);
-  },
-
-  async createPulse(data: CreatePulseData): Promise<Pulse> {
-    return apiClient.post("/admin/pulses", data);
-  },
-
-  async updatePulse(id: string, data: Partial<CreatePulseData & { status: string }>): Promise<Pulse> {
-    return apiClient.patch(`/admin/pulses/${id}`, data);
-  },
-
-  async updatePulseStatus(id: string, status: "DRAFT" | "LIVE" | "CLOSED"): Promise<Pulse> {
-    return apiClient.patch(`/admin/pulses/${id}`, { status });
-  },
-
-  // Talent Directory
+  // Users & Connections Directory
   async getTalents(filter: TalentFilter = {}): Promise<TalentListResponse> {
     const params = new URLSearchParams();
     if (filter.page) params.append("page", filter.page.toString());
     if (filter.limit) params.append("limit", filter.limit.toString());
     if (filter.search) params.append("search", filter.search);
-    if (filter.verificationStatus) params.append("verificationStatus", filter.verificationStatus);
-    if (filter.isEmailVerified !== undefined) params.append("isEmailVerified", String(filter.isEmailVerified));
+    if (filter.verificationStatus) {
+      params.append("verificationStatus", filter.verificationStatus);
+    }
+    if (filter.isEmailVerified !== undefined) {
+      params.append("isEmailVerified", String(filter.isEmailVerified));
+    }
     return apiClient.get(`/admin/talents?${params.toString()}`);
+  },
+
+  async getConnections(
+    filter: AdminConnectionFilter = {},
+  ): Promise<AdminConnectionListResponse> {
+    const params = new URLSearchParams();
+    if (filter.page) params.append("page", filter.page.toString());
+    if (filter.limit) params.append("limit", filter.limit.toString());
+    if (filter.status) params.append("status", filter.status);
+    if (filter.search) params.append("search", filter.search);
+    if (filter.userId) params.append("userId", filter.userId);
+    return apiClient.get(`/admin/talents/connections?${params.toString()}`);
+  },
+
+  async getTalentConnections(userId: string): Promise<TalentConnectionsResponse> {
+    return apiClient.get(`/admin/talents/${userId}/connections`);
   },
 
   async verifyTalent(id: string): Promise<AdminTalent> {
@@ -237,104 +316,3 @@ export const adminService = {
     return apiClient.delete(`/admin/talents/${id}`);
   },
 };
-
-export interface TalentRequest {
-  id: string;
-  talentId: string;
-  companyName: string;
-  email: string;
-  requestType: string;
-  projectBrief: string;
-  budgetMin: number;
-  budgetMax: number;
-  location: string | null;
-  city: string | null;
-  timeline: string;
-  status:
-    | "NEW"
-    | "TRIAGED"
-    | "AWAITING_CREATOR"
-    | "AWAITING_PAYMENT"
-    | "IN_FULFILLMENT"
-    | "COMPLETED"
-    | "DECLINED";
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface KanbanColumn {
-  status: string;
-  items: TalentRequest[];
-}
-
-export interface CollaborationRequestAdmin {
-  id: string;
-  fromUserId: string;
-  toUserId: string | null;
-  title: string;
-  description: string;
-  status: string;
-  city: string;
-  startDate: string;
-  createdAt: string;
-  updatedAt: string;
-  roles?: string[];
-  tags?: string[];
-  fromUser?: {
-    firstName: string;
-    lastName: string;
-    avatarUrl?: string;
-  };
-  toUser?: {
-    firstName: string;
-    lastName: string;
-    avatarUrl?: string;
-  };
-}
-
-export interface CollaborationKanbanColumn {
-  status: string;
-  items: CollaborationRequestAdmin[];
-}
-
-export interface Pulse {
-  id: string;
-  type: "POLL" | "EMOJI" | "BRAND";
-  question: string;
-  description?: string;
-  options: string[];
-  audience: string;
-  status: "DRAFT" | "LIVE" | "CLOSED";
-  expiresAt?: string;
-  totalResponses: number;
-  createdById: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PulseResponse {
-  data: Pulse[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    pageCount: number;
-  };
-}
-
-export interface CreatePulseData {
-  type: "POLL" | "EMOJI" | "BRAND";
-  question: string;
-  audience: string;
-  options: string[];
-  description?: string;
-  status: "DRAFT" | "LIVE" | "CLOSED";
-  expiresAt?: string;
-}
-
-export interface PulseFilter {
-  page?: number;
-  limit?: number;
-  status?: string;
-  search?: string;
-}

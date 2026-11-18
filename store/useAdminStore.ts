@@ -4,13 +4,9 @@ import {
   DashboardStats,
   AdminProof,
   ProofFilter,
-  KanbanColumn,
-  CollaborationKanbanColumn,
   AdminTalent,
   TalentListResponse,
   TalentFilter,
-  TalentRequest,
-  CollaborationRequestAdmin,
 } from "@/services/adminService";
 
 interface AdminState {
@@ -33,18 +29,8 @@ interface AdminState {
   quickFeatureProof: (id: string) => Promise<void>;
   toggleFeatureProof: (id: string, isFeatured: boolean) => Promise<void>;
   toggleShadowLimitProof: (id: string, shadowLimited: boolean) => Promise<void>;
-  fetchKanbanBoard: () => Promise<void>;
-  acceptTalentRequest: (id: string) => Promise<void>;
-  rejectTalentRequest: (id: string) => Promise<void>;
-  completeTalentRequest: (id: string) => Promise<void>;
-  updateTalentRequest: (id: string, data: Partial<TalentRequest>) => Promise<void>;
-  kanbanBoard: KanbanColumn[];
-  collaborationKanbanBoard: CollaborationKanbanColumn[];
-  fetchCollaborationKanbanBoard: () => Promise<void>;
-  acceptCollaborationRequest: (id: string) => Promise<void>;
-  rejectCollaborationRequest: (id: string) => Promise<void>;
-  updateCollaborationRequest: (id: string, data: Partial<CollaborationRequestAdmin>) => Promise<void>;
-  // Talent Directory
+  deleteProof: (id: string) => Promise<void>;
+  // Users Directory
   talents: AdminTalent[];
   talentsMeta: TalentListResponse["meta"];
   fetchTalents: (filter?: TalentFilter) => Promise<void>;
@@ -53,7 +39,7 @@ interface AdminState {
   deleteTalent: (id: string) => Promise<void>;
 }
 
-export const useAdminStore = create<AdminState>((set, get) => ({
+export const useAdminStore = create<AdminState>((set) => ({
   stats: null,
   proofs: [],
   proofsMeta: {
@@ -62,8 +48,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     total: 0,
     pageCount: 0,
   },
-  kanbanBoard: [],
-  collaborationKanbanBoard: [],
   talents: [],
   talentsMeta: { page: 1, limit: 20, total: 0, pageCount: 0 },
   isLoading: false,
@@ -171,87 +155,18 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  fetchKanbanBoard: async () => {
-    set({ isLoading: true, error: null });
+  deleteProof: async (id) => {
     try {
-      const board = await adminService.getTalentRequestsKanban();
-      set({ kanbanBoard: board, isLoading: false });
+      await adminService.deleteProof(id);
+      set((state) => ({
+        proofs: state.proofs.filter((p) => p.id !== id),
+        proofsMeta: {
+          ...state.proofsMeta,
+          total: Math.max(0, state.proofsMeta.total - 1),
+        },
+      }));
     } catch (error: unknown) {
-      set({
-        isLoading: false,
-        error: (error as Error).message || "Failed to fetch kanban board",
-      });
-    }
-  },
-
-  acceptTalentRequest: async (id) => {
-    try {
-      await adminService.acceptTalentRequest(id);
-      await get().fetchKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Accept talent request failed", error);
-    }
-  },
-  rejectTalentRequest: async (id) => {
-    try {
-      await adminService.rejectTalentRequest(id);
-      await get().fetchKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Reject talent request failed", error);
-    }
-  },
-  completeTalentRequest: async (id) => {
-    try {
-      await adminService.completeTalentRequest(id);
-      await get().fetchKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Complete talent request failed", error);
-    }
-  },
-  updateTalentRequest: async (id, data) => {
-    try {
-      await adminService.updateTalentRequest(id, data);
-      await get().fetchKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Update talent request failed", error);
-    }
-  },
-
-  fetchCollaborationKanbanBoard: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const board = await adminService.getCollaborationRequestsKanban();
-      set({ collaborationKanbanBoard: board, isLoading: false });
-    } catch (error: unknown) {
-      set({
-        isLoading: false,
-        error: (error as Error).message || "Failed to fetch collaboration kanban board",
-      });
-    }
-  },
-
-  acceptCollaborationRequest: async (id) => {
-    try {
-      await adminService.acceptCollaborationRequest(id);
-      await get().fetchCollaborationKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Accept collaboration request failed", error);
-    }
-  },
-  rejectCollaborationRequest: async (id) => {
-    try {
-      await adminService.rejectCollaborationRequest(id);
-      await get().fetchCollaborationKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Reject collaboration request failed", error);
-    }
-  },
-  updateCollaborationRequest: async (id, data) => {
-    try {
-      await adminService.updateCollaborationRequest(id, data);
-      await get().fetchCollaborationKanbanBoard();
-    } catch (error: unknown) {
-      console.error("Update collaboration request failed", error);
+      console.error("Delete proof failed", error);
     }
   },
 
@@ -259,9 +174,16 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await adminService.getTalents(filter);
-      set({ talents: response.data, talentsMeta: response.meta, isLoading: false });
+      set({
+        talents: response.data,
+        talentsMeta: response.meta,
+        isLoading: false,
+      });
     } catch (error: unknown) {
-      set({ isLoading: false, error: (error as Error).message || "Failed to fetch talents" });
+      set({
+        isLoading: false,
+        error: (error as Error).message || "Failed to fetch talents",
+      });
     }
   },
 
@@ -269,7 +191,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const updated = await adminService.verifyTalent(id);
       set((state) => ({
-        talents: state.talents.map((t) => (t.id === id ? updated : t)),
+        talents: state.talents.map((t) =>
+          t.id === id ? { ...t, ...updated } : t,
+        ),
       }));
     } catch (error: unknown) {
       console.error("Verify talent failed", error);
@@ -280,7 +204,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const updated = await adminService.unverifyTalent(id);
       set((state) => ({
-        talents: state.talents.map((t) => (t.id === id ? updated : t)),
+        talents: state.talents.map((t) =>
+          t.id === id ? { ...t, ...updated } : t,
+        ),
       }));
     } catch (error: unknown) {
       console.error("Unverify talent failed", error);
@@ -294,7 +220,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         talents: state.talents.filter((t) => t.id !== id),
         talentsMeta: {
           ...state.talentsMeta,
-          total: state.talentsMeta.total - 1,
+          total: Math.max(0, state.talentsMeta.total - 1),
         },
       }));
     } catch (error: unknown) {
