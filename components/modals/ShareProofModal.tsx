@@ -67,25 +67,43 @@ export default function ShareProofModal({
       !proof.gig.gu2kGigId?.startsWith("custom_"),
   );
 
-  const previewMediaUrl =
-    proof.mediaUrl ||
-    (proof.mediaUrls && proof.mediaUrls[0]) ||
-    proof.mediaItems?.[0]?.url ||
+  const normalizedMedia: { url: string; type: "image" | "video"; thumbnailUrl?: string }[] =
+    Array.isArray(proof.mediaItems) && proof.mediaItems.length > 0
+      ? proof.mediaItems
+      : Array.isArray(proof.mediaUrls) && proof.mediaUrls.length > 0
+        ? proof.mediaUrls.map((url) => ({
+            url,
+            type: /\.(mp4|mov|webm|m4v)$/i.test(url.split("?")[0])
+              ? "video"
+              : "image",
+          }))
+        : proof.mediaUrl
+          ? [
+              {
+                url: proof.mediaUrl,
+                type: /\.(mp4|mov|webm|m4v)$/i.test(proof.mediaUrl.split("?")[0])
+                  ? "video"
+                  : "image",
+              },
+            ]
+          : [];
+
+  const previewItem =
+    normalizedMedia.find((item) => item.type === "image") ||
+    normalizedMedia[0] ||
     null;
-  const isVideoPreview =
-    proof.mediaItems?.[0]?.type === "video" ||
-    Boolean(
-      previewMediaUrl &&
-        /\.(mp4|mov|webm|m4v)$/i.test(previewMediaUrl.split("?")[0]),
-    );
+  const previewMediaUrl = previewItem?.url || null;
+  const isVideoPreview = previewItem?.type === "video";
 
   const handleShare = async (
-    platform: "instagram" | "tiktok" | "youtube" | "copy_link",
+    platform: "whatsapp" | "twitter" | "instagram" | "copy_link",
   ) => {
-    const fallbackUrl =
-      proof.shareUrl || `${window.location.origin}/proofs/${proof.id}`;
+    const baseUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/proofs/${proof.id}`
+        : proof.shareUrl || `/proofs/${proof.id}`;
 
-    let resolvedUrl = fallbackUrl;
+    let resolvedUrl = baseUrl;
     if (isAuthenticated) {
       try {
         const res = await proofService.shareProof(proof.id, platform);
@@ -98,22 +116,41 @@ export default function ShareProofModal({
     }
 
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      await navigator.clipboard.writeText(resolvedUrl);
+      try {
+        await navigator.clipboard.writeText(resolvedUrl);
+      } catch {
+        // Ignore clipboard errors if focus was lost before redirect
+      }
     }
+
+    const snippet = (
+      proof.caption ||
+      proof.title ||
+      `Check out ${talentName}'s proof on Arena!`
+    ).slice(0, 140);
+    const shareText = `${snippet} — View on Arena: ${resolvedUrl}`;
 
     if (platform === "copy_link") {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast.success("Proof link copied to clipboard!");
+    } else if (platform === "whatsapp") {
+      toast.success("Link copied — opening WhatsApp!");
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(shareText)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } else if (platform === "twitter") {
+      toast.success("Link copied — opening Twitter!");
+      window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(snippet)}&url=${encodeURIComponent(resolvedUrl)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
     } else if (platform === "instagram") {
       toast.success("Link copied — ready to share on Instagram!");
       window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
-    } else if (platform === "tiktok") {
-      toast.success("Link copied — ready to share on TikTok!");
-      window.open("https://www.tiktok.com/upload", "_blank", "noopener,noreferrer");
-    } else if (platform === "youtube") {
-      toast.success("Link copied — ready to share on YouTube!");
-      window.open("https://www.youtube.com/", "_blank", "noopener,noreferrer");
     }
   };
 
@@ -202,12 +239,13 @@ export default function ShareProofModal({
         </div>
 
         {/* Visual Proof Preview Card */}
-        <div className="mt-4 rounded-2xl overflow-hidden h-[175px] relative border border-[#ECECF0]">
+        <div className="mt-4 rounded-2xl overflow-hidden h-[250px] sm:h-[270px] bg-[#F5F5F8] relative border border-[#ECECF0]">
           {previewMediaUrl ? (
             isVideoPreview ? (
               <video
                 src={previewMediaUrl}
-                className="w-full h-full object-cover"
+                poster={previewItem?.thumbnailUrl}
+                className="w-full h-full object-cover object-center"
                 muted
                 playsInline
               />
@@ -216,7 +254,7 @@ export default function ShareProofModal({
               <img
                 src={previewMediaUrl}
                 alt={talentName}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-[center_30%]"
               />
             )
           ) : (
@@ -248,14 +286,51 @@ export default function ShareProofModal({
           )}
         </div>
 
-        {/* 4 Circular Share Buttons: Instagram, TikTok, YouTube, Copy Link */}
+        {/* 4 Circular Share Buttons: WhatsApp, Twitter, Instagram, Copy Link */}
         <div className="mt-5 flex items-center justify-center gap-3.5">
+          {/* WhatsApp */}
+          <button
+            type="button"
+            onClick={() => handleShare("whatsapp")}
+            className="w-11 h-11 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
+            title="Share to WhatsApp"
+            aria-label="Share to WhatsApp"
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12.004 2a9.998 9.998 0 0 0-8.606 15.095L2 22l5.04-1.322A10 10 0 1 0 12.004 2Z"
+                fill="#25D366"
+              />
+              <path
+                d="M16.95 14.12c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.14-.61.14-.18.27-.7.88-.86 1.06-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.17-1.34-.8-.71-1.34-1.6-1.5-1.87-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.48-.84-2.02-.22-.53-.45-.46-.61-.47h-.52c-.18 0-.48.07-.73.34-.25.27-.95.93-.95 2.27s.98 2.63 1.11 2.81c.14.18 1.92 2.93 4.65 4.11.65.28 1.16.45 1.55.57.65.21 1.25.18 1.72.11.52-.08 1.6-.65 1.83-1.29.23-.64.23-1.18.16-1.29-.07-.11-.25-.18-.52-.32Z"
+                fill="#FFFFFF"
+              />
+            </svg>
+          </button>
+
+          {/* Twitter / X */}
+          <button
+            type="button"
+            onClick={() => handleShare("twitter")}
+            className="w-11 h-11 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
+            title="Share to Twitter / X"
+            aria-label="Share to Twitter / X"
+          >
+            <svg width="17" height="17" viewBox="0 0 25 24" fill="none">
+              <path
+                d="M14.919 10.392L22.5135 1.5H20.7135L14.121 9.2205L8.85295 1.5H2.77795L10.743 13.176L2.77795 22.5H4.57795L11.541 14.346L17.1045 22.5H23.1795L14.919 10.392ZM12.4545 13.278L11.6475 12.1155L5.22595 2.865H7.99045L13.1715 10.3305L13.9785 11.493L20.715 21.198H17.9505L12.4545 13.278Z"
+                fill="#111111"
+              />
+            </svg>
+          </button>
+
           {/* Instagram */}
           <button
             type="button"
             onClick={() => handleShare("instagram")}
             className="w-11 h-11 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
             title="Share to Instagram"
+            aria-label="Share to Instagram"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <defs>
@@ -282,45 +357,6 @@ export default function ShareProofModal({
                 strokeWidth="2"
               />
               <circle cx="17.5" cy="6.5" r="1.2" fill="url(#igGrad)" />
-            </svg>
-          </button>
-
-          {/* TikTok */}
-          <button
-            type="button"
-            onClick={() => handleShare("tiktok")}
-            className="w-11 h-11 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
-            title="Share to TikTok"
-          >
-            <svg width="17" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48Z"
-                fill="#111111"
-              />
-              <path
-                d="M15.54 3h-1.1a4.28 4.28 0 0 0 1.06 2.82c1.36 1.57 3.24 1.48 3.24 1.48V6.2c-.9-.08-2.32-.54-3.2-3.2Z"
-                fill="#EE1D52"
-              />
-              <path
-                d="M9.86 17.9a2.59 2.59 0 0 1-2.59-2.6c0-1.26.9-2.31 2.1-2.54-.27-.05-.56-.07-.86-.07a2.6 2.6 0 0 0-2.6 2.6c0 1.43 1.17 2.61 2.6 2.61.48 0 .93-.13 1.35-.35Z"
-                fill="#69C9D0"
-              />
-            </svg>
-          </button>
-
-          {/* YouTube */}
-          <button
-            type="button"
-            onClick={() => handleShare("youtube")}
-            className="w-11 h-11 rounded-full border border-[#E4E4EA] bg-white hover:bg-gray-50 flex items-center justify-center transition-colors cursor-pointer"
-            title="Share to YouTube"
-          >
-            <svg width="20" height="15" viewBox="0 0 24 17" fill="none">
-              <path
-                d="M23.5 2.66A3.01 3.01 0 0 0 21.38.53C19.51 0 12 0 12 0S4.49 0 2.62.53A3.01 3.01 0 0 0 .5 2.66C0 4.54 0 8.5 0 8.5s0 3.96.5 5.84a3.01 3.01 0 0 0 2.12 2.13C4.49 17 12 17 12 17s7.51 0 9.38-.53a3.01 3.01 0 0 0 2.12-2.13C24 12.46 24 8.5 24 8.5s0-3.96-.5-5.84Z"
-                fill="#FF0000"
-              />
-              <path d="M9.6 12.14 15.84 8.5 9.6 4.86v7.28Z" fill="#FFFFFF" />
             </svg>
           </button>
 
