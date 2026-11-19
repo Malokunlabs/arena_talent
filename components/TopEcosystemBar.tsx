@@ -7,9 +7,9 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUserStore } from "@/store/useUserStore";
 
 export const ECOSYSTEM_LINKS = {
-  gu2k: "https://geturgent2k.com/",
+  gu2k: "https://gu2k.app/",
   arena: "/",
-  brands: "https://geturgent2k.com/brands",
+  brands: "https://gu2k.app/brands",
   daily: "https://gu2kdaily.com/daily",
 } as const;
 
