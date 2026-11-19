@@ -29,7 +29,7 @@ export function EcosystemDropdownMenu({
         onClick={onSelect}
         className="block px-3.5 py-2 rounded-xl text-[12px] font-semibold text-white bg-white/10 transition-colors"
       >
-        Arena - Share Proof
+        Arena - Share Proof (Beta)
       </Link>
       <a
         href={ECOSYSTEM_LINKS.gu2k}
@@ -108,7 +108,7 @@ export default function TopEcosystemBar() {
           href={ECOSYSTEM_LINKS.arena}
           className="px-3.5 sm:px-5 h-[34px] mt-[7px] bg-[#EFEFF3] rounded-t-xl flex items-center text-black font-semibold whitespace-nowrap border-t border-x border-[#E4E4E9]"
         >
-          Arena<span className="hidden sm:inline"> - Share Proof</span>
+          Arena<span className="hidden sm:inline"> - Share Proof</span> (Beta)
         </Link>
 
         <a
