@@ -11,7 +11,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://arena.geturgent2k.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://arena.gu2k.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
