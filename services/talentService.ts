@@ -30,6 +30,8 @@ export interface Talent {
   level?: ArenaLevelSummary;
   followerCount?: number;
   verificationStatus?: string;
+  /** What GU2K vouches for, refreshed by the Arena backend. */
+  gu2k?: { certified: boolean; badges: unknown[]; verifiedTasks: number; states: string[] };
   avatarUrl?: string;
   coverUrl?: string | null;
   cvUrl?: string | null;

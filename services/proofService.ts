@@ -41,6 +41,8 @@ export interface Proof {
   updatedAt?: string;
   status?: string;
   isVerified?: boolean;
+  /** GU2K confirms this person completed the linked gig. */
+  isGu2kWork?: boolean;
   isFeatured?: boolean;
   shadowLimited?: boolean;
   talent?: {
