@@ -18,6 +18,7 @@ import ShareProofModal from "@/components/modals/ShareProofModal";
 import RecommendationsModal from "@/components/modals/RecommendationsModal";
 import CvModal from "@/components/modals/CvModal";
 import { LevelPill, getLevelColor } from "@/components/arena/LevelBadge";
+import Gu2kCredentials from "@/components/arena/Gu2kCredentials";
 import UserAvatar from "@/components/UserAvatar";
 import { useTalentStore } from "@/store/useTalentStore";
 import { useProofStore } from "@/store/useProofStore";
@@ -354,6 +355,8 @@ function ProfileContent() {
             </p>
           </div>
         </div>
+
+        <Gu2kCredentials username={talent.username} />
 
         {/* Proofs List */}
         <section className="mt-7">

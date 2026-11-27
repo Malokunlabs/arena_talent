@@ -8,6 +8,7 @@ import ProfileRightSidebar from "@/components/arena/ProfileRightSidebar";
 import ArenaFeedPost from "@/components/arena/ArenaFeedPost";
 import UserAvatar from "@/components/UserAvatar";
 import { LevelPill, getLevelColor } from "@/components/arena/LevelBadge";
+import Gu2kCredentials from "@/components/arena/Gu2kCredentials";
 import RecommendationsModal from "@/components/modals/RecommendationsModal";
 import CvModal from "@/components/modals/CvModal";
 import EditProfileModal from "@/components/modals/EditProfileModal";
@@ -307,6 +308,8 @@ export default function MyProfilePage() {
               </p>
             </div>
           </div>
+
+          <Gu2kCredentials username={talent?.username ?? user?.username} isOwner />
 
           {/* My Proofs Section */}
           <section className="mt-7">
