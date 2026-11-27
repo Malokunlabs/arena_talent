@@ -309,7 +309,7 @@ export default function MyProfilePage() {
             </div>
           </div>
 
-          <Gu2kCredentials username={talent?.username ?? user?.username} isOwner />
+          <Gu2kCredentials username={talent?.username ?? user?.username} data={talent?.gu2k} isOwner />
 
           {/* My Proofs Section */}
           <section className="mt-7">

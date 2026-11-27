@@ -356,7 +356,7 @@ function ProfileContent() {
           </div>
         </div>
 
-        <Gu2kCredentials username={talent.username} />
+        <Gu2kCredentials username={talent.username} data={talent.gu2k} />
 
         {/* Proofs List */}
         <section className="mt-7">

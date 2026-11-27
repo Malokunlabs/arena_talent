@@ -271,7 +271,12 @@ export default function ArenaFeedPost({
   const captionText = proof.caption || proof.title || "";
 
   // Only posts linked to a gig synced from GU2K count as verified work
-  const isVerifiedGig = Boolean(
+  // Verified only when GU2K confirms this person completed the gig (isGu2kWork from the
+  // Arena backend). Older backends without the field fall back to the gig link.
+  const isVerifiedGig =
+    typeof proof.isGu2kWork === "boolean"
+      ? proof.isGu2kWork
+      : Boolean(
     proof.gigId &&
       proof.gig &&
       proof.gig.status !== "CUSTOM" &&
@@ -356,7 +361,7 @@ export default function ArenaFeedPost({
                 : "Not linked to a GU2K gig record"
             }
           >
-            {isVerifiedGig ? "Verified GU2K gig" : "Self-reported"}
+            {isVerifiedGig ? "Verified GU2K work" : "Self posted"}
           </span>
         </div>
       </div>

@@ -23,20 +23,54 @@ interface Credentials {
   states: string[];
 }
 
-const GU2K_API = process.env.NEXT_PUBLIC_GU2K_BASE_URL ?? "https://geturgent2k.co";
+const GU2K_API =
+  process.env.NEXT_PUBLIC_GU2K_BASE_URL ?? "https://geturgent2k.co";
 const LEARN_URL = "https://gu2k.app/learn";
 
-export default function Gu2kCredentials({ username, isOwner = false }: { username?: string | null; isOwner?: boolean }) {
-  const valid = !!username && /^[A-Za-z0-9._-]{2,40}$/.test(username);
+/** The same facts as Arena's backend holds them (talent.gu2k), when it has them. */
+export interface ArenaGu2k {
+  certified: boolean;
+  badges: unknown[];
+  verifiedTasks: number;
+  states: string[];
+}
+
+export default function Gu2kCredentials({
+  username,
+  isOwner = false,
+  data,
+}: {
+  username?: string | null;
+  isOwner?: boolean;
+  data?: ArenaGu2k | null;
+}) {
+  // Arena's backend refreshes these from GU2K; ask GU2K directly only when it has not yet.
+  const fromArena: Credentials | null =
+    data && (data.badges.length > 0 || data.verifiedTasks > 0)
+      ? {
+          badges: data.badges as Badge[],
+          certified: data.certified,
+          verified_tasks: data.verifiedTasks,
+          states: data.states,
+        }
+      : null;
+  const valid =
+    !fromArena && !!username && /^[A-Za-z0-9._-]{2,40}$/.test(username);
   // Keyed by username so a stale answer for another profile is never shown.
-  const [result, setResult] = useState<{ for: string; creds: Credentials | null } | null>(null);
+  const [result, setResult] = useState<{
+    for: string;
+    creds: Credentials | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!valid) return;
     let cancelled = false;
     fetch(`${GU2K_API}/api/public/credentials/${encodeURIComponent(username!)}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => !cancelled && setResult({ for: username!, creds: j?.data ?? null }))
+      .then(
+        (j) =>
+          !cancelled && setResult({ for: username!, creds: j?.data ?? null }),
+      )
       .catch(() => !cancelled && setResult({ for: username!, creds: null }));
     return () => {
       cancelled = true;
@@ -44,17 +78,21 @@ export default function Gu2kCredentials({ username, isOwner = false }: { usernam
   }, [username, valid]);
 
   if (valid && result?.for !== username) return null;
-  const creds = valid ? result?.creds ?? null : null;
-  const empty = !creds || (creds.badges.length === 0 && creds.verified_tasks === 0);
+  const creds = fromArena ?? (valid ? (result?.creds ?? null) : null);
+  const empty =
+    !creds || (creds.badges.length === 0 && creds.verified_tasks === 0);
 
   if (empty) {
     if (!isOwner) return null;
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-[#D9C2FB] px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-[14px] font-semibold text-black">Get certified on GU2K</p>
+          <p className="text-[14px] font-semibold text-black">
+            Get certified on GU2K
+          </p>
           <p className="text-[13px] text-[#747682] mt-0.5">
-            Pass GU2K Learn and your badge shows here, with a link anyone can check. Certified earners get certified only gigs at a higher rate.
+            Pass GU2K Learn and your badge shows here, with a link anyone can
+            check. Certified earners get certified only gigs at a higher rate.
           </p>
         </div>
         <a
@@ -70,7 +108,10 @@ export default function Gu2kCredentials({ username, isOwner = false }: { usernam
   }
 
   return (
-    <section aria-label="Verified by GU2K" className="mt-4 rounded-2xl border border-[#E9DBFE] bg-white px-5 py-4">
+    <section
+      aria-label="Verified by GU2K"
+      className="mt-4 rounded-2xl border border-[#E9DBFE] bg-white px-5 py-4"
+    >
       <div className="flex items-center justify-between gap-2">
         <p className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.08em] text-[#7E00EE]">
           <BadgeCheck className="w-4 h-4" />
@@ -78,7 +119,10 @@ export default function Gu2kCredentials({ username, isOwner = false }: { usernam
         </p>
         {creds!.verified_tasks > 0 && (
           <p className="text-[13px] text-[#52525B]">
-            <span className="font-bold text-black">{creds!.verified_tasks}</span> task{creds!.verified_tasks === 1 ? "" : "s"} accepted
+            <span className="font-bold text-black">
+              {creds!.verified_tasks}
+            </span>{" "}
+            task{creds!.verified_tasks === 1 ? "" : "s"} accepted
           </p>
         )}
       </div>
@@ -86,12 +130,22 @@ export default function Gu2kCredentials({ username, isOwner = false }: { usernam
       {creds!.badges.length > 0 && (
         <ul className="mt-3 flex flex-col gap-2">
           {creds!.badges.map((b) => (
-            <li key={b.code} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-[#F7F2FF] px-4 py-3">
+            <li
+              key={b.code}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-[#F7F2FF] px-4 py-3"
+            >
               <div className="min-w-0">
                 <p className="text-[14px] font-semibold text-black">{b.name}</p>
                 <p className="text-[12px] text-[#747682]">
-                  {b.status === "active" ? "Active" : "Paused until a refresher is done"} · since{" "}
-                  {new Date(b.issued_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} · {b.code}
+                  {b.status === "active"
+                    ? "Active"
+                    : "Paused until a refresher is done"}{" "}
+                  · since{" "}
+                  {new Date(b.issued_at).toLocaleDateString("en-GB", {
+                    month: "short",
+                    year: "numeric",
+                  })}{" "}
+                  · {b.code}
                 </p>
               </div>
               <a
@@ -109,7 +163,8 @@ export default function Gu2kCredentials({ username, isOwner = false }: { usernam
 
       {creds!.states.length > 0 && (
         <p className="mt-3 inline-flex items-center gap-1 text-[12.5px] text-[#747682]">
-          <MapPin className="w-3.5 h-3.5" /> Worked in {creds!.states.join(", ")}
+          <MapPin className="w-3.5 h-3.5" /> Worked in{" "}
+          {creds!.states.join(", ")}
         </p>
       )}
     </section>
